@@ -1,0 +1,35 @@
+{
+  "name": "kyp-mem",
+  "version": "0.2.0",
+  "description": "Know Your Project — Headless Obsidian for AI agents. MCP-powered knowledge base with neon web UI.",
+  "bin": {
+    "kyp-mem": "./bin/cli.mjs"
+  },
+  "files": [
+    "bin/",
+    "kyp_mem/",
+    "pyproject.toml",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "postinstall": "node bin/install.mjs"
+  },
+  "keywords": [
+    "knowledge-base",
+    "obsidian",
+    "ai",
+    "mcp",
+    "claude",
+    "notes",
+    "wiki",
+    "second-brain"
+  ],
+  "author": "KDB AI Agency",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Adhithya-Karthikeyan/KYP-MEM.git"
+  },
+  "homepage": "https://github.com/Adhithya-Karthikeyan/KYP-MEM"
+}
