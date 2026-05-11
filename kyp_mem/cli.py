@@ -16,7 +16,7 @@ R = "\033[0m"   # reset
 def main():
     parser = argparse.ArgumentParser(
         prog="kyp-mem",
-        description="KYP-MEM — Know Your Project Memory. Headless Obsidian for AI agents.",
+        description="KYP-MEM — Know Your Project Memory. Headless knowledge base for AI agents.",
     )
     parser.add_argument("--vault", default=None, help="Override vault path")
 
