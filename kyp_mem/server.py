@@ -1,12 +1,11 @@
 """KYP-MEM MCP server — headless knowledge base for AI agents."""
 
-import os
 import json
 from mcp.server.fastmcp import FastMCP
+from .config import get_vault_path
 from .vault import Vault
 
-vault_path = os.environ.get("KYP_VAULT", os.path.expanduser("~/.kyp-mem/vault"))
-vault = Vault(vault_path)
+vault = Vault(get_vault_path())
 
 mcp = FastMCP("kyp-mem", description="Know Your Project — headless knowledge base like Obsidian")
 
