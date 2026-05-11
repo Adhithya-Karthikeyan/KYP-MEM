@@ -66,18 +66,74 @@ body::before {
 
 .layout {
   display: grid;
-  grid-template-columns: 260px 1fr 280px;
+  grid-template-columns: var(--sidebar-w, 260px) 5px 1fr 5px var(--right-w, 280px);
   grid-template-rows: 52px 1fr;
   height: 100vh;
   position: relative;
   z-index: 1;
 }
 
-/* No right panel when graph is hidden — handled by JS class */
 .layout.no-right-panel {
-  grid-template-columns: 260px 1fr;
+  grid-template-columns: var(--sidebar-w, 260px) 5px 1fr;
 }
-.layout.no-right-panel .right-panel { display: none; }
+.layout.no-right-panel .right-panel,
+.layout.no-right-panel #resize-right { display: none; }
+
+/* ============ RESIZE HANDLES ============ */
+.resize-handle {
+  background: transparent;
+  cursor: col-resize;
+  position: relative;
+  z-index: 10;
+  transition: background 0.2s;
+}
+
+.resize-handle::before {
+  content: '';
+  position: absolute;
+  inset: 0 -3px;
+  z-index: 1;
+}
+
+.resize-handle::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 3px;
+  height: 32px;
+  border-radius: 2px;
+  background: var(--text-muted);
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s, box-shadow 0.2s;
+}
+
+.resize-handle:hover::after,
+.resize-handle.dragging::after {
+  opacity: 1;
+  background: var(--neon-cyan);
+  box-shadow: 0 0 8px rgba(0, 255, 245, 0.4);
+}
+
+.resize-handle:hover,
+.resize-handle.dragging {
+  background: rgba(0, 255, 245, 0.08);
+}
+
+body.resizing {
+  cursor: col-resize !important;
+  user-select: none !important;
+}
+
+body.resizing * {
+  cursor: col-resize !important;
+  pointer-events: none !important;
+}
+
+body.resizing .resize-handle {
+  pointer-events: auto !important;
+}
 
 /* ============ HEADER ============ */
 .header {
