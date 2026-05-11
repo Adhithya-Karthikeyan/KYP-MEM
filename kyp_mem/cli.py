@@ -243,7 +243,7 @@ def _run_doctor():
 def _print_banner():
     print()
     print(f"{C}  KYP-MEM{R} — Know Your Project Memory")
-    print(f"  {D}Headless Obsidian for AI agents{R}")
+    print(f"  {D}Headless knowledge base for AI agents{R}")
     print()
 
 
