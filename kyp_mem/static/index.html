@@ -1226,7 +1226,7 @@ function initResize() {
         handle.classList.remove('dragging');
         document.body.classList.remove('resizing');
         opts.save();
-        if (graphVisible && currentPath) renderGraph({ path: currentPath, links: [], backlinks: [], related: [] });
+        if (graphVisible && currentPath) loadNote(currentPath);
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
       }
