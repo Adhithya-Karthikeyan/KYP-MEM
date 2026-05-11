@@ -4,3 +4,5 @@ __pycache__/
 dist/
 build/
 .venv/
+node_modules/
+.DS_Store
