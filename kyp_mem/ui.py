@@ -1,4 +1,4 @@
-"""KYP-MEM web UI — Obsidian-like interface for browsing the vault."""
+"""KYP-MEM web UI — interactive interface for browsing the vault."""
 
 import webbrowser
 from pathlib import Path
