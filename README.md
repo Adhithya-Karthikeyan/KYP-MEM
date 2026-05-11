@@ -83,7 +83,7 @@ Opens a rich interface at `localhost:3333` with:
 
 ## Note Format
 
-Standard markdown with YAML frontmatter — same as Obsidian:
+Standard markdown with YAML frontmatter:
 
 ```markdown
 ---
