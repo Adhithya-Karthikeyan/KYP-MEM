@@ -10,7 +10,7 @@ readme = "README.md"
 license = {text = "MIT"}
 requires-python = ">=3.10"
 authors = [
-    {name = "KDB AI Agency", email = "dfreakhitman@gmail.com"}
+    {name = "KDB AI Agency", email = "skadhithya95@gmail.com"}
 ]
 keywords = ["knowledge-base", "obsidian", "ai", "mcp", "notes", "wiki", "second-brain"]
 classifiers = [
