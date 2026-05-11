@@ -1195,6 +1195,66 @@ document.addEventListener('click', (e) => {
   if (!e.target.closest('.search-box')) searchResults.classList.remove('active');
 });
 
+// --- Resizable Panels ---
+function initResize() {
+  const layout = document.getElementById('layout');
+  const leftHandle = document.getElementById('resize-left');
+  const rightHandle = document.getElementById('resize-right');
+
+  let sidebarW = parseInt(localStorage.getItem('kyp-sidebar-w')) || 260;
+  let rightW = parseInt(localStorage.getItem('kyp-right-w')) || 280;
+
+  layout.style.setProperty('--sidebar-w', sidebarW + 'px');
+  layout.style.setProperty('--right-w', rightW + 'px');
+
+  function makeDraggable(handle, opts) {
+    handle.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const startX = e.clientX;
+      const startW = opts.getWidth();
+      handle.classList.add('dragging');
+      document.body.classList.add('resizing');
+
+      function onMove(e) {
+        const delta = e.clientX - startX;
+        const adjusted = opts.invert ? startW - delta : startW + delta;
+        const clamped = Math.max(opts.min, Math.min(opts.max, adjusted));
+        opts.setWidth(clamped);
+      }
+
+      function onUp() {
+        handle.classList.remove('dragging');
+        document.body.classList.remove('resizing');
+        opts.save();
+        if (graphVisible && currentPath) renderGraph({ path: currentPath, links: [], backlinks: [], related: [] });
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+      }
+
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+  }
+
+  makeDraggable(leftHandle, {
+    getWidth: () => sidebarW,
+    setWidth: (w) => { sidebarW = w; layout.style.setProperty('--sidebar-w', w + 'px'); },
+    save: () => localStorage.setItem('kyp-sidebar-w', sidebarW),
+    invert: false,
+    min: 180,
+    max: 450,
+  });
+
+  makeDraggable(rightHandle, {
+    getWidth: () => rightW,
+    setWidth: (w) => { rightW = w; layout.style.setProperty('--right-w', w + 'px'); },
+    save: () => localStorage.setItem('kyp-right-w', rightW),
+    invert: true,
+    min: 200,
+    max: 500,
+  });
+}
+
 // --- Init ---
 async function init() {
   treeData = await fetchJSON('/api/tree');
