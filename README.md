@@ -30,7 +30,7 @@ That's it. Claude now has `kyp_read`, `kyp_write`, `kyp_search`, and 7 other too
 kyp-mem ui
 ```
 
-Opens an Obsidian-like interface at `localhost:3333` with:
+Opens a rich interface at `localhost:3333` with:
 - Collapsible folder tree
 - Rendered markdown with syntax highlighting
 - Clickable `[[wikilinks]]`
