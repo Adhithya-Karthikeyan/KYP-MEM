@@ -7,7 +7,7 @@ from .vault import Vault
 
 vault = Vault(get_vault_path())
 
-mcp = FastMCP("kyp-mem", description="Know Your Project — headless knowledge base for AI agents")
+mcp = FastMCP("kyp-mem")
 
 
 @mcp.tool()

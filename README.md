@@ -65,7 +65,7 @@ Opens a rich interface at `localhost:3333` with:
 | Command | What it does |
 |---------|-------------|
 | `kyp-mem init` | First-time setup — choose vault location |
-| `kyp-mem setup-claude` | Auto-configure Claude Code MCP settings |
+| `kyp-mem setup-claude` | Register the MCP server with Claude Code for this project |
 | `kyp-mem setup-claude --global` | Configure globally (all projects) |
 | `kyp-mem serve` | Start MCP server (used by Claude, not you) |
 | `kyp-mem ui` | Open web UI at localhost:3333 |
@@ -110,21 +110,11 @@ Settings are defined in `HedgeConfig`. See [[Risk Management]] for safety checks
 
 If you prefer to configure manually instead of using `setup-claude`:
 
-```json
-{
-  "mcpServers": {
-    "kyp-mem": {
-      "command": "npx",
-      "args": ["-y", "kyp-mem", "serve"],
-      "env": {
-        "KYP_VAULT": "~/.kyp-mem/vault"
-      }
-    }
-  }
-}
+```bash
+claude mcp add -s local -e KYP_VAULT="$HOME/.kyp-mem/vault" kyp-mem -- npx -y kyp-mem serve
 ```
 
-Add to `~/.claude/settings.json` (global) or `.claude/settings.json` (per-project).
+Use `-s user` instead of `-s local` to make it available in all projects.
 
 ## Architecture
 

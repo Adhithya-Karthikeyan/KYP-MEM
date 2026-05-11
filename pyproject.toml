@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "kyp-mem"
-version = "0.2.1"
+version = "0.2.2"
 description = "Know Your Project — Headless knowledge base for AI agents. MCP-powered with wikilinks, backlinks, and neon web UI."
 readme = "README.md"
 license = {text = "MIT"}

@@ -4,6 +4,7 @@ import os
 import json
 import shutil
 import argparse
+import subprocess
 from pathlib import Path
 
 C = "\033[36m"  # cyan
@@ -107,28 +108,112 @@ def _run_setup_claude(global_config: bool = False):
     from .config import get_vault_path
 
     vault_path = get_vault_path()
+    mcp_command, mcp_args = _get_mcp_command()
+    claude_scope = "user" if global_config else "local"
+    scope_label = "global user" if global_config else "local project"
+
+    registered, detail = _register_with_claude_mcp(
+        claude_scope,
+        mcp_command,
+        mcp_args,
+        vault_path,
+    )
+
+    print()
+    print(f"  {C}KYP-MEM{R} — Claude Code Setup")
+    print()
+    if registered:
+        print(f"  {G}✓{R} MCP server registered with Claude Code ({scope_label})")
+    else:
+        settings_path = _write_legacy_claude_settings(global_config, mcp_command, mcp_args, vault_path)
+        print(f"  {Y}✗{R} Could not register with Claude Code's MCP manager")
+        print(f"  {D}  Reason:  {detail}{R}")
+        print(f"  {Y}!{R} Wrote legacy settings as a fallback")
+        print(f"  {D}  File:    {settings_path}{R}")
+    print(f"  {D}  Command: {mcp_command} {' '.join(mcp_args)}{R}")
+    print(f"  {D}  Vault:   {vault_path}{R}")
+    print()
+    print(f"  {C}Done!{R} Restart Claude Code and kyp-mem will run automatically.")
+    print(f"  Claude gets these tools: kyp_list, kyp_read, kyp_write, kyp_delete,")
+    print(f"  kyp_search, kyp_tags, kyp_related, kyp_recent, kyp_stats")
+    print()
+    print(f"  {D}To open the web UI anytime:{R} {Y}kyp-mem ui{R}")
+    print()
+
+
+def _get_mcp_command() -> tuple[str, list[str]]:
     kyp_mem_bin = shutil.which("kyp-mem")
     npx_bin = shutil.which("npx")
 
     if kyp_mem_bin and "_npx" not in Path(kyp_mem_bin).parts:
-        mcp_command = kyp_mem_bin
-        mcp_args = ["serve"]
-    elif npx_bin:
-        mcp_command = npx_bin
-        mcp_args = ["-y", "kyp-mem", "serve"]
-    else:
-        print(f"  {Y}Warning:{R} 'kyp-mem' not found in PATH.")
-        print(f"  {D}Make sure you installed with: npm install -g kyp-mem{R}")
-        print()
-        mcp_command = "kyp-mem"
-        mcp_args = ["serve"]
+        return kyp_mem_bin, ["serve"]
+    if npx_bin:
+        return npx_bin, ["-y", "kyp-mem", "serve"]
 
+    print(f"  {Y}Warning:{R} 'kyp-mem' not found in PATH.")
+    print(f"  {D}Make sure you installed with: npm install -g kyp-mem{R}")
+    print()
+    return "kyp-mem", ["serve"]
+
+
+def _register_with_claude_mcp(
+    scope: str,
+    mcp_command: str,
+    mcp_args: list[str],
+    vault_path: str,
+) -> tuple[bool, str]:
+    claude_bin = shutil.which("claude")
+    if not claude_bin:
+        return False, "'claude' CLI not found in PATH"
+
+    server_config = {
+        "type": "stdio",
+        "command": mcp_command,
+        "args": mcp_args,
+        "env": {
+            "KYP_VAULT": vault_path,
+        },
+    }
+
+    # Make setup idempotent when the user reruns it with a new vault or binary.
+    subprocess.run(
+        [claude_bin, "mcp", "remove", "-s", scope, "kyp-mem"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        text=True,
+    )
+
+    result = subprocess.run(
+        [
+            claude_bin,
+            "mcp",
+            "add-json",
+            "-s",
+            scope,
+            "kyp-mem",
+            json.dumps(server_config),
+        ],
+        capture_output=True,
+        text=True,
+    )
+
+    if result.returncode == 0:
+        return True, result.stdout.strip()
+
+    detail = (result.stderr or result.stdout or "unknown error").strip()
+    return False, detail
+
+
+def _write_legacy_claude_settings(
+    global_config: bool,
+    mcp_command: str,
+    mcp_args: list[str],
+    vault_path: str,
+) -> Path:
     if global_config:
         settings_path = Path.home() / ".claude" / "settings.json"
-        scope = "global"
     else:
         settings_path = Path.cwd() / ".claude" / "settings.json"
-        scope = "project"
 
     settings_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -140,7 +225,6 @@ def _run_setup_claude(global_config: bool = False):
             settings = {}
 
     mcp_servers = settings.setdefault("mcpServers", {})
-
     mcp_servers["kyp-mem"] = {
         "command": mcp_command,
         "args": mcp_args,
@@ -150,21 +234,7 @@ def _run_setup_claude(global_config: bool = False):
     }
 
     settings_path.write_text(json.dumps(settings, indent=2) + "\n")
-
-    print()
-    print(f"  {C}KYP-MEM{R} — Claude Code Setup")
-    print()
-    print(f"  {G}✓{R} MCP server added to {scope} settings")
-    print(f"  {D}  File:    {settings_path}{R}")
-    print(f"  {D}  Command: {mcp_command} {' '.join(mcp_args)}{R}")
-    print(f"  {D}  Vault:   {vault_path}{R}")
-    print()
-    print(f"  {C}Done!{R} Restart Claude Code and kyp-mem will run automatically.")
-    print(f"  Claude gets these tools: kyp_list, kyp_read, kyp_write, kyp_delete,")
-    print(f"  kyp_search, kyp_tags, kyp_related, kyp_recent, kyp_stats")
-    print()
-    print(f"  {D}To open the web UI anytime:{R} {Y}kyp-mem ui{R}")
-    print()
+    return settings_path
 
 
 def _run_stats():
@@ -212,22 +282,37 @@ def _run_doctor():
     else:
         print(f"  {Y}✗{R} Vault not found: {vault_path}")
 
-    # Claude Code config
-    for label, path in [
+    # Claude Code MCP registration
+    claude_bin = shutil.which("claude")
+    if claude_bin:
+        result = subprocess.run(
+            [claude_bin, "mcp", "get", "kyp-mem"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0 and "Status: ✓ Connected" in result.stdout:
+            print(f"  {G}✓{R} Claude Code MCP: kyp-mem connected")
+        elif result.returncode == 0:
+            print(f"  {Y}✗{R} Claude Code MCP: kyp-mem registered but not connected")
+        else:
+            print(f"  {Y}✗{R} Claude Code MCP: kyp-mem not active")
+    else:
+        print(f"  {Y}✗{R} Claude Code CLI not found in PATH")
+
+    legacy_paths = [
         ("project", Path.cwd() / ".claude" / "settings.json"),
         ("global", Path.home() / ".claude" / "settings.json"),
-    ]:
-        if path.exists():
-            try:
-                s = json.loads(path.read_text())
-                if "kyp-mem" in s.get("mcpServers", {}):
-                    print(f"  {G}✓{R} Claude Code ({label}): kyp-mem configured")
-                else:
-                    print(f"  {D}·{R} Claude Code ({label}): exists but kyp-mem not configured")
-            except json.JSONDecodeError:
-                print(f"  {Y}✗{R} Claude Code ({label}): invalid JSON")
-        else:
-            print(f"  {D}·{R} Claude Code ({label}): no settings file")
+    ]
+    for label, path in legacy_paths:
+        if not path.exists():
+            continue
+        try:
+            s = json.loads(path.read_text())
+        except json.JSONDecodeError:
+            print(f"  {Y}✗{R} Legacy Claude settings ({label}): invalid JSON")
+            continue
+        if "kyp-mem" in s.get("mcpServers", {}):
+            print(f"  {D}·{R} Legacy Claude settings ({label}): kyp-mem entry present")
 
     # Binary
     kyp_bin = shutil.which("kyp-mem")
