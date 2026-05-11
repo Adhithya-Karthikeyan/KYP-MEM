@@ -4,9 +4,27 @@ build-backend = "hatchling.build"
 
 [project]
 name = "kyp-mem"
-version = "0.1.0"
-description = "Know Your Project — Headless Obsidian for AI agents"
+version = "0.2.0"
+description = "Know Your Project — Headless Obsidian for AI agents. MCP-powered knowledge base with neon web UI."
+readme = "README.md"
+license = {text = "MIT"}
 requires-python = ">=3.10"
+authors = [
+    {name = "KDB AI Agency", email = "dfreakhitman@gmail.com"}
+]
+keywords = ["knowledge-base", "obsidian", "ai", "mcp", "notes", "wiki", "second-brain"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Software Development :: Documentation",
+    "Topic :: Text Processing :: Markup :: Markdown",
+]
 dependencies = [
     "mcp>=1.0.0",
     "pyyaml>=6.0",
@@ -14,5 +32,13 @@ dependencies = [
     "uvicorn>=0.20.0",
 ]
 
+[project.urls]
+Homepage = "https://github.com/kdbalagency/kyp-mem"
+Repository = "https://github.com/kdbalagency/kyp-mem"
+Issues = "https://github.com/kdbalagency/kyp-mem/issues"
+
 [project.scripts]
 kyp-mem = "kyp_mem.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["kyp_mem"]
