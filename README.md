@@ -1,6 +1,6 @@
 # KYP-MEM — Know Your Project Memory
 
-**Headless Obsidian for AI agents.** A markdown knowledge base with wikilinks, backlinks, tags, related notes, and a neon web UI — all powered by an MCP server so Claude (or any AI) can read and write your project knowledge directly.
+**Headless knowledge base for AI agents.** Markdown notes with wikilinks, backlinks, tags, related notes, and a neon web UI — all powered by an MCP server so Claude (or any AI) can read and write your project knowledge directly.
 
 ## Install
 
