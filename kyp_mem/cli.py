@@ -108,12 +108,20 @@ def _run_setup_claude(global_config: bool = False):
 
     vault_path = get_vault_path()
     kyp_mem_bin = shutil.which("kyp-mem")
+    npx_bin = shutil.which("npx")
 
-    if not kyp_mem_bin:
+    if kyp_mem_bin and "_npx" not in Path(kyp_mem_bin).parts:
+        mcp_command = kyp_mem_bin
+        mcp_args = ["serve"]
+    elif npx_bin:
+        mcp_command = npx_bin
+        mcp_args = ["-y", "kyp-mem", "serve"]
+    else:
         print(f"  {Y}Warning:{R} 'kyp-mem' not found in PATH.")
-        print(f"  {D}Make sure you installed with: pip install kyp-mem{R}")
+        print(f"  {D}Make sure you installed with: npm install -g kyp-mem{R}")
         print()
-        kyp_mem_bin = "kyp-mem"
+        mcp_command = "kyp-mem"
+        mcp_args = ["serve"]
 
     if global_config:
         settings_path = Path.home() / ".claude" / "settings.json"
@@ -134,8 +142,8 @@ def _run_setup_claude(global_config: bool = False):
     mcp_servers = settings.setdefault("mcpServers", {})
 
     mcp_servers["kyp-mem"] = {
-        "command": kyp_mem_bin,
-        "args": ["serve"],
+        "command": mcp_command,
+        "args": mcp_args,
         "env": {
             "KYP_VAULT": vault_path,
         },
@@ -148,7 +156,7 @@ def _run_setup_claude(global_config: bool = False):
     print()
     print(f"  {G}✓{R} MCP server added to {scope} settings")
     print(f"  {D}  File:    {settings_path}{R}")
-    print(f"  {D}  Command: {kyp_mem_bin} serve{R}")
+    print(f"  {D}  Command: {mcp_command} {' '.join(mcp_args)}{R}")
     print(f"  {D}  Vault:   {vault_path}{R}")
     print()
     print(f"  {C}Done!{R} Restart Claude Code and kyp-mem will run automatically.")

@@ -5,17 +5,23 @@
 ## Install
 
 ```bash
-pip install kyp-mem
+npx -y kyp-mem
+```
+
+Or install the command globally:
+
+```bash
+npm install -g kyp-mem
 ```
 
 ## Setup (3 commands)
 
 ```bash
 # 1. Choose where your vault (knowledge base) lives
-kyp-mem init
+npx -y kyp-mem init
 
 # 2. Connect to Claude Code — auto-configures MCP
-kyp-mem setup-claude
+npx -y kyp-mem setup-claude
 
 # 3. Restart Claude Code — done!
 #    kyp-mem now runs headlessly every session.
@@ -27,7 +33,7 @@ That's it. Claude now has `kyp_read`, `kyp_write`, `kyp_search`, and 7 other too
 ## Optional: Web UI
 
 ```bash
-kyp-mem ui
+npx -y kyp-mem ui
 ```
 
 Opens a rich interface at `localhost:3333` with:
@@ -108,8 +114,8 @@ If you prefer to configure manually instead of using `setup-claude`:
 {
   "mcpServers": {
     "kyp-mem": {
-      "command": "kyp-mem",
-      "args": ["serve"],
+      "command": "npx",
+      "args": ["-y", "kyp-mem", "serve"],
       "env": {
         "KYP_VAULT": "~/.kyp-mem/vault"
       }
@@ -134,12 +140,10 @@ Add to `~/.claude/settings.json` (global) or `.claude/settings.json` (per-projec
         └── ...
 ```
 
-## Publishing to PyPI
+## Publishing to npm
 
 ```bash
-pip install build twine
-python3 -m build
-twine upload dist/*
+npm publish
 ```
 
 ## License
