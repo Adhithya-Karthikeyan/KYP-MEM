@@ -8,51 +8,82 @@
 pip install kyp-mem
 ```
 
-## Quick Start
+## Setup (3 commands)
 
 ```bash
-# First-time setup — choose where your vault lives
+# 1. Choose where your vault (knowledge base) lives
 kyp-mem init
 
-# Open the web UI
-kyp-mem ui
+# 2. Connect to Claude Code — auto-configures MCP
+kyp-mem setup-claude
 
-# Start MCP server (for Claude Code / AI agents)
-kyp-mem serve
+# 3. Restart Claude Code — done!
+#    kyp-mem now runs headlessly every session.
+#    Claude can read/write/search your knowledge base.
 ```
+
+That's it. Claude now has `kyp_read`, `kyp_write`, `kyp_search`, and 7 other tools available in every session.
+
+## Optional: Web UI
+
+```bash
+kyp-mem ui
+```
+
+Opens an Obsidian-like interface at `localhost:3333` with:
+- Collapsible folder tree
+- Rendered markdown with syntax highlighting
+- Clickable `[[wikilinks]]`
+- Backlinks and related notes panel
+- Interactive D3 graph view (toggleable)
+- Full-text search (`Cmd+K`)
+- Draggable resizable panels
+
+## How It Works
+
+```
+┌─────────────┐          ┌─────────────┐          ┌──────────────┐
+│  Claude Code │──stdio──▶│  kyp-mem    │──read/──▶│  ~/.kyp-mem/ │
+│  (any AI)    │◀─────────│  MCP server │  write   │  vault/      │
+└─────────────┘          └─────────────┘          │    *.md files │
+                                                   └──────────────┘
+```
+
+- **Headless by default** — runs as an MCP server (stdio), no GUI needed
+- **Markdown files on disk** — same format as Obsidian, no database
+- **In-memory index** — links, backlinks, tags, search, similarity scoring
+- **Web UI optional** — `kyp-mem ui` when you want to browse visually
 
 ## Commands
 
-| Command | Description |
+| Command | What it does |
 |---------|-------------|
-| `kyp-mem init` | Set up vault location |
-| `kyp-mem ui` | Open web UI (localhost:3333) |
-| `kyp-mem ui --port 4000` | Custom port |
-| `kyp-mem serve` | Start MCP server (stdio) |
+| `kyp-mem init` | First-time setup — choose vault location |
+| `kyp-mem setup-claude` | Auto-configure Claude Code MCP settings |
+| `kyp-mem setup-claude --global` | Configure globally (all projects) |
+| `kyp-mem serve` | Start MCP server (used by Claude, not you) |
+| `kyp-mem ui` | Open web UI at localhost:3333 |
 | `kyp-mem stats` | Print vault statistics |
 | `kyp-mem tree` | Print vault tree |
-| `kyp-mem --vault /path` | Override vault location |
+| `kyp-mem doctor` | Check installation health |
 
-## Connect to Claude Code
+## MCP Tools (what Claude gets)
 
-Add to your Claude Code MCP settings:
+| Tool | Description |
+|------|-------------|
+| `kyp_list` | Browse vault folders and notes |
+| `kyp_read` | Read a note — content + tags + backlinks + related |
+| `kyp_write` | Create or update a note with tags and properties |
+| `kyp_delete` | Delete a note |
+| `kyp_search` | Full-text search across all notes |
+| `kyp_tags` | List all tags or filter notes by tag |
+| `kyp_related` | Find related notes by links, tags, proximity |
+| `kyp_recent` | Recently modified notes |
+| `kyp_stats` | Vault statistics |
 
-```json
-{
-  "mcpServers": {
-    "kyp-mem": {
-      "command": "kyp-mem",
-      "args": ["serve"]
-    }
-  }
-}
-```
+## Note Format
 
-Claude gets these tools: `kyp_list`, `kyp_read`, `kyp_write`, `kyp_delete`, `kyp_search`, `kyp_tags`, `kyp_related`, `kyp_recent`, `kyp_stats`.
-
-## How Notes Work
-
-Notes are standard markdown files with YAML frontmatter — same format as Obsidian:
+Standard markdown with YAML frontmatter — same as Obsidian:
 
 ```markdown
 ---
@@ -67,39 +98,49 @@ updated: 2026-05-12
 Settings are defined in `HedgeConfig`. See [[Risk Management]] for safety checks.
 ```
 
-**Features:**
-- `[[Wikilinks]]` — automatically parsed and indexed
-- **Backlinks** — see which notes reference the current one
-- **Related notes** — ranked by shared tags, links, and folder proximity
-- **Tags** — filterable metadata on every note
-- **Full-text search** — across all notes
-- **Graph view** — D3 force graph showing note connections
+`[[Wikilinks]]` are automatically parsed, indexed, and turned into navigable backlinks.
 
-## Web UI
+## Manual Claude Code Config
 
-The web UI provides an Obsidian-like experience with:
-- Collapsible folder tree sidebar
-- Rendered markdown with syntax-highlighted code blocks
-- Clickable wikilinks
-- Backlinks and related notes panel
-- Interactive graph view (toggleable)
-- Full-text search with `Cmd+K`
+If you prefer to configure manually instead of using `setup-claude`:
+
+```json
+{
+  "mcpServers": {
+    "kyp-mem": {
+      "command": "kyp-mem",
+      "args": ["serve"],
+      "env": {
+        "KYP_VAULT": "~/.kyp-mem/vault"
+      }
+    }
+  }
+}
+```
+
+Add to `~/.claude/settings.json` (global) or `.claude/settings.json` (per-project).
 
 ## Architecture
 
 ```
 ~/.kyp-mem/
-  config.json          # Vault path configuration
-  vault/               # Your knowledge base
-    Project A/
-      Architecture.md
-      Configuration.md
-      Bugs.md
-    Project B/
-      ...
+├── config.json       # vault path + settings
+└── vault/            # your knowledge base
+    ├── Project A/
+    │   ├── Architecture.md
+    │   ├── Configuration.md
+    │   └── Bugs.md
+    └── Project B/
+        └── ...
 ```
 
-Zero database. Just markdown files + an in-memory index rebuilt on startup.
+## Publishing to PyPI
+
+```bash
+pip install build twine
+python3 -m build
+twine upload dist/*
+```
 
 ## License
 
