@@ -74,7 +74,7 @@ def _run_init():
     print(f"{C}  ██║  ██╗   ██║   ██║           ██║ ╚═╝ ██║███████╗██║ ╚═╝ ██║{R}")
     print(f"{C}  ╚═╝  ╚═╝   ╚═╝   ╚═╝           ╚═╝     ╚═╝╚══════╝╚═╝     ╚═╝{R}")
     print()
-    print(f"  {D}Know Your Project — Headless Obsidian for AI agents{R}")
+    print(f"  {D}Know Your Project — Headless knowledge base for AI agents{R}")
     print()
     print(f"  {Y}>> First-time setup{R}")
     print()
