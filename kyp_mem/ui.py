@@ -1,16 +1,16 @@
 """KYP-MEM web UI — Obsidian-like interface for browsing the vault."""
 
-import os
 import webbrowser
 from pathlib import Path
 from fastapi import FastAPI
 from fastapi.responses import HTMLResponse, JSONResponse
 import uvicorn
+from .config import get_vault_path
 from .vault import Vault
 
 
 def create_app(vault_path: str = None) -> FastAPI:
-    vault_path = vault_path or os.environ.get("KYP_VAULT", os.path.expanduser("~/.kyp-mem/vault"))
+    vault_path = vault_path or get_vault_path()
     vault = Vault(vault_path)
     app = FastAPI(title="KYP-MEM")
 
@@ -85,7 +85,7 @@ def create_app(vault_path: str = None) -> FastAPI:
 
 def start_ui(port: int = 3333, vault_path: str = None, open_browser: bool = True):
     app = create_app(vault_path)
-    print(f"KYP-MEM UI -> http://localhost:{port}")
+    print(f"\033[36mKYP-MEM\033[0m UI -> http://localhost:{port}")
     if open_browser:
         webbrowser.open(f"http://localhost:{port}")
     uvicorn.run(app, host="0.0.0.0", port=port, log_level="warning")
