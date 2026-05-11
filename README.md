@@ -50,7 +50,7 @@ Opens a rich interface at `localhost:3333` with:
 ```
 
 - **Headless by default** — runs as an MCP server (stdio), no GUI needed
-- **Markdown files on disk** — same format as Obsidian, no database
+- **Markdown files on disk** — plain `.md` files with YAML frontmatter, no database
 - **In-memory index** — links, backlinks, tags, search, similarity scoring
 - **Web UI optional** — `kyp-mem ui` when you want to browse visually
 
