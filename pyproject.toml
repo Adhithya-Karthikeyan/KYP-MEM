@@ -12,7 +12,7 @@ requires-python = ">=3.10"
 authors = [
     {name = "KDB AI Agency", email = "skadhithya95@gmail.com"}
 ]
-keywords = ["knowledge-base", "obsidian", "ai", "mcp", "notes", "wiki", "second-brain"]
+keywords = ["knowledge-base", "markdown", "ai", "mcp", "notes", "wiki", "second-brain"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
