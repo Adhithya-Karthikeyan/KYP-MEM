@@ -3,7 +3,7 @@
   "version": "0.2.1",
   "description": "Know Your Project — Headless knowledge base for AI agents. MCP-powered with wikilinks, backlinks, and neon web UI.",
   "bin": {
-    "kyp-mem": "./bin/cli.mjs"
+    "kyp-mem": "bin/cli.mjs"
   },
   "files": [
     "bin/",
@@ -30,7 +30,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Adhithya-Karthikeyan/KYP-MEM.git"
+    "url": "git+https://github.com/Adhithya-Karthikeyan/KYP-MEM.git"
   },
   "homepage": "https://github.com/Adhithya-Karthikeyan/KYP-MEM"
 }
