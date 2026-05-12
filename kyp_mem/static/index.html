@@ -1873,6 +1873,102 @@ document.addEventListener('keydown', (e) => {
   }
 });
 
+// --- Session Management ---
+function openSessionCreate(defaultProject) {
+  const overlay = document.getElementById('session-create-overlay');
+  const projectInput = document.getElementById('session-project');
+  const datalist = document.getElementById('project-list');
+  const summaryInput = document.getElementById('session-summary');
+
+  const projects = new Set();
+  for (const path of Object.keys(allNotes)) {
+    const parts = path.split('/');
+    if (parts.length > 1) projects.add(parts[0]);
+  }
+
+  datalist.innerHTML = '';
+  for (const p of [...projects].sort()) {
+    const opt = document.createElement('option');
+    opt.value = p;
+    datalist.appendChild(opt);
+  }
+
+  projectInput.value = defaultProject || '';
+  summaryInput.value = '';
+  overlay.classList.add('active');
+
+  if (defaultProject) summaryInput.focus();
+  else projectInput.focus();
+}
+
+function closeSessionCreate() {
+  document.getElementById('session-create-overlay').classList.remove('active');
+}
+
+document.getElementById('session-cancel').addEventListener('click', closeSessionCreate);
+document.getElementById('session-create-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeSessionCreate();
+});
+
+document.getElementById('session-create-btn').addEventListener('click', async () => {
+  const project = document.getElementById('session-project').value.trim();
+  const summary = document.getElementById('session-summary').value.trim();
+
+  if (!project) {
+    document.getElementById('session-project').focus();
+    return;
+  }
+
+  const resp = await fetch('/api/sessions/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ project, summary }),
+  });
+
+  const result = await resp.json();
+  if (result.ok) {
+    closeSessionCreate();
+    await refreshTree();
+    loadNote(result.path);
+  }
+});
+
+document.getElementById('new-session-btn').addEventListener('click', () => {
+  const project = currentPath ? currentPath.split('/')[0] : '';
+  openSessionCreate(project);
+});
+
+async function refreshTree() {
+  treeData = await fetchJSON('/api/tree');
+  allNotes = {};
+  function walk(node) {
+    if (node.type === 'note') {
+      allNotes[node.path] = { title: node.name.replace('.md', ''), tags: node.tags || [] };
+    }
+    (node.children || []).forEach(walk);
+  }
+  walk(treeData);
+
+  const treeEl = document.getElementById('file-tree');
+  treeEl.innerHTML = '';
+  renderTree(treeData, treeEl);
+  renderTagCloud(collectAllTags());
+
+  const stats = await fetchJSON('/api/stats');
+  document.getElementById('stats-bar').innerHTML = `
+    <span><span class="stat-val">${stats.notes}</span> notes</span>
+    <span><span class="stat-val">${stats.folders}</span> folders</span>
+    <span><span class="stat-val">${stats.tags}</span> tags</span>
+    <span><span class="stat-val">${stats.links}</span> links</span>
+  `;
+
+  if (currentPath) {
+    document.querySelectorAll('.tree-item').forEach(el => {
+      el.classList.toggle('active', el.dataset.path === currentPath);
+    });
+  }
+}
+
 // --- Graph ---
 function renderGraph(note) {
   const container = document.getElementById('graph-container');
