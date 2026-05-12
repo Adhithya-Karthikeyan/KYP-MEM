@@ -251,7 +251,7 @@ def kyp_stats() -> str:
 
 @mcp.tool()
 def kyp_session_search(query: str, project: str = None) -> str:
-    """Search past session logs semantically to remember what was investigated, learned, or planned. Uses a vector database."""
+    """Semantic search across past session logs using vector embeddings. Use this to recall: what was investigated, bugs encountered, decisions made, and next steps from prior sessions. Search before re-investigating known issues or making decisions that may have been made before."""
     from .vector import get_session_memory
     results = get_session_memory().search_sessions(query, project=project, n_results=5)
     
