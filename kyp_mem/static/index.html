@@ -1493,15 +1493,17 @@ function renderRightPanel(note) {
   const blSection = document.getElementById('rp-backlinks');
   const blList = document.getElementById('rp-backlinks-list');
   blList.innerHTML = '';
-  if (note.backlinks && note.backlinks.length) {
+  const backlinks = note.backlinks || [];
+  if (backlinks.length) {
     blSection.style.display = '';
-    document.getElementById('bl-count').textContent = note.backlinks.length;
-    note.backlinks.forEach(path => {
-      const n = allNotes[path];
+    document.getElementById('bl-count').textContent = backlinks.length;
+    backlinks.forEach(bl => {
       const item = document.createElement('div');
-      item.className = 'rp-item';
-      item.innerHTML = `<span class="rp-title rp-backlink-title">${n ? n.title : path}</span>`;
-      item.addEventListener('click', () => loadNote(path));
+      item.className = 'rp-item-col';
+      let html = `<span class="rp-title rp-backlink-title" style="font-size:11px">${bl.title || bl.path || bl}</span>`;
+      if (bl.context) html += `<span class="rp-context">${bl.context}</span>`;
+      item.innerHTML = html;
+      item.addEventListener('click', () => loadNote(bl.path || bl));
       blList.appendChild(item);
     });
   } else {
