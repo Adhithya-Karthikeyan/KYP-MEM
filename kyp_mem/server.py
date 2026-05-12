@@ -12,6 +12,61 @@ mcp = FastMCP("kyp-mem")
 
 
 @mcp.tool()
+def ____kyp_instructions() -> str:
+    """## KYP-MEM — Know Your Project Memory
+
+YOU MUST FOLLOW THESE INSTRUCTIONS when kyp-mem tools are available.
+
+### AT SESSION START (MANDATORY)
+1. Identify the project you are working on from the user's working directory or question.
+2. Call `kyp_project_context(project)` to load the project's knowledge base, notes, and recent session summaries.
+3. If no project exists yet, call `kyp_project_context` anyway — if it returns empty, ask the user if you should create one.
+4. Use the returned context to ground yourself: understand architecture, known bugs, past decisions, and what was done in recent sessions. Do NOT ask the user questions that are already answered in the project context.
+
+### DURING WORK — WHEN TO SEARCH SESSIONS
+Call `kyp_session_search(query)` when:
+- You encounter a bug or error — search for it to see if it was investigated before.
+- You are about to make an architectural decision — check if a prior session already made this decision.
+- The user asks "did we already...", "what happened with...", "last time we..." — search sessions semantically.
+- You are unsure about project-specific behavior — sessions contain investigation logs.
+
+### DURING WORK — WHEN TO UPDATE KNOWLEDGE
+Call `kyp_write` to update the project's Knowledge.md when you:
+- Fix a bug → add it under ## Bugs > ### Fixed
+- Discover a new bug → add it under ## Bugs > ### Known
+- Make an architectural decision → add it under ## Key Decisions
+- Learn something important about the project → add it under ## Notes
+- Complete an improvement → move it from ## Improvements > ### Planned to ### Completed
+
+Also use `kyp_write` to create new project notes for substantial topics (API docs, setup guides, component deep-dives). Use [[wikilinks]] to connect notes.
+
+### DURING WORK — WHEN TO USE OTHER TOOLS
+- `kyp_search(query)` — keyword search across ALL notes (not just sessions). Use for finding specific content.
+- `kyp_read(path)` — read a specific note. Default is brief mode; use full=True for complete content.
+- `kyp_related(path)` — find notes connected by backlinks, tags, or folder proximity.
+- `kyp_tags(tag)` — browse by tag or list all tags.
+
+### SESSION CAPTURE
+Sessions are captured automatically by hooks — you do not need to create session notes manually. If the user explicitly asks to log a session, use `kyp_session_create`.
+
+### IMPORTANT RULES
+- NEVER hallucinate project details. If it's not in the knowledge base or sessions, say you don't know.
+- ALWAYS check knowledge base before making assumptions about project architecture.
+- Keep Knowledge.md updated as you work — it is the source of truth for future sessions.
+- Use [[wikilinks]] in notes to build the knowledge graph.
+- Tag notes consistently: use project name, topic tags, and type tags (bug, decision, guide, etc.).
+
+Call this tool to acknowledge these instructions. It returns a confirmation."""
+    projects = []
+    for path in vault.index.notes:
+        parts = path.split("/")
+        if len(parts) > 1:
+            projects.append(parts[0])
+    unique = sorted(set(projects))
+    return f"KYP-MEM active. Available projects: {', '.join(unique) if unique else '(none)'}. Call kyp_project_context(project) to load context."
+
+
+@mcp.tool()
 def kyp_list(path: str = "") -> str:
     """List notes and folders in the vault. Shows inline tags for quick navigation. Pass a folder path or empty for root."""
     tree = vault.list_tree(path)
