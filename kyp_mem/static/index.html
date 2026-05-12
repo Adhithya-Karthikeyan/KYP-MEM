@@ -1023,6 +1023,7 @@ let currentPath = null;
 let treeData = null;
 let allNotes = {};
 let graphVisible = true;
+let activeTagFilters = new Set();
 
 async function fetchJSON(url) {
   const r = await fetch(url);
