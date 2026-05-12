@@ -301,12 +301,6 @@ def _run_install_hooks(global_config: bool = False, remove: bool = False):
     post_tool_hooks = hooks.setdefault("PostToolUse", [])
     stop_hooks = hooks.setdefault("Stop", [])
 
-    def _has_kyp_hook(entry):
-        for hook in entry.get("hooks", []):
-            if "kyp-mem hook" in hook.get("command", ""):
-                return True
-        return "kyp-mem hook" in entry.get("command", "")
-
     post_tool_hooks = [h for h in post_tool_hooks if not _has_kyp_hook(h)]
     stop_hooks = [h for h in stop_hooks if not _has_kyp_hook(h)]
 
