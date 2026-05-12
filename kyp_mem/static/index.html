@@ -1085,10 +1085,186 @@ body.resizing .resize-handle { pointer-events: auto !important; }
   background: var(--neon-cyan);
 }
 
-/* ============ SESSIONS ============ */
-.session-folder-icon { color: var(--neon-green) !important; }
+/* ============ SESSIONS PILLAR ============ */
+.pillar-divider {
+  height: 1px;
+  margin: 4px 12px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
 
-.session-add-btn {
+.pillar-label {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  padding: 10px 18px 4px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  user-select: none;
+}
+
+.pillar-label .pillar-accent {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 6px;
+}
+
+.pillar-label .pillar-accent.sessions { background: var(--neon-green); box-shadow: 0 0 6px var(--neon-green); }
+.pillar-label .pillar-accent.projects { background: var(--neon-cyan); box-shadow: 0 0 6px var(--neon-cyan); }
+
+.pillar-label .pillar-action {
+  font-size: 9px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 1px 6px;
+  border-radius: 3px;
+  border: 1px solid transparent;
+  transition: all 0.15s;
+  letter-spacing: 0.5px;
+}
+
+.pillar-label .pillar-action:hover {
+  color: var(--neon-green);
+  border-color: rgba(91,185,140,0.3);
+}
+
+.session-search-box {
+  padding: 6px 12px 4px;
+}
+
+.session-search-box input {
+  width: 100%;
+  background: rgba(8,8,10,0.4);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 5px 10px 5px 24px;
+  border-radius: var(--radius);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.session-search-box input::placeholder { color: var(--text-muted); }
+
+.session-search-box input:focus {
+  border-color: rgba(91,185,140,0.4);
+  box-shadow: 0 0 8px rgba(91,185,140,0.08);
+}
+
+.session-search-box {
+  position: relative;
+}
+
+.session-search-box .ss-icon {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  font-size: 10px;
+  pointer-events: none;
+}
+
+.session-search-results {
+  padding: 0 8px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.session-search-results:empty { display: none; }
+
+.ss-result {
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  margin: 1px 0;
+  transition: background 0.1s;
+}
+
+.ss-result:hover { background: var(--bg-hover); }
+
+.ss-result .ss-title {
+  font-size: 11px;
+  color: var(--neon-green);
+  font-weight: 500;
+}
+
+.ss-result .ss-meta {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+.ss-result .ss-snippet {
+  font-size: 10px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-project-group {
+  padding: 0 8px;
+}
+
+.session-project-header {
+  display: flex;
+  align-items: center;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  gap: 6px;
+  user-select: none;
+  transition: background 0.1s;
+  margin: 1px 0;
+}
+
+.session-project-header:hover { background: var(--bg-hover); }
+
+.session-project-header .sp-arrow {
+  width: 12px;
+  font-size: 8px;
+  color: var(--text-muted);
+  text-align: center;
+  flex-shrink: 0;
+  transition: transform 0.15s;
+}
+
+.session-project-header .sp-arrow.open { transform: rotate(90deg); }
+
+.session-project-header .sp-icon {
+  font-size: 11px;
+  color: var(--neon-green);
+  flex-shrink: 0;
+  opacity: 0.7;
+}
+
+.session-project-header .sp-name {
+  font-size: 12px;
+  color: var(--text-primary);
+  font-weight: 500;
+  flex: 1;
+}
+
+.session-project-header .sp-count {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  background: rgba(91,185,140,0.06);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.session-project-header .sp-add {
   background: transparent;
   border: 1px solid var(--border);
   color: var(--text-muted);
@@ -1098,7 +1274,6 @@ body.resizing .resize-handle { pointer-events: auto !important; }
   height: 16px;
   border-radius: 3px;
   cursor: pointer;
-  margin-left: auto;
   display: none;
   align-items: center;
   justify-content: center;
@@ -1107,12 +1282,61 @@ body.resizing .resize-handle { pointer-events: auto !important; }
   line-height: 1;
 }
 
-.tree-item:hover .session-add-btn { display: flex; }
+.session-project-header:hover .sp-add { display: flex; }
+.session-project-header .sp-add:hover { border-color: var(--neon-green); color: var(--neon-green); }
 
-.session-add-btn:hover {
-  border-color: var(--neon-green);
-  color: var(--neon-green);
+.session-list {
+  padding-left: 12px;
+  overflow: hidden;
 }
+
+.session-list.collapsed { display: none; }
+
+.session-item {
+  display: flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 11px;
+  gap: 6px;
+  user-select: none;
+  transition: background 0.1s;
+  position: relative;
+  margin: 1px 0;
+}
+
+.session-item:hover { background: var(--bg-hover); }
+
+.session-item.active {
+  background: rgba(91,185,140,0.05);
+}
+
+.session-item.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 2px;
+  background: var(--neon-green);
+  border-radius: 1px;
+}
+
+.session-item .si-icon {
+  font-size: 9px;
+  color: var(--neon-green);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+.session-item .si-time {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-secondary);
+}
+
+.session-item.active .si-time { color: var(--neon-green); }
 
 .session-badge {
   display: inline-flex;
@@ -1127,6 +1351,14 @@ body.resizing .resize-handle { pointer-events: auto !important; }
   border-radius: var(--radius);
   margin-bottom: 16px;
   letter-spacing: 0.5px;
+}
+
+.session-empty {
+  padding: 12px 18px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--text-muted);
+  text-align: center;
 }
 
 .session-create-overlay {
@@ -1200,8 +1432,8 @@ body.resizing .resize-handle { pointer-events: auto !important; }
 .session-field select:focus,
 .session-field input:focus,
 .session-field textarea:focus {
-  border-color: rgba(217,119,87,0.4);
-  box-shadow: 0 0 8px rgba(217,119,87,0.1);
+  border-color: rgba(91,185,140,0.4);
+  box-shadow: 0 0 8px rgba(91,185,140,0.1);
   background: var(--bg-surface);
 }
 
