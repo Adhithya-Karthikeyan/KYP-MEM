@@ -73,9 +73,11 @@ def main():
     elif args.command == "doctor":
         _run_doctor()
     elif args.command == "hook":
-        from .hooks import handle_post_tool_use, handle_stop
+        from .hooks import handle_post_tool_use, handle_user_prompt, handle_stop
         if args.hook_command == "post-tool-use":
             handle_post_tool_use()
+        elif args.hook_command == "user-prompt":
+            handle_user_prompt()
         elif args.hook_command == "stop":
             handle_stop()
     else:
