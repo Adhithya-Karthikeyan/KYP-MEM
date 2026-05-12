@@ -289,10 +289,10 @@ def _run_install_hooks(global_config: bool = False, remove: bool = False):
 
     post_tool_hooks.append({
         "matcher": "Edit|Write|Bash",
-        "command": f"{mcp_command} hook post-tool-use",
+        "hooks": [{"type": "command", "command": f"{mcp_command} hook post-tool-use"}],
     })
     stop_hooks.append({
-        "command": f"{mcp_command} hook stop",
+        "hooks": [{"type": "command", "command": f"{mcp_command} hook stop"}],
     })
 
     hooks["PostToolUse"] = post_tool_hooks
