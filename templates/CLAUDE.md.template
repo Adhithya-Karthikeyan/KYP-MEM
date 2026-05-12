@@ -1,0 +1,21 @@
+# Project Memory — KYP-MEM
+
+## Session Start (MANDATORY)
+At the start of every session, call `kyp_project_context("PROJECT_NAME")` to load:
+- Project knowledge base (architecture, bugs, decisions)
+- Recent session history (what was done, what's next)
+
+Ground yourself with this context before doing any work.
+
+## During Work
+- **Before investigating bugs:** `kyp_session_search("error or symptom")` — check if this was solved before.
+- **Before decisions:** `kyp_session_search("topic")` — check if a decision was already made.
+- **After fixing bugs:** Update Knowledge.md — `kyp_write("PROJECT_NAME/Knowledge.md", ...)`
+- **After decisions:** Add to Key Decisions section in Knowledge.md.
+- **Deep-dives:** Create separate notes with `kyp_write("PROJECT_NAME/Topic.md", ..., "tags")`
+
+## Rules
+- Never hallucinate project details — if it's not in the knowledge base, say you don't know.
+- Always check context before making assumptions about architecture.
+- Use [[wikilinks]] to connect notes.
+- Sessions are auto-captured by hooks — no manual logging needed.
