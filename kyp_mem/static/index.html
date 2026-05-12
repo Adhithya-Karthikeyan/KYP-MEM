@@ -1011,6 +1011,144 @@ body.resizing .resize-handle { pointer-events: auto !important; }
   background: var(--neon-cyan);
 }
 
+/* ============ SESSIONS ============ */
+.session-folder-icon { color: var(--neon-green) !important; }
+
+.session-add-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  width: 16px;
+  height: 16px;
+  border-radius: 3px;
+  cursor: pointer;
+  margin-left: auto;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+  padding: 0;
+  line-height: 1;
+}
+
+.tree-item:hover .session-add-btn { display: flex; }
+
+.session-add-btn:hover {
+  border-color: var(--neon-green);
+  color: var(--neon-green);
+}
+
+.session-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--neon-green);
+  background: rgba(91,185,140,0.08);
+  border: 1px solid rgba(91,185,140,0.15);
+  padding: 4px 12px;
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  letter-spacing: 0.5px;
+}
+
+.session-create-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(6,6,12,0.75);
+  z-index: 200;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(4px);
+}
+
+.session-create-overlay.active { display: flex; }
+
+.session-create-modal {
+  width: 420px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+
+.session-create-header {
+  padding: 16px 20px 12px;
+  border-bottom: 1px solid var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  letter-spacing: 0.5px;
+}
+
+.session-create-body {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.session-field label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--text-muted);
+  margin-bottom: 4px;
+}
+
+.session-field select,
+.session-field input,
+.session-field textarea {
+  width: 100%;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.session-field select:focus,
+.session-field input:focus,
+.session-field textarea:focus {
+  border-color: rgba(217,119,87,0.3);
+}
+
+.session-field textarea {
+  min-height: 60px;
+  resize: vertical;
+}
+
+.session-create-footer {
+  padding: 12px 20px;
+  border-top: 1px solid var(--border-subtle);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.session-create-footer .edit-btn.create {
+  background: rgba(91,185,140,0.1);
+  color: var(--neon-green);
+  border-color: rgba(91,185,140,0.3);
+}
+
+.session-create-footer .edit-btn.create:hover {
+  background: rgba(91,185,140,0.2);
+}
+
 /* ============ SCROLLBAR ============ */
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: transparent; }
