@@ -71,6 +71,12 @@ def main():
         _run_install_hooks(global_config=args.global_config, remove=args.remove)
     elif args.command == "doctor":
         _run_doctor()
+    elif args.command == "hook":
+        from .hooks import handle_post_tool_use, handle_stop
+        if args.hook_command == "post-tool-use":
+            handle_post_tool_use()
+        elif args.hook_command == "stop":
+            handle_stop()
     else:
         _print_banner()
         parser.print_help()
