@@ -26,24 +26,46 @@ def kyp_list(path: str = "") -> str:
 
 
 @mcp.tool()
-def kyp_read(path: str) -> str:
-    """Read a note by path (e.g. 'Hedge Engine/Configuration.md'). Returns content + properties + backlinks + related notes."""
+def kyp_read(path: str, full: bool = False) -> str:
+    """Read a note. Returns brief summary by default (title, tags, preview, links). Set full=True for complete content."""
     note = vault.read(path)
     if not note:
         return f"Not found: {path}"
 
+    if not full:
+        parts = [f"# {note.title}"]
+        if note.tags:
+            parts.append(f"tags: {', '.join(note.tags)}")
+        if note.created:
+            parts.append(f"created: {note.created}")
+
+        lines = [l for l in note.content.strip().split("\n") if l.strip() and not l.startswith("# ")]
+        preview = "\n".join(lines[:6])
+        if len(lines) > 6:
+            preview += "\n..."
+        parts.append("")
+        parts.append(preview)
+
+        backlinks = vault.get_backlinks(path)
+        outlinks = note.links
+        if outlinks:
+            parts.append(f"\nlinks: {', '.join(f'[[{l}]]' for l in outlinks)}")
+        if backlinks:
+            parts.append(f"backlinks: {', '.join(f'[[{b.replace('.md', '')}]]' for b in backlinks)}")
+
+        return "\n".join(parts)
+
     parts = [f"# {note.title}", ""]
 
     if note.tags or note.properties or note.created:
-        parts.append("**Properties:**")
         if note.tags:
-            parts.append(f"  tags: {', '.join(note.tags)}")
+            parts.append(f"tags: {', '.join(note.tags)}")
         if note.created:
-            parts.append(f"  created: {note.created}")
+            parts.append(f"created: {note.created}")
         if note.updated:
-            parts.append(f"  updated: {note.updated}")
+            parts.append(f"updated: {note.updated}")
         for k, v in note.properties.items():
-            parts.append(f"  {k}: {v}")
+            parts.append(f"{k}: {v}")
         parts.append("")
 
     parts.append(note.content)
