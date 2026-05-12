@@ -321,7 +321,7 @@ def kyp_sessions(project: str = "", limit: int = 10) -> str:
 
 @mcp.tool()
 def kyp_project_context(project: str) -> str:
-    """Get full project context: knowledge base + recent session summaries. Call this at session start to understand project history, avoid repeating past work, and prevent hallucination."""
+    """CALL THIS AT SESSION START. Returns the project's full context: Knowledge.md (ground truth), project notes, and recent session summaries. Use this to understand architecture, known bugs, past decisions, and what was done recently. This prevents hallucination and avoids repeating past work."""
     parts = []
 
     knowledge_path = f"{project}/Knowledge.md"
