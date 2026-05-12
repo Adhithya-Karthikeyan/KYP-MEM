@@ -1112,7 +1112,7 @@ async function loadNote(path) {
   let html = '<div class="fade-in">';
 
   html += '<div class="note-properties">';
-  (note.tags || []).forEach(t => { html += `<span class="tag">#${t}</span>`; });
+  (note.tags || []).forEach(t => { html += `<span class="tag clickable-tag" data-tag="${t}">#${t}</span>`; });
   Object.entries(note.properties || {}).forEach(([k, v]) => {
     html += `<span class="prop-item"><span class="prop-key">${k}:</span> ${v}</span>`;
   });
