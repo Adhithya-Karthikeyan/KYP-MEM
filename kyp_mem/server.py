@@ -324,11 +324,20 @@ def kyp_project_context(project: str) -> str:
     """CALL THIS AT SESSION START. Returns the project's full context: Knowledge.md (ground truth), project notes, and recent session summaries. Use this to understand architecture, known bugs, past decisions, and what was done recently. This prevents hallucination and avoids repeating past work."""
     parts = []
 
+    MAX_KNOWLEDGE_CHARS = 3000
+    MAX_NOTE_PREVIEW_LINES = 6
+    MAX_SESSION_CHARS = 400
+
     knowledge_path = f"{project}/Knowledge.md"
     knowledge = vault.read(knowledge_path)
     if knowledge:
         parts.append("=== PROJECT KNOWLEDGE ===")
-        parts.append(knowledge.content)
+        content = knowledge.content
+        if len(content) > MAX_KNOWLEDGE_CHARS:
+            parts.append(content[:MAX_KNOWLEDGE_CHARS])
+            parts.append(f"\n... (truncated — use kyp_read(\"{knowledge_path}\", full=True) for complete content)")
+        else:
+            parts.append(content)
         parts.append("")
 
     project_notes = []
@@ -341,9 +350,9 @@ def kyp_project_context(project: str) -> str:
         for path, note in sorted(project_notes):
             parts.append(f"\n--- {note.title} ({path}) ---")
             preview = note.content.strip().split("\n")
-            parts.append("\n".join(preview[:10]))
-            if len(preview) > 10:
-                parts.append("...")
+            parts.append("\n".join(preview[:MAX_NOTE_PREVIEW_LINES]))
+            if len(preview) > MAX_NOTE_PREVIEW_LINES:
+                parts.append(f"... (use kyp_read(\"{path}\", full=True) for complete content)")
         parts.append("")
 
     sessions = []
@@ -360,9 +369,11 @@ def kyp_project_context(project: str) -> str:
             content = note.content
             timeline_idx = content.find("## Timeline")
             if timeline_idx > 0:
-                parts.append(content[:timeline_idx].strip())
+                content = content[:timeline_idx].strip()
+            if len(content) > MAX_SESSION_CHARS:
+                parts.append(content[:MAX_SESSION_CHARS] + "...")
             else:
-                parts.append(content[:500])
+                parts.append(content)
         parts.append("")
 
     if not parts:
