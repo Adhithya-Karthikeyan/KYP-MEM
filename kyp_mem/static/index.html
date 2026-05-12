@@ -1955,9 +1955,41 @@ document.getElementById('session-create-btn').addEventListener('click', async ()
   }
 });
 
-document.getElementById('new-session-btn').addEventListener('click', () => {
-  const project = currentPath ? currentPath.split('/')[0] : '';
-  openSessionCreate(project);
+// --- Project Management ---
+function closeProjectCreate() {
+  document.getElementById('project-create-overlay').classList.remove('active');
+}
+
+document.getElementById('new-project-btn').addEventListener('click', () => {
+  document.getElementById('project-create-overlay').classList.add('active');
+  document.getElementById('project-name-input').value = '';
+  document.getElementById('project-overview-input').value = '';
+  document.getElementById('project-name-input').focus();
+});
+
+document.getElementById('project-cancel').addEventListener('click', closeProjectCreate);
+document.getElementById('project-create-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeProjectCreate();
+});
+
+document.getElementById('project-create-btn').addEventListener('click', async () => {
+  const name = document.getElementById('project-name-input').value.trim();
+  const overview = document.getElementById('project-overview-input').value.trim();
+  if (!name) {
+    document.getElementById('project-name-input').focus();
+    return;
+  }
+  const resp = await fetch('/api/projects/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, overview }),
+  });
+  const result = await resp.json();
+  if (result.ok) {
+    closeProjectCreate();
+    await refreshTree();
+    loadNote(result.path);
+  }
 });
 
 async function refreshTree() {
