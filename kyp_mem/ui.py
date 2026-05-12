@@ -142,6 +142,28 @@ def create_app(vault_path: str = None) -> FastAPI:
         vault.write_note(path, content, tags, {})
         return JSONResponse({"ok": True, "path": path})
 
+    @app.get("/api/sessions/search")
+    def search_sessions(q: str = "", project: str = ""):
+        from .vector import get_session_memory
+        mem = get_session_memory()
+        if not mem or not q:
+            return JSONResponse([])
+        results = mem.search_sessions(q, project=project or None, n_results=10)
+        if not results or not results.get("ids") or not results["ids"][0]:
+            return JSONResponse([])
+        items = []
+        for i, path in enumerate(results["ids"][0]):
+            doc = results["documents"][0][i]
+            dist = results["distances"][0][i]
+            note = vault.index.notes.get(path)
+            items.append({
+                "path": path,
+                "title": note.title if note else path,
+                "distance": dist,
+                "snippet": doc[:300],
+            })
+        return JSONResponse(items)
+
     @app.get("/api/sessions")
     def list_sessions(project: str = ""):
         sessions = {}
