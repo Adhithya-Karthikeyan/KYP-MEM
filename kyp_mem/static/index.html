@@ -1519,6 +1519,7 @@ async function init() {
   await Promise.all(promises);
 
   renderTree(treeData, document.getElementById('file-tree'));
+  renderTagCloud(collectAllTags());
 
   document.getElementById('stats-bar').innerHTML = `
     <span><span class="stat-val">${stats.notes}</span> notes</span>
