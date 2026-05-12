@@ -60,6 +60,23 @@ if (args[0] === "hook") {
   await new Promise((r) => process.stdin.on("end", r));
   const raw = Buffer.concat(chunks).toString();
 
+  if (hookType === "user-prompt") {
+    try {
+      const data = JSON.parse(raw);
+      const prompt = (data.prompt || "").trim();
+      if (!prompt) process.exit(0);
+      const entry = {
+        ts: new Date().toISOString(),
+        cwd: process.env.CLAUDE_PROJECT_DIR || process.cwd(),
+        action: "prompt",
+        prompt,
+      };
+      mkdirSync(sessionDir, { recursive: true });
+      appendFileSync(sessionFile, JSON.stringify(entry) + "\n");
+    } catch (_) {}
+    process.exit(0);
+  }
+
   if (hookType === "post-tool-use") {
     try {
       const data = JSON.parse(raw);
@@ -72,6 +89,9 @@ if (args[0] === "hook") {
       if (tool === "Edit" || tool === "Write") {
         entry.file = input.file_path || "";
         entry.action = tool === "Edit" ? "edit" : "create";
+      } else if (tool === "Read") {
+        entry.file = input.file_path || "";
+        entry.action = "read";
       } else if (tool === "Bash") {
         entry.command = (input.command || "").slice(0, 300);
         entry.action = "command";
