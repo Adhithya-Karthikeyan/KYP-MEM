@@ -1,7 +1,9 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "child_process";
-import { delimiter, dirname, resolve } from "path";
+import { appendFileSync, mkdirSync } from "fs";
+import { homedir } from "os";
+import { delimiter, dirname, join, resolve } from "path";
 import { fileURLToPath } from "url";
 
 const args = process.argv.slice(2);
