@@ -1216,8 +1216,9 @@ body.resizing .resize-handle { pointer-events: auto !important; }
   <!-- Right panel -->
   <div class="right-panel" id="right-panel">
     <div id="graph-section">
-      <div class="rp-section-title">Local Graph</div>
+      <div class="rp-section-title">Local Graph <span class="graph-size-controls"><button class="graph-size-btn" id="graph-shrink" title="Shrink graph">&minus;</button><button class="graph-size-btn" id="graph-grow" title="Grow graph">+</button></span></div>
       <div id="graph-container"></div>
+      <div id="graph-resize-handle" class="graph-resize-handle"></div>
     </div>
     <div id="rp-outline" class="rp-section" style="display:none;">
       <div class="rp-section-title">Outline <span class="rp-count" id="outline-count"></span></div>
