@@ -1693,60 +1693,126 @@ function renderGraph(note) {
     if (path) links.push({ source: note.path, target: path });
   });
 
-  (note.backlinks || []).forEach(path => {
-    if (!nodes.has(path)) {
-      const n = allNotes[path];
-      nodes.set(path, { id: path, title: n ? n.title : path, active: false });
+  (note.backlinks || []).forEach(bl => {
+    const blPath = typeof bl === 'string' ? bl : (bl && bl.path);
+    if (!blPath) return;
+    if (!nodes.has(blPath)) {
+      const n = allNotes[blPath];
+      const title = (bl && typeof bl === 'object' && bl.title) ? bl.title : (n ? n.title : blPath);
+      nodes.set(blPath, { id: blPath, title, active: false });
     }
-    links.push({ source: path, target: note.path });
+    links.push({ source: blPath, target: note.path });
   });
 
   (note.related || []).forEach(r => {
     if (!nodes.has(r.path)) {
       nodes.set(r.path, { id: r.path, title: r.title, active: false });
     }
+    links.push({ source: note.path, target: r.path, dashed: true });
   });
 
   const nodeArray = Array.from(nodes.values());
   if (nodeArray.length < 2) {
-    container.innerHTML = '<svg></svg>';
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-muted);font-size:10px;font-family:var(--font-mono)">No connections</div>';
     return;
   }
 
-  const width = container.clientWidth;
-  const height = container.clientHeight;
+  const width = container.clientWidth || 248;
+  const height = container.clientHeight || 200;
+  const margin = 24;
 
   const svg = d3.select(container).append('svg')
     .attr('viewBox', `0 0 ${width} ${height}`);
 
+  const g = svg.append('g');
+
+  svg.call(d3.zoom()
+    .scaleExtent([0.3, 3])
+    .on('zoom', (event) => g.attr('transform', event.transform))
+  );
+
   const simulation = d3.forceSimulation(nodeArray)
-    .force('link', d3.forceLink(links).id(d => d.id).distance(50))
-    .force('charge', d3.forceManyBody().strength(-100))
+    .force('link', d3.forceLink(links).id(d => d.id).distance(60))
+    .force('charge', d3.forceManyBody().strength(-120))
     .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collision', d3.forceCollide().radius(22));
+    .force('collision', d3.forceCollide().radius(25));
 
-  const link = svg.selectAll('.graph-link')
+  const linkEl = g.selectAll('.graph-link')
     .data(links).enter().append('line')
-    .attr('class', 'graph-link');
+    .attr('class', 'graph-link')
+    .attr('stroke-dasharray', d => d.dashed ? '3,3' : null)
+    .style('opacity', d => d.dashed ? 0.5 : 1);
 
-  const node = svg.selectAll('.graph-node')
+  const node = g.selectAll('.graph-node')
     .data(nodeArray).enter().append('g')
     .attr('class', d => 'graph-node' + (d.active ? ' active' : ''))
-    .on('click', (e, d) => loadNote(d.id))
+    .on('click', (e, d) => { e.stopPropagation(); loadNote(d.id); })
     .call(d3.drag()
       .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
       .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
       .on('end', (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
     );
 
-  node.append('circle').attr('r', d => d.active ? 5 : 3.5);
+  node.append('circle').attr('r', d => d.active ? 6 : 4);
   node.append('text').text(d => d.title).attr('dx', 10).attr('dy', 3);
 
   simulation.on('tick', () => {
-    link
+    linkEl
       .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
       .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
-    node.attr('transform', d => `translate(${d.x},${d.y})`);
+    node.attr('transform', d => {
+      d.x = Math.max(margin, Math.min(width - margin, d.x));
+      d.y = Math.max(margin, Math.min(height - margin, d.y));
+      return `translate(${d.x},${d.y})`;
+    });
+  });
+}
+
+// --- Graph Resize ---
+let graphHeight = parseInt(localStorage.getItem('kyp-graph-h')) || 200;
+
+function initGraphResize() {
+  const container = document.getElementById('graph-container');
+  container.style.height = graphHeight + 'px';
+
+  document.getElementById('graph-shrink').addEventListener('click', () => {
+    graphHeight = Math.max(100, graphHeight - 50);
+    container.style.height = graphHeight + 'px';
+    localStorage.setItem('kyp-graph-h', graphHeight);
+    if (graphVisible && currentNote) renderGraph(currentNote);
+  });
+
+  document.getElementById('graph-grow').addEventListener('click', () => {
+    graphHeight = Math.min(600, graphHeight + 50);
+    container.style.height = graphHeight + 'px';
+    localStorage.setItem('kyp-graph-h', graphHeight);
+    if (graphVisible && currentNote) renderGraph(currentNote);
+  });
+
+  const handle = document.getElementById('graph-resize-handle');
+  handle.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    const startY = e.clientY;
+    const startH = graphHeight;
+    document.body.style.cursor = 'ns-resize';
+    document.body.style.userSelect = 'none';
+
+    function onMove(ev) {
+      graphHeight = Math.max(100, Math.min(600, startH + (ev.clientY - startY)));
+      container.style.height = graphHeight + 'px';
+    }
+
+    function onUp() {
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
+      localStorage.setItem('kyp-graph-h', graphHeight);
+      if (graphVisible && currentNote) renderGraph(currentNote);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
   });
 }
 
