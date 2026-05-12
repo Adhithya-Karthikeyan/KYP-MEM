@@ -1,6 +1,7 @@
 """KYP-MEM MCP server — headless knowledge base for AI agents."""
 
 import json
+from datetime import datetime
 from mcp.server.fastmcp import FastMCP
 from .config import get_vault_path
 from .vault import Vault
