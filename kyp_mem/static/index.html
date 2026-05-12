@@ -1183,6 +1183,24 @@ body.resizing .resize-handle { pointer-events: auto !important; }
       <div class="rp-section-title">Outgoing Links <span class="rp-count" id="out-count"></span></div>
       <div id="rp-outlinks-list"></div>
     </div>
+    <div id="rp-unlinked" class="rp-section" style="display:none;">
+      <div class="rp-section-title">Unlinked Mentions <span class="rp-count" id="unlinked-count"></span></div>
+      <div id="rp-unlinked-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Edit Modal -->
+<div class="edit-overlay" id="edit-overlay">
+  <div class="edit-modal">
+    <div class="edit-header">
+      <span class="edit-path" id="edit-path"></span>
+      <div class="edit-actions">
+        <button class="edit-btn cancel" id="edit-cancel">ESC</button>
+        <button class="edit-btn save" id="edit-save">SAVE</button>
+      </div>
+    </div>
+    <textarea class="edit-textarea" id="edit-textarea" placeholder="Write markdown..."></textarea>
   </div>
 </div>
 
