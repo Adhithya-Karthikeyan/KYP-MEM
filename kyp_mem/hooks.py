@@ -152,6 +152,14 @@ def handle_stop():
     parts.append(", ".join(summary_items) + f" in `{project_name}`." if summary_items else "")
     parts.append("")
 
+    parts.append("## PROMPTS")
+    if prompts:
+        for i, p in enumerate(prompts, 1):
+            parts.append(f"### {i}. [{p['ts']}]")
+            parts.append(f"> {p['text']}")
+            parts.append("")
+    parts.append("")
+
     parts.append("## INVESTIGATED")
     if investigated_cmds:
         for cmd in investigated_cmds[:15]:
