@@ -11,6 +11,40 @@ CURRENT_SESSION = SESSION_DIR / "current.jsonl"
 MIN_ACTIONS = 3
 
 
+def handle_post_tool_use():
+    raw = sys.stdin.read().strip()
+    if not raw:
+        return
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return
+
+    tool_name = data.get("tool_name", "")
+    tool_input = data.get("tool_input", {})
+
+    entry = {"ts": datetime.now().isoformat()}
+
+    cwd = os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd())
+    entry["cwd"] = cwd
+
+    if tool_name == "Edit":
+        entry["action"] = "edit"
+        entry["file"] = tool_input.get("file_path", "")
+    elif tool_name == "Write":
+        entry["action"] = "create"
+        entry["file"] = tool_input.get("file_path", "")
+    elif tool_name == "Bash":
+        entry["action"] = "command"
+        entry["command"] = tool_input.get("command", "")
+    else:
+        return
+
+    SESSION_DIR.mkdir(parents=True, exist_ok=True)
+    with open(CURRENT_SESSION, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
 def handle_stop():
     if not CURRENT_SESSION.exists():
         return
