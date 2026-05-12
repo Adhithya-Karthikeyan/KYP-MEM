@@ -1,6 +1,7 @@
 """KYP-MEM web UI — interactive interface for browsing the vault."""
 
 import webbrowser
+from datetime import datetime
 from pathlib import Path
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
