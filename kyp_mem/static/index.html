@@ -2403,7 +2403,12 @@ document.getElementById('project-create-btn').addEventListener('click', async ()
 });
 
 async function refreshTree() {
-  const rawTreeData = await fetchJSON('/api/tree');
+  const [rawTreeData, sessionsData, stats] = await Promise.all([
+    fetchJSON('/api/tree'),
+    fetchJSON('/api/sessions'),
+    fetchJSON('/api/stats'),
+  ]);
+
   allNotes = {};
   function walk(node) {
     if (node.type === 'note') {
@@ -2413,45 +2418,13 @@ async function refreshTree() {
   }
   walk(rawTreeData);
 
-  const sessionTreeData = { name: "vault", type: "folder", children: [] };
-  const mainTreeData = { name: "vault", type: "folder", children: [] };
-
-  (rawTreeData.children || []).forEach(projectNode => {
-    if (projectNode.type === 'folder') {
-      const sessionsFolder = projectNode.children.find(c => c.name === 'Sessions');
-      const otherChildren = projectNode.children.filter(c => c.name !== 'Sessions');
-      
-      if (sessionsFolder) {
-        sessionTreeData.children.push({
-          name: projectNode.name,
-          type: "folder",
-          children: [sessionsFolder]
-        });
-      }
-      if (otherChildren.length > 0) {
-        mainTreeData.children.push({
-          ...projectNode,
-          children: otherChildren
-        });
-      }
-    } else {
-      mainTreeData.children.push(projectNode);
-    }
-  });
-
   const treeEl = document.getElementById('file-tree');
   treeEl.innerHTML = '';
-  renderTree(mainTreeData, treeEl);
+  renderTree(rawTreeData, treeEl);
 
-  const sessionEl = document.getElementById('session-tree');
-  if (sessionEl) {
-    sessionEl.innerHTML = '';
-    renderTree(sessionTreeData, sessionEl);
-  }
-
+  renderSessionTree(sessionsData);
   renderTagCloud(collectAllTags());
 
-  const stats = await fetchJSON('/api/stats');
   document.getElementById('stats-bar').innerHTML = `
     <span><span class="stat-val">${stats.notes}</span> notes</span>
     <span><span class="stat-val">${stats.folders}</span> folders</span>
@@ -2459,11 +2432,17 @@ async function refreshTree() {
     <span><span class="stat-val">${stats.links}</span> links</span>
   `;
 
-  if (currentPath) {
-    document.querySelectorAll('.tree-item').forEach(el => {
-      el.classList.toggle('active', el.dataset.path === currentPath);
-    });
-  }
+  markActiveItems();
+}
+
+function markActiveItems() {
+  if (!currentPath) return;
+  document.querySelectorAll('.tree-item[data-path]').forEach(el => {
+    el.classList.toggle('active', el.dataset.path === currentPath);
+  });
+  document.querySelectorAll('.session-item[data-path]').forEach(el => {
+    el.classList.toggle('active', el.dataset.path === currentPath);
+  });
 }
 
 // --- Graph ---
