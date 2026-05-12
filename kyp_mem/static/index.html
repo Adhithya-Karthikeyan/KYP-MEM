@@ -2211,10 +2211,8 @@ function renderRightPanel(note) {
     document.getElementById('bl-count').textContent = backlinks.length;
     backlinks.forEach(bl => {
       const item = document.createElement('div');
-      item.className = 'rp-item-col';
-      let html = `<span class="rp-title rp-backlink-title" style="font-size:11px">${bl.title || bl.path || bl}</span>`;
-      if (bl.context) html += `<span class="rp-context">${bl.context}</span>`;
-      item.innerHTML = html;
+      item.className = 'rp-link-item';
+      item.innerHTML = `<span class="rp-link-icon backlink">&#8592;</span><span class="rp-link-title">${bl.title || bl.path || bl}</span>`;
       item.addEventListener('click', () => loadNote(bl.path || bl));
       blList.appendChild(item);
     });
