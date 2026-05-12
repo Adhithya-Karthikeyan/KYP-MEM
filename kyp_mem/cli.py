@@ -36,6 +36,11 @@ def main():
 
     subparsers.add_parser("stats", help="Print vault statistics")
     subparsers.add_parser("tree", help="Print vault tree")
+    ih = subparsers.add_parser("install-hooks", help="Set up auto-learning hooks for Claude Code")
+    ih.add_argument("--global", dest="global_config", action="store_true",
+                    help="Add hooks to global ~/.claude/settings.json (default: project)")
+    ih.add_argument("--remove", action="store_true", help="Remove KYP-MEM hooks")
+
     subparsers.add_parser("doctor", help="Check installation and config health")
 
     args = parser.parse_args()
