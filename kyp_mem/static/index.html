@@ -1924,28 +1924,19 @@ function updateQsSelection() {
   });
 }
 
-// --- File Tree ---
-function renderTree(node, container, parentFolder) {
+// --- File Tree (Projects pillar only — no Sessions folders) ---
+function renderTree(node, container) {
   if (node.type === 'folder' && node.name !== 'vault') {
-    const isSessionsFolder = node.name === 'Sessions';
+    if (node.name === 'Sessions') return;
+
     const item = document.createElement('div');
     item.className = 'tree-item';
-
-    if (isSessionsFolder) {
-      item.innerHTML = `<span class="arrow open">&#9654;</span><span class="icon session-folder-icon">&#9716;</span><span class="name">Sessions</span><button class="session-add-btn" data-project="${parentFolder || ''}" title="New session">+</button>`;
-    } else {
-      item.innerHTML = `<span class="arrow open">&#9654;</span><span class="icon folder-icon">&#9776;</span><span class="name">${node.name}</span>`;
-    }
+    item.innerHTML = `<span class="arrow open">&#9654;</span><span class="icon folder-icon">&#9776;</span><span class="name">${node.name}</span>`;
 
     const children = document.createElement('div');
     children.className = 'tree-children';
 
     item.addEventListener('click', (e) => {
-      if (e.target.classList.contains('session-add-btn')) {
-        e.stopPropagation();
-        openSessionCreate(e.target.dataset.project);
-        return;
-      }
       e.stopPropagation();
       item.querySelector('.arrow').classList.toggle('open');
       children.classList.toggle('collapsed');
@@ -1953,29 +1944,13 @@ function renderTree(node, container, parentFolder) {
 
     container.appendChild(item);
     container.appendChild(children);
-    (node.children || []).forEach(c => renderTree(c, children, node.name));
+    (node.children || []).forEach(c => renderTree(c, children));
 
   } else if (node.type === 'note') {
     const item = document.createElement('div');
     item.className = 'tree-item';
     item.dataset.path = node.path;
-
-    const isSessionNote = node.path.includes('/Sessions/') || node.path.startsWith('Sessions/');
-    let displayName = node.name.replace('.md', '');
-
-    if (isSessionNote) {
-      const match = displayName.match(/^(\d{4})-(\d{2})-(\d{2})_(\d{2})(\d{2})(\d{2})$/);
-      if (match) {
-        const [, y, mo, d, h, mi] = match;
-        const hr = parseInt(h);
-        const ampm = hr >= 12 ? 'PM' : 'AM';
-        const hr12 = hr % 12 || 12;
-        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-        displayName = `${months[parseInt(mo)-1]} ${parseInt(d)}, ${hr12}:${mi} ${ampm}`;
-        item.title = node.name.replace('.md', '');
-      }
-    }
-
+    const displayName = node.name.replace('.md', '');
     item.innerHTML = `<span class="arrow" style="visibility:hidden">&#9654;</span><span class="icon note-icon">&#9671;</span><span class="name">${displayName}</span>`;
     item.addEventListener('click', () => loadNote(node.path));
     container.appendChild(item);
@@ -1984,6 +1959,107 @@ function renderTree(node, container, parentFolder) {
     node.children.forEach(c => renderTree(c, container));
   }
 }
+
+// --- Session Tree (Sessions pillar — grouped by project with dropdowns) ---
+function formatSessionTimestamp(filename) {
+  const stem = filename.replace('.md', '');
+  const match = stem.match(/^(\d{4})-(\d{2})-(\d{2})_(\d{2})(\d{2})(\d{2})$/);
+  if (!match) return stem;
+  const [, y, mo, d, h, mi] = match;
+  const hr = parseInt(h);
+  const ampm = hr >= 12 ? 'PM' : 'AM';
+  const hr12 = hr % 12 || 12;
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `${months[parseInt(mo)-1]} ${parseInt(d)}, ${hr12}:${mi} ${ampm}`;
+}
+
+function renderSessionTree(sessionsData) {
+  const container = document.getElementById('session-tree');
+  container.innerHTML = '';
+
+  if (Object.keys(sessionsData).length === 0) {
+    container.innerHTML = '<div class="session-empty">No sessions yet</div>';
+    return;
+  }
+
+  const sortedProjects = Object.keys(sessionsData).sort();
+  sortedProjects.forEach(project => {
+    const sessions = sessionsData[project];
+    const group = document.createElement('div');
+    group.className = 'session-project-group';
+
+    const header = document.createElement('div');
+    header.className = 'session-project-header';
+    header.innerHTML = `
+      <span class="sp-arrow open">&#9654;</span>
+      <span class="sp-icon">&#9716;</span>
+      <span class="sp-name">${project}</span>
+      <span class="sp-count">${sessions.length}</span>
+      <button class="sp-add" title="New session for ${project}">+</button>
+    `;
+
+    const list = document.createElement('div');
+    list.className = 'session-list';
+
+    sessions.sort((a, b) => b.path.localeCompare(a.path));
+    sessions.forEach(session => {
+      const item = document.createElement('div');
+      item.className = 'session-item';
+      item.dataset.path = session.path;
+      const displayTime = formatSessionTimestamp(session.path.split('/').pop());
+      item.innerHTML = `<span class="si-icon">&#9679;</span><span class="si-time">${displayTime}</span>`;
+      item.title = session.title || session.path;
+      item.addEventListener('click', () => loadNote(session.path));
+      list.appendChild(item);
+    });
+
+    header.addEventListener('click', (e) => {
+      if (e.target.classList.contains('sp-add')) {
+        e.stopPropagation();
+        openSessionCreate(project);
+        return;
+      }
+      e.stopPropagation();
+      header.querySelector('.sp-arrow').classList.toggle('open');
+      list.classList.toggle('collapsed');
+    });
+
+    group.appendChild(header);
+    group.appendChild(list);
+    container.appendChild(group);
+  });
+}
+
+// --- Session Semantic Search ---
+let sessionSearchTimeout;
+const sessionSearchInput = document.getElementById('session-search-input');
+const sessionSearchResults = document.getElementById('session-search-results');
+
+sessionSearchInput.addEventListener('input', () => {
+  clearTimeout(sessionSearchTimeout);
+  const q = sessionSearchInput.value.trim();
+  if (!q) { sessionSearchResults.innerHTML = ''; return; }
+  sessionSearchTimeout = setTimeout(async () => {
+    const results = await fetchJSON(`/api/sessions/search?q=${encodeURIComponent(q)}`);
+    sessionSearchResults.innerHTML = '';
+    if (results.length === 0) {
+      sessionSearchResults.innerHTML = '<div class="ss-result"><span class="ss-meta">No matching sessions</span></div>';
+      return;
+    }
+    results.forEach(r => {
+      const div = document.createElement('div');
+      div.className = 'ss-result';
+      const dist = r.distance !== undefined ? ` &middot; dist: ${r.distance.toFixed(2)}` : '';
+      div.innerHTML = `<div class="ss-title">${r.title}</div><div class="ss-meta">${r.path}${dist}</div>${r.snippet ? `<div class="ss-snippet">${r.snippet.substring(0, 120)}</div>` : ''}`;
+      div.addEventListener('click', () => {
+        loadNote(r.path);
+        sessionSearchInput.value = '';
+        sessionSearchResults.innerHTML = '';
+      });
+      sessionSearchResults.appendChild(div);
+    });
+  }, 250);
+});
 
 // --- Note rendering ---
 async function loadNote(path) {
