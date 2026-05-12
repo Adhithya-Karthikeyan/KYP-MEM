@@ -1,5 +1,6 @@
 """KYP-MEM session hooks — compile captured tool activity into vault notes."""
 
+import os
 import sys
 import json
 from datetime import datetime
