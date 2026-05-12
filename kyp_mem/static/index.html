@@ -1403,6 +1403,7 @@ async function loadNote(path) {
   const contentEl = document.getElementById('content');
   let html = '<div class="fade-in">';
 
+  html += `<button class="note-edit-btn" onclick="openEditor('${path}')">EDIT</button>`;
   html += '<div class="note-properties">';
   (note.tags || []).forEach(t => { html += `<span class="tag clickable-tag" data-tag="${t}">#${t}</span>`; });
   Object.entries(note.properties || {}).forEach(([k, v]) => {
