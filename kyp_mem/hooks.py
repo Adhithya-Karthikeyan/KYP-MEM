@@ -60,6 +60,9 @@ def handle_post_tool_use():
     elif tool_name == "Write":
         entry["action"] = "create"
         entry["file"] = tool_input.get("file_path", "")
+    elif tool_name == "Read":
+        entry["action"] = "read"
+        entry["file"] = tool_input.get("file_path", "")
     elif tool_name == "Bash":
         entry["action"] = "command"
         entry["command"] = tool_input.get("command", "")
