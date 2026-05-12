@@ -2,7 +2,7 @@
 
 import webbrowser
 from pathlib import Path
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 import uvicorn
 from .config import get_vault_path
