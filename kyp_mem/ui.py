@@ -185,6 +185,29 @@ def create_app(vault_path: str = None) -> FastAPI:
             return JSONResponse({"ok": True})
         return JSONResponse({"error": "Not found"}, 404)
 
+    @app.post("/api/projects/create")
+    async def create_project(request: Request):
+        body = await request.json()
+        name = body.get("name", "").strip()
+        overview = body.get("overview", "").strip()
+        if not name:
+            return JSONResponse({"error": "Project name required"}, 400)
+        path = f"{name}/Knowledge.md"
+        if vault.read(path):
+            return JSONResponse({"error": "Project already exists"}, 409)
+        content = (
+            f"# {name}\n\n"
+            f"## Overview\n{overview or '(Project description, goals, tech stack)'}\n\n"
+            f"## Architecture\n(System design, key components, data flow)\n\n"
+            f"## Bugs\n### Known\n\n### Fixed\n\n\n"
+            f"## Improvements\n### Planned\n\n### Completed\n\n\n"
+            f"## Key Decisions\n(Important architectural or design decisions)\n\n"
+            f"## Notes\n(Miscellaneous project knowledge)\n"
+        )
+        tags = ["project", "knowledge", name.lower().replace(" ", "-")]
+        vault.write_note(path, content, tags, {})
+        return JSONResponse({"ok": True, "path": path})
+
     @app.post("/api/reload")
     def reload():
         vault._load_all()
