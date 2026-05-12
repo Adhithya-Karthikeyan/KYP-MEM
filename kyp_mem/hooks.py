@@ -12,6 +12,31 @@ CURRENT_SESSION = SESSION_DIR / "current.jsonl"
 MIN_ACTIONS = 3
 
 
+def handle_user_prompt():
+    raw = sys.stdin.read().strip()
+    if not raw:
+        return
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError:
+        return
+
+    prompt = data.get("prompt", "").strip()
+    if not prompt:
+        return
+
+    entry = {
+        "ts": datetime.now().isoformat(),
+        "cwd": os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd()),
+        "action": "prompt",
+        "prompt": prompt,
+    }
+
+    SESSION_DIR.mkdir(parents=True, exist_ok=True)
+    with open(CURRENT_SESSION, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
 def handle_post_tool_use():
     raw = sys.stdin.read().strip()
     if not raw:
