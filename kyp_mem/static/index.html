@@ -1442,6 +1442,7 @@ async function loadNote(path) {
   currentPath = path;
   const note = await fetchJSON(`/api/note/${path}`);
   if (note.error) return;
+  currentNote = note;
 
   document.querySelectorAll('.tree-item').forEach(el => {
     el.classList.toggle('active', el.dataset.path === path);
