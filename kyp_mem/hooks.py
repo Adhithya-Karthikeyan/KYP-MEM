@@ -103,6 +103,7 @@ def handle_stop():
     files_edited = set()
     files_created = set()
     commands = []
+    prompts = []
     timeline = []
 
     for e in entries:
@@ -110,7 +111,10 @@ def handle_stop():
         ts = ts_raw[11:19] if len(ts_raw) >= 19 else ""
         action = e.get("action", "")
 
-        if action == "edit":
+        if action == "prompt":
+            prompts.append({"ts": ts, "text": e.get("prompt", "")})
+            timeline.append(f"  {ts} — Prompt: {e.get('prompt', '')[:60]}...")
+        elif action == "edit":
             fp = e.get("file", "")
             files_edited.add(fp)
             timeline.append(f"  {ts} — Edit `{Path(fp).name}`")
