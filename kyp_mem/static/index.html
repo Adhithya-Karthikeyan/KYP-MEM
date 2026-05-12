@@ -2068,7 +2068,10 @@ async function loadNote(path) {
   if (note.error) return;
   currentNote = note;
 
-  document.querySelectorAll('.tree-item').forEach(el => {
+  document.querySelectorAll('.tree-item[data-path]').forEach(el => {
+    el.classList.toggle('active', el.dataset.path === path);
+  });
+  document.querySelectorAll('.session-item[data-path]').forEach(el => {
     el.classList.toggle('active', el.dataset.path === path);
   });
 
