@@ -1650,6 +1650,13 @@ async function loadNote(path) {
   let html = '<div class="fade-in">';
 
   html += `<button class="note-edit-btn" onclick="openEditor('${path}')">EDIT</button>`;
+
+  const isSession = path.includes('/Sessions/') || path.startsWith('Sessions/');
+  if (isSession) {
+    const sessionProject = path.includes('/Sessions/') ? path.split('/Sessions/')[0] : 'General';
+    html += `<div class="session-badge">&#9716; SESSION &middot; ${sessionProject}</div>`;
+  }
+
   html += '<div class="note-properties">';
   (note.tags || []).forEach(t => { html += `<span class="tag clickable-tag" data-tag="${t}">#${t}</span>`; });
   Object.entries(note.properties || {}).forEach(([k, v]) => {
