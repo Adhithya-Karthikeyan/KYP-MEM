@@ -310,7 +310,7 @@ def _run_install_hooks(global_config: bool = False, remove: bool = False):
     stop_hooks = [h for h in stop_hooks if not _has_kyp_hook(h)]
 
     post_tool_hooks.append({
-        "matcher": "Edit|Write|Bash",
+        "matcher": "Edit|Write|Read|Bash",
         "hooks": [{"type": "command", "command": f"{mcp_command} hook post-tool-use"}],
     })
     prompt_hooks.append({
