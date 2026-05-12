@@ -962,7 +962,21 @@ body.resizing .resize-handle {
     <div class="sidebar-scroll">
       <div class="sidebar-section">
         <div class="sidebar-section-title">Explorer</div>
+        <div id="filter-info" class="filter-info" style="display:none;">
+          <span id="filter-count"></span>
+          <span class="clear-btn" id="clear-filters">clear</span>
+        </div>
         <div id="file-tree"></div>
+      </div>
+      <div class="tag-filter-section">
+        <div class="tag-filter-header" id="tag-filter-toggle">
+          <span>Tags</span>
+          <span class="arrow open" id="tag-arrow">&#9654;</span>
+        </div>
+        <div class="tag-filter-body" id="tag-filter-body">
+          <div class="tag-filter-active" id="active-tags"></div>
+          <div class="tag-cloud" id="tag-cloud"></div>
+        </div>
       </div>
     </div>
     <div class="stats-bar" id="stats-bar"></div>
