@@ -1393,6 +1393,110 @@ function initResize() {
   });
 }
 
+// --- Tag Filter ---
+document.getElementById('tag-filter-toggle').addEventListener('click', () => {
+  const body = document.getElementById('tag-filter-body');
+  const arrow = document.getElementById('tag-arrow');
+  body.classList.toggle('collapsed');
+  arrow.classList.toggle('open');
+});
+
+document.getElementById('clear-filters').addEventListener('click', () => {
+  activeTagFilters.clear();
+  applyTagFilter();
+});
+
+function renderTagCloud(tags) {
+  const cloud = document.getElementById('tag-cloud');
+  cloud.innerHTML = '';
+  const sorted = Object.entries(tags).sort((a, b) => b[1] - a[1]);
+  sorted.forEach(([tag, count]) => {
+    const chip = document.createElement('span');
+    chip.className = 'tag-chip' + (activeTagFilters.has(tag) ? ' selected' : '');
+    chip.innerHTML = `#${tag}<span class="tag-count">${count}</span>`;
+    chip.addEventListener('click', () => {
+      if (activeTagFilters.has(tag)) {
+        activeTagFilters.delete(tag);
+      } else {
+        activeTagFilters.add(tag);
+      }
+      applyTagFilter();
+    });
+    cloud.appendChild(chip);
+  });
+}
+
+function applyTagFilter() {
+  const activeEl = document.getElementById('active-tags');
+  const filterInfo = document.getElementById('filter-info');
+  const filterCount = document.getElementById('filter-count');
+
+  activeEl.innerHTML = '';
+  activeTagFilters.forEach(tag => {
+    const el = document.createElement('span');
+    el.className = 'active-tag';
+    el.innerHTML = `#${tag}<span class="remove">&times;</span>`;
+    el.addEventListener('click', () => {
+      activeTagFilters.delete(tag);
+      applyTagFilter();
+    });
+    activeEl.appendChild(el);
+  });
+
+  document.querySelectorAll('.tag-chip').forEach(chip => {
+    const tag = chip.textContent.replace('#', '').replace(/\d+$/, '');
+    chip.classList.toggle('selected', activeTagFilters.has(tag));
+  });
+
+  const treeItems = document.querySelectorAll('.tree-item[data-path]');
+  let visibleCount = 0;
+
+  if (activeTagFilters.size === 0) {
+    treeItems.forEach(el => { el.style.display = ''; });
+    document.querySelectorAll('.tree-children').forEach(el => el.classList.remove('collapsed'));
+    filterInfo.style.display = 'none';
+    renderTagCloud(collectAllTags());
+    return;
+  }
+
+  const matchingPaths = new Set();
+  const matchingFolders = new Set();
+
+  for (const [path, note] of Object.entries(allNotes)) {
+    const noteTags = (note.tags || []).map(t => t.toLowerCase());
+    const matches = [...activeTagFilters].every(f => noteTags.includes(f.toLowerCase()));
+    if (matches) {
+      matchingPaths.add(path);
+      const folder = path.split('/').slice(0, -1).join('/');
+      if (folder) matchingFolders.add(folder);
+    }
+  }
+
+  treeItems.forEach(el => {
+    const path = el.dataset.path;
+    if (matchingPaths.has(path)) {
+      el.style.display = '';
+      visibleCount++;
+    } else {
+      el.style.display = 'none';
+    }
+  });
+
+  document.querySelectorAll('.tree-children').forEach(el => el.classList.remove('collapsed'));
+
+  filterInfo.style.display = '';
+  filterCount.textContent = `${visibleCount} note${visibleCount !== 1 ? 's' : ''}`;
+  renderTagCloud(collectAllTags());
+}
+
+function collectAllTags() {
+  const tags = {};
+  for (const note of Object.values(allNotes)) {
+    (note.tags || []).forEach(t => { tags[t] = (tags[t] || 0) + 1; });
+  }
+  return tags;
+}
+
 // --- Init ---
 async function init() {
   treeData = await fetchJSON('/api/tree');
