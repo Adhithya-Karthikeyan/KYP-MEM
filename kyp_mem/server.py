@@ -12,13 +12,18 @@ mcp = FastMCP("kyp-mem")
 
 @mcp.tool()
 def kyp_list(path: str = "") -> str:
-    """List notes and folders in the vault. Pass a folder path to list its contents, or empty for root."""
+    """List notes and folders in the vault. Shows inline tags for quick navigation. Pass a folder path or empty for root."""
     tree = vault.list_tree(path)
     lines = []
     for f in tree["folders"]:
         lines.append(f"  {f}/")
     for n in tree["notes"]:
-        lines.append(f"  {n}")
+        rel = f"{path}/{n}" if path else n
+        note = vault.index.notes.get(rel)
+        if note and note.tags:
+            lines.append(f"  {n}  [{', '.join(note.tags)}]")
+        else:
+            lines.append(f"  {n}")
     if not lines:
         lines.append("(empty vault)")
     header = f"Vault: {path or '/'}"
