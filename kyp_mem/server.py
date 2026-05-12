@@ -192,3 +192,54 @@ def kyp_stats() -> str:
         f"  Links: {s['links']}\n"
         f"  Backlinks: {s['backlinks']}"
     )
+
+
+@mcp.tool()
+def kyp_session_create(project: str, summary: str = "", investigated: str = "", learned: str = "", completed: str = "", next_steps: str = "") -> str:
+    """Create a structured session note. Project is required. Sections accept markdown text."""
+    session_id = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+    parts = [f"# Session {session_id}", ""]
+    parts.append(f"**Project:** {project}")
+    parts.append("")
+    parts.append("## Summary")
+    parts.append(summary or "")
+    parts.append("")
+    parts.append("## INVESTIGATED")
+    parts.append(investigated or "")
+    parts.append("")
+    parts.append("## LEARNED")
+    parts.append(learned or "")
+    parts.append("")
+    parts.append("## COMPLETED")
+    parts.append(completed or "")
+    parts.append("")
+    parts.append("## NEXT STEPS")
+    parts.append(next_steps or "")
+
+    content = "\n".join(parts)
+    tags = ["session", "manual", project.lower().replace(" ", "-")]
+    path = f"{project}/Sessions/{session_id}.md"
+    vault.write_note(path, content, tags, {})
+    return f"Created session: {path}"
+
+
+@mcp.tool()
+def kyp_sessions(project: str = "", limit: int = 10) -> str:
+    """List sessions, optionally filtered by project. Shows most recent first."""
+    sessions = []
+    for path, note in vault.index.notes.items():
+        if "/Sessions/" not in path and not path.startswith("Sessions/"):
+            continue
+        if project and not path.lower().startswith(project.lower() + "/"):
+            continue
+        sessions.append((path, note))
+    sessions.sort(key=lambda s: s[0], reverse=True)
+    sessions = sessions[:limit]
+    if not sessions:
+        return "No sessions found." + (f" (project filter: {project})" if project else "")
+    lines = ["Sessions:", ""]
+    for path, note in sessions:
+        tags = f" [{', '.join(note.tags)}]" if note.tags else ""
+        date = note.created or note.updated or ""
+        lines.append(f"  {date} — {note.title} ({path}){tags}")
+    return "\n".join(lines)
