@@ -2265,10 +2265,8 @@ function renderRightPanel(note) {
     document.getElementById('unlinked-count').textContent = unlinked.length;
     unlinked.forEach(u => {
       const item = document.createElement('div');
-      item.className = 'rp-item-col';
-      let html = `<span class="rp-title" style="font-size:11px;color:var(--text-secondary)">${u.title}</span>`;
-      if (u.context) html += `<span class="rp-context">${u.context}</span>`;
-      item.innerHTML = html;
+      item.className = 'rp-link-item unlinked';
+      item.innerHTML = `<span class="rp-link-icon unlinked">&#8776;</span><span class="rp-link-title">${u.title}</span>`;
       item.addEventListener('click', () => loadNote(u.path));
       ulList.appendChild(item);
     });
