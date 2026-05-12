@@ -120,6 +120,71 @@ def create_app(vault_path: str = None) -> FastAPI:
         vault.write_note(path, content, tags, props)
         return JSONResponse({"ok": True, "path": path})
 
+    @app.post("/api/sessions/create")
+    async def create_session(request: Request):
+        body = await request.json()
+        project = body.get("project", "").strip()
+        summary = body.get("summary", "").strip()
+        if not project:
+            return JSONResponse({"error": "Project name required"}, 400)
+        session_id = datetime.now().strftime("%Y-%m-%d_%H%M%S")
+        content = (
+            f"# Session {session_id}\n\n"
+            f"**Project:** {project}\n\n"
+            f"## Summary\n{summary}\n\n"
+            f"## INVESTIGATED\n\n\n"
+            f"## LEARNED\n\n\n"
+            f"## COMPLETED\n\n\n"
+            f"## NEXT STEPS\n\n"
+        )
+        tags = ["session", "manual", project.lower().replace(" ", "-")]
+        path = f"{project}/Sessions/{session_id}.md"
+        vault.write_note(path, content, tags, {})
+        return JSONResponse({"ok": True, "path": path})
+
+    @app.get("/api/sessions")
+    def list_sessions(project: str = ""):
+        sessions = {}
+        for path, note in vault.index.notes.items():
+            if "/Sessions/" not in path and not path.startswith("Sessions/"):
+                continue
+            parts = path.split("/")
+            idx = parts.index("Sessions") if "Sessions" in parts else -1
+            proj = "/".join(parts[:idx]) if idx > 0 else "(root)"
+            if project and proj.lower() != project.lower():
+                continue
+            if proj not in sessions:
+                sessions[proj] = []
+            sessions[proj].append({
+                "path": path,
+                "title": note.title,
+                "tags": note.tags,
+                "created": note.created,
+                "updated": note.updated,
+            })
+        for proj in sessions:
+            sessions[proj].sort(key=lambda s: s["path"], reverse=True)
+        return JSONResponse(sessions)
+
+    @app.get("/api/projects")
+    def list_projects():
+        projects = set()
+        for path in vault.index.notes:
+            parts = path.split("/")
+            if len(parts) > 1:
+                projects.add(parts[0])
+        result = []
+        for proj in sorted(projects):
+            session_count = sum(1 for p in vault.index.notes if p.startswith(f"{proj}/Sessions/"))
+            result.append({"name": proj, "session_count": session_count})
+        return JSONResponse(result)
+
+    @app.delete("/api/note/{path:path}")
+    def delete_note(path: str):
+        if vault.delete(path):
+            return JSONResponse({"ok": True})
+        return JSONResponse({"error": "Not found"}, 404)
+
     @app.post("/api/reload")
     def reload():
         vault._load_all()
