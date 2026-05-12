@@ -151,7 +151,7 @@ def kyp_read(path: str, full: bool = False) -> str:
 
 @mcp.tool()
 def kyp_write(path: str, content: str, tags: str = "", properties: str = "") -> str:
-    """Create or update a note. Path like 'Project/Note.md'. Tags: comma-separated. Properties: JSON string."""
+    """Create or update a note. Use this to persist knowledge: bug fixes, architectural decisions, setup guides, API contracts. Path like 'Project/Note.md'. Use [[wikilinks]] in content to connect notes. Tags: comma-separated. Properties: JSON string."""
     if not path.endswith(".md"):
         path += ".md"
 
