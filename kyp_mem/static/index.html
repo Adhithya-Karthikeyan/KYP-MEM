@@ -1406,6 +1406,28 @@ body.resizing .resize-handle { pointer-events: auto !important; }
   </div>
 </div>
 
+<!-- Session Create Modal -->
+<div class="session-create-overlay" id="session-create-overlay">
+  <div class="session-create-modal">
+    <div class="session-create-header">NEW SESSION</div>
+    <div class="session-create-body">
+      <div class="session-field">
+        <label>Project</label>
+        <input type="text" id="session-project" list="project-list" placeholder="Project name...">
+        <datalist id="project-list"></datalist>
+      </div>
+      <div class="session-field">
+        <label>Summary</label>
+        <textarea id="session-summary" placeholder="What are you working on?"></textarea>
+      </div>
+    </div>
+    <div class="session-create-footer">
+      <button class="edit-btn cancel" id="session-cancel">CANCEL</button>
+      <button class="edit-btn create" id="session-create-btn">CREATE</button>
+    </div>
+  </div>
+</div>
+
 <script>
 let currentPath = null;
 let treeData = null;
