@@ -393,6 +393,28 @@ def _run_doctor():
         if "kyp-mem" in s.get("mcpServers", {}):
             print(f"  {D}·{R} Legacy Claude settings ({label}): kyp-mem entry present")
 
+    # Hooks
+    for label, path in legacy_paths:
+        if not path.exists():
+            continue
+        try:
+            s = json.loads(path.read_text())
+        except json.JSONDecodeError:
+            continue
+        hooks = s.get("hooks", {})
+        has_post = any("kyp-mem hook" in h.get("command", "") for h in hooks.get("PostToolUse", []))
+        has_stop = any("kyp-mem hook" in h.get("command", "") for h in hooks.get("Stop", []))
+        if has_post and has_stop:
+            print(f"  {G}✓{R} Auto-learning hooks installed ({label})")
+        elif has_post or has_stop:
+            print(f"  {Y}!{R} Partial hooks installed ({label}) — run: kyp-mem install-hooks")
+
+    # Session log
+    session_file = Path.home() / ".kyp-mem" / "sessions" / "current.jsonl"
+    if session_file.exists():
+        line_count = len(session_file.read_text().strip().split("\n"))
+        print(f"  {D}·{R} Active session log: {line_count} entries")
+
     # Binary
     kyp_bin = shutil.which("kyp-mem")
     if kyp_bin:
