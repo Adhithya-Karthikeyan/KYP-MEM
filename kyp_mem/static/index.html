@@ -1545,7 +1545,79 @@ function renderRightPanel(note) {
   } else {
     outSection.style.display = 'none';
   }
+
+  const ulSection = document.getElementById('rp-unlinked');
+  const ulList = document.getElementById('rp-unlinked-list');
+  ulList.innerHTML = '';
+  const unlinked = note.unlinked || [];
+  if (unlinked.length) {
+    ulSection.style.display = '';
+    document.getElementById('unlinked-count').textContent = unlinked.length;
+    unlinked.forEach(u => {
+      const item = document.createElement('div');
+      item.className = 'rp-item-col';
+      let html = `<span class="rp-title" style="font-size:11px;color:var(--text-secondary)">${u.title}</span>`;
+      if (u.context) html += `<span class="rp-context">${u.context}</span>`;
+      item.innerHTML = html;
+      item.addEventListener('click', () => loadNote(u.path));
+      ulList.appendChild(item);
+    });
+  } else {
+    ulSection.style.display = 'none';
+  }
 }
+
+// --- Editor ---
+let editingPath = null;
+let editingNote = null;
+
+async function openEditor(path) {
+  const note = await fetchJSON(`/api/note/${path}`);
+  if (note.error) return;
+  editingPath = path;
+  editingNote = note;
+  document.getElementById('edit-path').textContent = path;
+  document.getElementById('edit-textarea').value = note.content || '';
+  document.getElementById('edit-overlay').classList.add('active');
+  document.getElementById('edit-textarea').focus();
+}
+
+document.getElementById('edit-cancel').addEventListener('click', closeEditor);
+document.getElementById('edit-overlay').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) closeEditor();
+});
+
+document.getElementById('edit-save').addEventListener('click', async () => {
+  if (!editingPath) return;
+  const content = document.getElementById('edit-textarea').value;
+  await fetch(`/api/note/${editingPath}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      content,
+      tags: editingNote.tags || [],
+      properties: editingNote.properties || {},
+    }),
+  });
+  closeEditor();
+  await loadNote(editingPath);
+});
+
+function closeEditor() {
+  document.getElementById('edit-overlay').classList.remove('active');
+  editingPath = null;
+  editingNote = null;
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && document.getElementById('edit-overlay').classList.contains('active')) {
+    closeEditor();
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === 's' && editingPath) {
+    e.preventDefault();
+    document.getElementById('edit-save').click();
+  }
+});
 
 // --- Graph ---
 function renderGraph(note) {
