@@ -1633,17 +1633,31 @@ body.resizing .resize-handle { pointer-events: auto !important; }
   <!-- Left sidebar -->
   <div class="sidebar">
     <div class="sidebar-scroll">
+      <!-- SESSIONS PILLAR (Claude-Mem) -->
+      <div class="pillar-label">
+        <span><span class="pillar-accent sessions"></span>SESSIONS</span>
+        <span class="pillar-action" id="new-session-btn">+ NEW</span>
+      </div>
+      <div class="session-search-box">
+        <span class="ss-icon">&#9906;</span>
+        <input type="text" id="session-search-input" placeholder="Semantic search sessions...">
+      </div>
+      <div class="session-search-results" id="session-search-results"></div>
+      <div id="session-tree"></div>
+
+      <div class="pillar-divider"></div>
+
+      <!-- PROJECTS PILLAR (Obsidian) -->
+      <div class="pillar-label">
+        <span><span class="pillar-accent projects"></span>PROJECTS</span>
+        <span class="pillar-action" id="new-project-sidebar-btn">+ NEW</span>
+      </div>
       <div class="sidebar-section">
-        <div class="section-label">Explorer</div>
         <div id="filter-info" class="filter-info" style="display:none;">
           <span id="filter-count"></span>
           <span class="clear-btn" id="clear-filters">clear</span>
         </div>
         <div id="file-tree"></div>
-      </div>
-      <div class="sidebar-section" style="margin-top: 24px;">
-        <div class="section-label">Sessions</div>
-        <div id="session-tree"></div>
       </div>
       <div class="tag-filter-section">
         <div class="tag-filter-header" id="tag-filter-toggle">
