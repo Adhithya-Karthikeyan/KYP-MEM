@@ -243,3 +243,55 @@ def kyp_sessions(project: str = "", limit: int = 10) -> str:
         date = note.created or note.updated or ""
         lines.append(f"  {date} — {note.title} ({path}){tags}")
     return "\n".join(lines)
+
+
+@mcp.tool()
+def kyp_project_context(project: str) -> str:
+    """Get full project context: knowledge base + recent session summaries. Call this at session start to understand project history, avoid repeating past work, and prevent hallucination."""
+    parts = []
+
+    knowledge_path = f"{project}/Knowledge.md"
+    knowledge = vault.read(knowledge_path)
+    if knowledge:
+        parts.append("=== PROJECT KNOWLEDGE ===")
+        parts.append(knowledge.content)
+        parts.append("")
+
+    project_notes = []
+    for path, note in vault.index.notes.items():
+        if path.startswith(f"{project}/") and "/Sessions/" not in path and path != knowledge_path:
+            project_notes.append((path, note))
+
+    if project_notes:
+        parts.append("=== PROJECT NOTES ===")
+        for path, note in sorted(project_notes):
+            parts.append(f"\n--- {note.title} ({path}) ---")
+            preview = note.content.strip().split("\n")
+            parts.append("\n".join(preview[:10]))
+            if len(preview) > 10:
+                parts.append("...")
+        parts.append("")
+
+    sessions = []
+    for path, note in vault.index.notes.items():
+        if path.startswith(f"{project}/Sessions/"):
+            sessions.append((path, note))
+    sessions.sort(key=lambda s: s[0], reverse=True)
+    recent = sessions[:5]
+
+    if recent:
+        parts.append(f"=== RECENT SESSIONS ({len(recent)} of {len(sessions)}) ===")
+        for path, note in recent:
+            parts.append(f"\n--- {note.title} ---")
+            content = note.content
+            timeline_idx = content.find("## Timeline")
+            if timeline_idx > 0:
+                parts.append(content[:timeline_idx].strip())
+            else:
+                parts.append(content[:500])
+        parts.append("")
+
+    if not parts:
+        return f"No context found for project '{project}'. Create a Knowledge.md to get started."
+
+    return "\n".join(parts)
