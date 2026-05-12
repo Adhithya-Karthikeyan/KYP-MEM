@@ -195,6 +195,25 @@ def kyp_stats() -> str:
 
 
 @mcp.tool()
+def kyp_session_search(query: str, project: str = None) -> str:
+    """Search past session logs semantically to remember what was investigated, learned, or planned. Uses a vector database."""
+    from .vector import get_session_memory
+    results = get_session_memory().search_sessions(query, project=project, n_results=5)
+    
+    if not results or not results.get("ids") or not results["ids"][0]:
+        return "No relevant past sessions found."
+    
+    lines = ["Semantic Session Search Results:", ""]
+    for i, path in enumerate(results["ids"][0]):
+        doc = results["documents"][0][i]
+        score = results["distances"][0][i]
+        lines.append(f"--- Session: {path} (Distance: {score:.2f}) ---")
+        lines.append(doc)
+        lines.append("")
+    return "\n".join(lines)
+
+
+@mcp.tool()
 def kyp_session_create(project: str, summary: str = "", investigated: str = "", learned: str = "", completed: str = "", next_steps: str = "") -> str:
     """Create a structured session note. Project is required. Sections accept markdown text."""
     session_id = datetime.now().strftime("%Y-%m-%d_%H%M%S")

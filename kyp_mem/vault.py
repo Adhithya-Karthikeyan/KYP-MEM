@@ -200,12 +200,23 @@ class Index:
         return results[:15]
 
 
+from .vector import init_vector_db, get_session_memory
+
 class Vault:
     def __init__(self, vault_path: str):
         self.root = Path(vault_path).expanduser().resolve()
         self.root.mkdir(parents=True, exist_ok=True)
         self.index = Index()
+        init_vector_db(str(self.root))
         self._load_all()
+        self._sync_vector_db()
+
+    def _sync_vector_db(self):
+        mem = get_session_memory()
+        for path, note in self.index.notes.items():
+            if "/Sessions/" in path or path.startswith("Sessions/"):
+                folder = note.folder
+                mem.upsert_session(path, folder, note.content)
 
     def _load_all(self):
         notes = {}
@@ -250,6 +261,8 @@ class Vault:
 
         full.write_text(serialize_note(note), encoding="utf-8")
         self._load_all()
+        if "/Sessions/" in path or path.startswith("Sessions/"):
+            get_session_memory().upsert_session(path, note.folder, note.content)
 
     def delete(self, path: str) -> bool:
         full = self.root / path
@@ -261,6 +274,8 @@ class Vault:
                 parent.rmdir()
                 parent = parent.parent
             self._load_all()
+            if "/Sessions/" in path or path.startswith("Sessions/"):
+                get_session_memory().delete_session(path)
             return True
         return False
 
