@@ -1568,16 +1568,27 @@ function updateQsSelection() {
 }
 
 // --- File Tree ---
-function renderTree(node, container) {
+function renderTree(node, container, parentFolder) {
   if (node.type === 'folder' && node.name !== 'vault') {
+    const isSessionsFolder = node.name === 'Sessions';
     const item = document.createElement('div');
     item.className = 'tree-item';
-    item.innerHTML = `<span class="arrow open">&#9654;</span><span class="icon folder-icon">&#9776;</span><span class="name">${node.name}</span>`;
+
+    if (isSessionsFolder) {
+      item.innerHTML = `<span class="arrow open">&#9654;</span><span class="icon session-folder-icon">&#9716;</span><span class="name">Sessions</span><button class="session-add-btn" data-project="${parentFolder || ''}" title="New session">+</button>`;
+    } else {
+      item.innerHTML = `<span class="arrow open">&#9654;</span><span class="icon folder-icon">&#9776;</span><span class="name">${node.name}</span>`;
+    }
 
     const children = document.createElement('div');
     children.className = 'tree-children';
 
     item.addEventListener('click', (e) => {
+      if (e.target.classList.contains('session-add-btn')) {
+        e.stopPropagation();
+        openSessionCreate(e.target.dataset.project);
+        return;
+      }
       e.stopPropagation();
       item.querySelector('.arrow').classList.toggle('open');
       children.classList.toggle('collapsed');
@@ -1585,13 +1596,30 @@ function renderTree(node, container) {
 
     container.appendChild(item);
     container.appendChild(children);
-    (node.children || []).forEach(c => renderTree(c, children));
+    (node.children || []).forEach(c => renderTree(c, children, node.name));
 
   } else if (node.type === 'note') {
     const item = document.createElement('div');
     item.className = 'tree-item';
     item.dataset.path = node.path;
-    item.innerHTML = `<span class="arrow" style="visibility:hidden">&#9654;</span><span class="icon note-icon">&#9671;</span><span class="name">${node.name.replace('.md', '')}</span>`;
+
+    const isSessionNote = node.path.includes('/Sessions/') || node.path.startsWith('Sessions/');
+    let displayName = node.name.replace('.md', '');
+
+    if (isSessionNote) {
+      const match = displayName.match(/^(\d{4})-(\d{2})-(\d{2})_(\d{2})(\d{2})(\d{2})$/);
+      if (match) {
+        const [, y, mo, d, h, mi] = match;
+        const hr = parseInt(h);
+        const ampm = hr >= 12 ? 'PM' : 'AM';
+        const hr12 = hr % 12 || 12;
+        const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+        displayName = `${months[parseInt(mo)-1]} ${parseInt(d)}, ${hr12}:${mi} ${ampm}`;
+        item.title = node.name.replace('.md', '');
+      }
+    }
+
+    item.innerHTML = `<span class="arrow" style="visibility:hidden">&#9654;</span><span class="icon note-icon">&#9671;</span><span class="name">${displayName}</span>`;
     item.addEventListener('click', () => loadNote(node.path));
     container.appendChild(item);
 
