@@ -2924,6 +2924,23 @@ async function init() {
   `;
 }
 
+// --- Auto-refresh: poll for vault changes ---
+let lastKnownStats = null;
+
+async function pollForChanges() {
+  try {
+    const stats = await fetchJSON('/api/stats');
+    const key = `${stats.notes}:${stats.links}:${stats.tags}`;
+    if (lastKnownStats && lastKnownStats !== key) {
+      await refreshTree();
+      if (currentPath) loadNote(currentPath);
+    }
+    lastKnownStats = key;
+  } catch {}
+}
+
+setInterval(pollForChanges, 3000);
+
 initResize();
 initGraphResize();
 init();
