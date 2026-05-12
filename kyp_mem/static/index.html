@@ -2368,6 +2368,16 @@ document.getElementById('session-create-btn').addEventListener('click', async ()
   }
 });
 
+// --- Sidebar pillar buttons ---
+document.getElementById('new-session-btn').addEventListener('click', () => openSessionCreate(''));
+
+document.getElementById('new-project-sidebar-btn').addEventListener('click', () => {
+  document.getElementById('project-create-overlay').classList.add('active');
+  document.getElementById('project-name-input').value = '';
+  document.getElementById('project-overview-input').value = '';
+  document.getElementById('project-name-input').focus();
+});
+
 // --- Project Management ---
 function closeProjectCreate() {
   document.getElementById('project-create-overlay').classList.remove('active');
