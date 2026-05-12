@@ -108,6 +108,17 @@ def create_app(vault_path: str = None) -> FastAPI:
             for n in notes
         ])
 
+    @app.post("/api/note/{path:path}")
+    async def save_note(path: str, request: Request):
+        body = await request.json()
+        content = body.get("content", "")
+        tags = body.get("tags", [])
+        props = body.get("properties", {})
+        if not path.endswith(".md"):
+            path += ".md"
+        vault.write_note(path, content, tags, props)
+        return JSONResponse({"ok": True, "path": path})
+
     @app.post("/api/reload")
     def reload():
         vault._load_all()
