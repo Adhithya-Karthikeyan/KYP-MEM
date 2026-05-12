@@ -64,29 +64,53 @@ def handle_stop():
             short = cmd[:80] + "..." if len(cmd) > 80 else cmd
             timeline.append(f"  {ts} — `{short}`")
 
+    summary_items = []
+    if files_edited:
+        summary_items.append(f"Modified {len(files_edited)} file{'s' if len(files_edited) != 1 else ''}")
+    if files_created:
+        summary_items.append(f"Created {len(files_created)} file{'s' if len(files_created) != 1 else ''}")
+    if commands:
+        summary_items.append(f"Ran {len(commands)} command{'s' if len(commands) != 1 else ''}")
+
+    investigate_keywords = {'grep', 'find', 'cat', 'head', 'tail', 'less', 'ls', 'tree', 'rg', 'ag', 'fd', 'wc', 'diff'}
+    investigated_cmds = []
+    for cmd in commands:
+        first_word = cmd.strip().split()[0] if cmd.strip() else ''
+        if first_word in investigate_keywords:
+            investigated_cmds.append(cmd)
+
     parts = [f"# Session {session_id}", ""]
     parts.append(f"**Project:** `{project_dir}`")
     parts.append(f"**Actions:** {len(entries)} total, {len(write_actions)} substantive")
     parts.append("")
 
-    if files_edited:
-        parts.append("## Files Modified")
-        for f in sorted(files_edited):
-            parts.append(f"- `{f}`")
-        parts.append("")
+    parts.append("## Summary")
+    parts.append(", ".join(summary_items) + f" in `{project_name}`." if summary_items else "")
+    parts.append("")
 
-    if files_created:
-        parts.append("## Files Created")
-        for f in sorted(files_created):
-            parts.append(f"- `{f}`")
-        parts.append("")
-
-    if commands:
-        parts.append("## Commands Run")
-        for cmd in commands[:25]:
+    parts.append("## INVESTIGATED")
+    if investigated_cmds:
+        for cmd in investigated_cmds[:15]:
             short = cmd[:120] + "..." if len(cmd) > 120 else cmd
             parts.append(f"- `{short}`")
-        parts.append("")
+    parts.append("")
+
+    parts.append("## LEARNED")
+    parts.append("")
+    parts.append("")
+
+    parts.append("## COMPLETED")
+    if files_edited:
+        for f in sorted(files_edited):
+            parts.append(f"- Modified `{Path(f).name}`")
+    if files_created:
+        for f in sorted(files_created):
+            parts.append(f"- Created `{Path(f).name}`")
+    parts.append("")
+
+    parts.append("## NEXT STEPS")
+    parts.append("")
+    parts.append("")
 
     if timeline:
         parts.append("## Timeline")
@@ -102,7 +126,7 @@ def handle_stop():
     from .vault import Vault
 
     vault = Vault(get_vault_path())
-    vault.write_note(f"Sessions/{session_id}.md", content, tags, {})
+    vault.write_note(f"{project_name}/Sessions/{session_id}.md", content, tags, {})
 
     CURRENT_SESSION.unlink(missing_ok=True)
 
