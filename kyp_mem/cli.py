@@ -275,11 +275,17 @@ def _run_install_hooks(global_config: bool = False, remove: bool = False):
 
     hooks = settings.setdefault("hooks", {})
 
+    def _has_kyp_hook(entry):
+        for hook in entry.get("hooks", []):
+            if "kyp-mem hook" in hook.get("command", ""):
+                return True
+        return "kyp-mem hook" in entry.get("command", "")
+
     if remove:
         changed = False
         for event in ("PostToolUse", "Stop"):
             if event in hooks:
-                hooks[event] = [h for h in hooks[event] if "kyp-mem hook" not in h.get("command", "")]
+                hooks[event] = [h for h in hooks[event] if not _has_kyp_hook(h)]
                 if not hooks[event]:
                     del hooks[event]
                 changed = True
