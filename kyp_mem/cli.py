@@ -244,6 +244,78 @@ def _write_legacy_claude_settings(
     return settings_path
 
 
+def _run_install_hooks(global_config: bool = False, remove: bool = False):
+    mcp_command, _ = _get_mcp_command()
+
+    if global_config:
+        settings_path = Path.home() / ".claude" / "settings.json"
+        scope_label = "global"
+    else:
+        settings_path = Path.cwd() / ".claude" / "settings.json"
+        scope_label = "project"
+
+    settings_path.parent.mkdir(parents=True, exist_ok=True)
+    settings = {}
+    if settings_path.exists():
+        try:
+            settings = json.loads(settings_path.read_text())
+        except json.JSONDecodeError:
+            settings = {}
+
+    hooks = settings.setdefault("hooks", {})
+
+    if remove:
+        changed = False
+        for event in ("PostToolUse", "Stop"):
+            if event in hooks:
+                hooks[event] = [h for h in hooks[event] if "kyp-mem hook" not in h.get("command", "")]
+                if not hooks[event]:
+                    del hooks[event]
+                changed = True
+        if not hooks:
+            del settings["hooks"]
+        settings_path.write_text(json.dumps(settings, indent=2) + "\n")
+        print()
+        print(f"  {G}✓{R} KYP-MEM hooks removed from {scope_label} settings")
+        print(f"  {D}  File: {settings_path}{R}")
+        print()
+        return
+
+    post_tool_hooks = hooks.setdefault("PostToolUse", [])
+    stop_hooks = hooks.setdefault("Stop", [])
+
+    post_tool_hooks = [h for h in post_tool_hooks if "kyp-mem hook" not in h.get("command", "")]
+    stop_hooks = [h for h in stop_hooks if "kyp-mem hook" not in h.get("command", "")]
+
+    post_tool_hooks.append({
+        "matcher": "Edit|Write|Bash",
+        "command": f"{mcp_command} hook post-tool-use",
+    })
+    stop_hooks.append({
+        "command": f"{mcp_command} hook stop",
+    })
+
+    hooks["PostToolUse"] = post_tool_hooks
+    hooks["Stop"] = stop_hooks
+
+    settings_path.write_text(json.dumps(settings, indent=2) + "\n")
+
+    print()
+    print(f"  {C}KYP-MEM{R} — Auto-Learning Hooks")
+    print()
+    print(f"  {G}✓{R} Hooks installed ({scope_label})")
+    print(f"  {D}  File: {settings_path}{R}")
+    print()
+    print(f"  How it works:")
+    print(f"  {D}  • PostToolUse hook captures file edits, writes, and commands{R}")
+    print(f"  {D}  • Stop hook compiles the session into a vault note{R}")
+    print(f"  {D}  • Notes saved under Sessions/ with timestamps and tags{R}")
+    print(f"  {D}  • Sessions with < 3 substantive actions are skipped{R}")
+    print()
+    print(f"  {C}Done!{R} Restart Claude Code. Sessions will auto-save to your vault.")
+    print()
+
+
 def _run_stats():
     from .config import get_vault_path
     from .vault import Vault
