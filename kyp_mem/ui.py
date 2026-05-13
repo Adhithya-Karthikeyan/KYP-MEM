@@ -177,12 +177,20 @@ def create_app(vault_path: str = None) -> FastAPI:
                 continue
             if proj not in sessions:
                 sessions[proj] = []
+            summary = ""
+            for line in (note.content or "").split("\n"):
+                if line.startswith("## Summary"):
+                    continue
+                if summary == "" and line.strip() and not line.startswith("#"):
+                    summary = line.strip()
+                    break
             sessions[proj].append({
                 "path": path,
                 "title": note.title,
                 "tags": note.tags,
                 "created": note.created,
                 "updated": note.updated,
+                "summary": summary,
             })
         for proj in sessions:
             sessions[proj].sort(key=lambda s: s["path"], reverse=True)
