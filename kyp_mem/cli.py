@@ -45,6 +45,7 @@ def main():
 
     hook_parser = subparsers.add_parser("hook", help="Handle Claude Code hook events (internal)")
     hook_sub = hook_parser.add_subparsers(dest="hook_command")
+    hook_sub.add_parser("session-start", help="Inject project context at session start")
     hook_sub.add_parser("post-tool-use", help="Capture tool activity to session log")
     hook_sub.add_parser("user-prompt", help="Capture user prompt to session log")
     hook_sub.add_parser("stop", help="Compile session into vault note")
