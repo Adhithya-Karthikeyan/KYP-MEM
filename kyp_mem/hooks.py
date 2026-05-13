@@ -12,6 +12,81 @@ CURRENT_SESSION = SESSION_DIR / "current.jsonl"
 MIN_ACTIONS = 3
 
 
+def handle_session_start():
+    """Inject project context into the conversation at session start."""
+    sys.stdin.read()
+
+    cwd = os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd())
+    project_name = Path(cwd).name
+
+    try:
+        from .config import get_vault_path
+        from .vault import Vault
+
+        vault = Vault(get_vault_path())
+
+        project_notes = [p for p in vault.index.notes if p.startswith(f"{project_name}/")]
+        if not project_notes:
+            return
+
+        parts = [f"# [kyp-mem] {project_name} — Project Context"]
+        parts.append(f"Vault: {get_vault_path()}")
+        parts.append("")
+
+        knowledge_path = f"{project_name}/Knowledge.md"
+        knowledge = vault.read(knowledge_path)
+        if knowledge:
+            parts.append("## Knowledge")
+            content = knowledge.content
+            timeline_idx = content.find("## Timeline")
+            if timeline_idx > 0:
+                content = content[:timeline_idx].strip()
+            if len(content) > 2000:
+                parts.append(content[:2000] + "\n...")
+            else:
+                parts.append(content)
+            parts.append("")
+
+        other_notes = sorted(
+            p for p in project_notes
+            if "/Sessions/" not in p and p != knowledge_path
+        )
+        if other_notes:
+            parts.append("## Project Notes")
+            for p in other_notes:
+                note = vault.index.notes.get(p)
+                title = note.title if note else p
+                tags = f" [{', '.join(note.tags)}]" if note and note.tags else ""
+                parts.append(f"- {title} ({p}){tags}")
+            parts.append("")
+
+        sessions = sorted(
+            (p for p in project_notes if "/Sessions/" in p),
+            reverse=True,
+        )[:3]
+        if sessions:
+            parts.append(f"## Recent Sessions (last {len(sessions)})")
+            for sp in sessions:
+                note = vault.read(sp)
+                if not note:
+                    continue
+                parts.append(f"### {note.title}")
+                content = note.content
+                timeline_idx = content.find("## Timeline")
+                if timeline_idx > 0:
+                    content = content[:timeline_idx].strip()
+                if len(content) > 300:
+                    content = content[:300] + "..."
+                parts.append(content)
+                parts.append("")
+
+        parts.append("Use `kyp_project_context` for full details. Use `kyp_session_search` to search past sessions.")
+
+        print("\n".join(parts))
+    except Exception:
+        pass
+
+
 def handle_user_prompt():
     raw = sys.stdin.read().strip()
     if not raw:
