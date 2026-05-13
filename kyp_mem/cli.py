@@ -304,14 +304,19 @@ def _run_install_hooks(global_config: bool = False, remove: bool = False):
         print()
         return
 
+    session_start_hooks = hooks.setdefault("SessionStart", [])
     post_tool_hooks = hooks.setdefault("PostToolUse", [])
     prompt_hooks = hooks.setdefault("UserPromptSubmit", [])
     stop_hooks = hooks.setdefault("Stop", [])
 
+    session_start_hooks = [h for h in session_start_hooks if not _has_kyp_hook(h)]
     post_tool_hooks = [h for h in post_tool_hooks if not _has_kyp_hook(h)]
     prompt_hooks = [h for h in prompt_hooks if not _has_kyp_hook(h)]
     stop_hooks = [h for h in stop_hooks if not _has_kyp_hook(h)]
 
+    session_start_hooks.append({
+        "hooks": [{"type": "command", "command": f"{mcp_command} hook session-start"}],
+    })
     post_tool_hooks.append({
         "matcher": "Edit|Write|Read|Bash",
         "hooks": [{"type": "command", "command": f"{mcp_command} hook post-tool-use"}],
@@ -323,6 +328,7 @@ def _run_install_hooks(global_config: bool = False, remove: bool = False):
         "hooks": [{"type": "command", "command": f"{mcp_command} hook stop"}],
     })
 
+    hooks["SessionStart"] = session_start_hooks
     hooks["PostToolUse"] = post_tool_hooks
     hooks["UserPromptSubmit"] = prompt_hooks
     hooks["Stop"] = stop_hooks
