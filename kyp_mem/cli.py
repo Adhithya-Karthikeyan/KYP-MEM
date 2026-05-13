@@ -289,7 +289,7 @@ def _run_install_hooks(global_config: bool = False, remove: bool = False):
 
     if remove:
         changed = False
-        for event in ("PostToolUse", "UserPromptSubmit", "Stop"):
+        for event in ("SessionStart", "PostToolUse", "UserPromptSubmit", "Stop"):
             if event in hooks:
                 hooks[event] = [h for h in hooks[event] if not _has_kyp_hook(h)]
                 if not hooks[event]:
