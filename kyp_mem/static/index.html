@@ -2417,8 +2417,9 @@ async function openEditor(path) {
   $('edit-overlay').classList.add('active');
   $('edit-textarea').focus();
 }
-// Make openEditor globally accessible
+// Make functions globally accessible for inline onclick handlers
 window.openEditor = openEditor;
+window.loadNote = loadNote;
 
 function closeEditor() {
   $('edit-overlay').classList.remove('active');
