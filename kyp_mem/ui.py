@@ -291,13 +291,23 @@ def create_app(vault_path: str = None) -> FastAPI:
             avg_injection_tokens = sum(i.get("tokens", 0) for i in injections) // len(injections)
             latest_injection_tokens = injections[-1].get("tokens", 0)
 
-        savings_pct = 0
-        if total_exploration > 0 and latest_injection_tokens > 0:
-            savings_pct = round((1 - latest_injection_tokens / total_exploration) * 100, 1)
+        # Avg exploration per session = what a cold start costs
+        avg_exploration = total_exploration // len(sessions) if sessions else 0
+
+        # Compression ratio: how much memory compresses one session's worth
+        # of exploration into an injection. Lower = better compression.
+        # e.g. 10x means injection is 10x smaller than avg session exploration
+        compression_ratio = round(avg_exploration / latest_injection_tokens, 1) if latest_injection_tokens > 0 and avg_exploration > 0 else 0
+
+        # Per-session savings: injection replaces one cold-start exploration
+        per_session_savings_pct = 0
+        if avg_exploration > 0 and latest_injection_tokens > 0:
+            per_session_savings_pct = round((1 - latest_injection_tokens / avg_exploration) * 100, 1)
 
         return JSONResponse({
             "session_count": len(sessions),
             "total_exploration_tokens": total_exploration,
+            "avg_exploration_per_session": avg_exploration,
             "total_files_read": total_files_read,
             "total_files_read_chars": total_files_read_chars,
             "total_commands": total_commands,
@@ -305,7 +315,8 @@ def create_app(vault_path: str = None) -> FastAPI:
             "injection_count": len(injections),
             "avg_injection_tokens": avg_injection_tokens,
             "latest_injection_tokens": latest_injection_tokens,
-            "savings_pct": max(savings_pct, 0),
+            "compression_ratio": compression_ratio,
+            "per_session_savings_pct": max(per_session_savings_pct, 0),
             "sessions": sessions[-20:],
         })
 
