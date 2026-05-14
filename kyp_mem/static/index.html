@@ -1139,6 +1139,7 @@ function renderRail(note) {
   graphCard.querySelector('#rail-graph-expand')?.addEventListener('click', () => {
     _graphData = null;
     setView('graph');
+    renderGraphView();
   });
 
   // Outline
