@@ -81,6 +81,29 @@ def create_app(vault_path: str = None) -> FastAPI:
             "related": [{"path": p, "score": s, "title": vault.index.notes[p].title if p in vault.index.notes else p} for p, s in related],
         })
 
+    @app.get("/api/graph")
+    def graph():
+        nodes = []
+        edges = []
+        seen_edges = set()
+        for path, note in vault.index.notes.items():
+            kind = "session" if "/Sessions/" in path else "note"
+            nodes.append({"id": path, "title": note.title, "kind": kind, "tags": note.tags})
+            for link in (note.links or []):
+                target = None
+                link_lower = link.lower()
+                for p in vault.index.notes:
+                    stem = p.split("/")[-1].replace(".md", "").lower()
+                    if stem == link_lower:
+                        target = p
+                        break
+                if target:
+                    key = tuple(sorted([path, target]))
+                    if key not in seen_edges:
+                        seen_edges.add(key)
+                        edges.append({"source": path, "target": target})
+        return JSONResponse({"nodes": nodes, "edges": edges})
+
     @app.get("/api/search")
     def search(q: str = "", tag: str = ""):
         if not q and not tag:
