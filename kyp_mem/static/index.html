@@ -1931,30 +1931,34 @@ async function init() {
   const density = localStorage.getItem('kyp-density') || 'regular';
   document.documentElement.setAttribute('data-density', density);
 
-  const [rawTree, sessionsData, stats] = await Promise.all([
-    fetchJSON('/api/tree'), fetchJSON('/api/sessions'), fetchJSON('/api/stats'),
-  ]);
-  treeData = rawTree;
+  try {
+    const [rawTree, sessionsData, stats] = await Promise.all([
+      fetchJSON('/api/tree'), fetchJSON('/api/sessions'), fetchJSON('/api/stats'),
+    ]);
+    treeData = rawTree;
 
-  function walk(node) {
-    if (node.type === 'note') allNotes[node.path] = { title: node.name.replace('.md', ''), tags: node.tags || [] };
-    (node.children || []).forEach(walk);
+    function walk(node) {
+      if (node.type === 'note') allNotes[node.path] = { title: node.name.replace('.md', ''), tags: node.tags || [] };
+      (node.children || []).forEach(walk);
+    }
+    walk(treeData);
+
+    renderSidebar(sessionsData);
+    $('stat-notes').textContent = stats.notes;
+    $('stat-folders').textContent = stats.folders;
+
+    // Enrich notes with tags in background (don't block sidebar render)
+    const promises = Object.keys(allNotes).map(async path => {
+      try {
+        const note = await fetchJSON(`/api/note/${path}`);
+        if (!note.error) allNotes[path] = { title: note.title, tags: note.tags || [] };
+      } catch {}
+    });
+    Promise.all(promises).then(() => loadTokenEconomics());
+  } catch (e) {
+    console.error('KYP-MEM init failed:', e);
+    $('sidebar-scroll').innerHTML = `<div style="padding:12px;color:#f66;font-size:12px">Init error: ${e.message}<br>Check console for details</div>`;
   }
-  walk(treeData);
-
-  // Enrich notes with tags
-  const promises = Object.keys(allNotes).map(async path => {
-    try {
-      const note = await fetchJSON(`/api/note/${path}`);
-      if (!note.error) allNotes[path] = { title: note.title, tags: note.tags || [] };
-    } catch {}
-  });
-  await Promise.all(promises);
-
-  renderSidebar(sessionsData);
-  $('stat-notes').textContent = stats.notes;
-  $('stat-folders').textContent = stats.folders;
-  loadTokenEconomics();
 
   // Show empty state
   $('content-area').innerHTML = `
