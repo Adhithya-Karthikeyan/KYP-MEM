@@ -1478,8 +1478,6 @@ function renderGraphView() {
   buildFullGraph('force');
 }
 
-let _graphData = null;
-
 async function buildFullGraph(layout) {
   const wrap = $('graph-svg-wrap');
   if (!wrap) return;
