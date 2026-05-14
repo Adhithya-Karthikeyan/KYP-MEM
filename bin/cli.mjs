@@ -84,7 +84,8 @@ if (args[0] === "hook") {
       if (tool.includes("kyp-mem") || tool.includes("kyp_mem")) process.exit(0);
 
       const input = data.tool_input || {};
-      const resp = String(data.tool_response || "").slice(0, 2000);
+      const rawResp = data.tool_response || "";
+      const resp = (typeof rawResp === "string" ? rawResp : JSON.stringify(rawResp)).slice(0, 2000);
       const entry = { ts: new Date().toISOString(), tool, cwd: process.cwd() };
 
       if (tool === "Edit" || tool === "Write") {
