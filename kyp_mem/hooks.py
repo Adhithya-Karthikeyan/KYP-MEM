@@ -160,7 +160,7 @@ def handle_user_prompt():
 
 def handle_post_tool_use():
     raw = sys.stdin.read().strip()
-    if not raw:
+    if not raw or _is_subprocess():
         return
     try:
         data = json.loads(raw)
