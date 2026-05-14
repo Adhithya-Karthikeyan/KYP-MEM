@@ -715,8 +715,6 @@ def handle_stop():
     vault = Vault(get_vault_path())
     vault.write_note(f"{project_name}/Sessions/{session_id}.md", content, tags, {})
 
-    CURRENT_SESSION.unlink(missing_ok=True)
-
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "stop":
