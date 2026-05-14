@@ -808,12 +808,8 @@ $('sidebar-toggle').addEventListener('click', () => {
 });
 applySidebar();
 
-// ─── Rail Toggle ─────────────────────────────────────────────────────────────
-$('rail-toggle').addEventListener('click', () => {
-  railOpen = !railOpen;
-  localStorage.setItem('kyp-rail-open', railOpen);
-  if (currentPath && view === 'note') loadNote(currentPath);
-});
+// Rail is always open
+let railOpen = true;
 
 // ─── Resize Handle ───────────────────────────────────────────────────────────
 (function initResize() {
