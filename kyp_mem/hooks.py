@@ -196,7 +196,12 @@ def handle_post_tool_use():
     entry["cwd"] = cwd
 
     tool_response = data.get("tool_response", "")
-    resp_str = str(tool_response) if tool_response else ""
+    if isinstance(tool_response, str):
+        resp_str = tool_response
+    elif tool_response:
+        resp_str = json.dumps(tool_response)
+    else:
+        resp_str = ""
     response_chars = len(resp_str)
     resp_truncated = resp_str[:2000]
 
