@@ -340,6 +340,58 @@ def _build_next_steps(files_edited, files_created, commands_classified):
     return items
 
 
+def _summarize_with_claude(raw_note, project_name):
+    """Use Claude to rewrite session sections in plain, human-readable language."""
+    try:
+        from .config import get_session_model
+        import anthropic
+
+        model = get_session_model()
+        client = anthropic.Anthropic()
+
+        prompt = f"""You are summarizing a coding session for the project "{project_name}".
+Below is a raw session note with sections: Summary, INVESTIGATED, LEARNED, COMPLETED, NEXT STEPS.
+The raw data contains file names, grep patterns, and command output — rewrite each section in plain, conversational English describing what was actually done and why.
+
+Rules:
+- Summary: 1-2 sentences describing what the session accomplished in plain words
+- INVESTIGATED: Bullet points explaining what was analyzed or explored and why, not raw grep patterns or file paths
+- LEARNED: Bullet points of insights or discoveries made during the session
+- COMPLETED: Bullet points of concrete deliverables or changes made
+- NEXT STEPS: Bullet points of what should be done next
+- Keep each section concise (2-5 bullets max)
+- Do NOT include raw command output, grep patterns, or technical file paths
+- Write as if explaining to a teammate what you did today
+- Return ONLY the rewritten sections in this exact format (no other text):
+
+## Summary
+<text>
+
+## INVESTIGATED
+- <item>
+
+## LEARNED
+- <item>
+
+## COMPLETED
+- <item>
+
+## NEXT STEPS
+- <item>
+
+Raw session note:
+{raw_note}"""
+
+        response = client.messages.create(
+            model=model,
+            max_tokens=1024,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        return response.content[0].text.strip()
+    except Exception:
+        return None
+
+
 def handle_stop():
     if not CURRENT_SESSION.exists():
         return
@@ -417,49 +469,91 @@ def handle_stop():
     completed = _build_completed(files_edited, files_created, commands_classified, project_dir)
     next_steps = _build_next_steps(files_edited, files_created, commands_classified)
 
+    # Build raw note for Claude summarization
+    raw_parts = []
+    raw_parts.append("## Summary")
+    raw_parts.append(", ".join(summary_items) + f" in `{project_name}`." if summary_items else "")
+    raw_parts.append("")
+    raw_parts.append("## INVESTIGATED")
+    if investigated:
+        raw_parts.extend(investigated)
+    raw_parts.append("")
+    raw_parts.append("## LEARNED")
+    if learned:
+        raw_parts.extend(learned)
+    raw_parts.append("")
+    raw_parts.append("## COMPLETED")
+    if completed:
+        raw_parts.extend(completed)
+    raw_parts.append("")
+    raw_parts.append("## NEXT STEPS")
+    if next_steps:
+        raw_parts.extend(next_steps)
+
+    # Add prompts and timeline as context for Claude
+    if prompts:
+        raw_parts.append("")
+        raw_parts.append("## PROMPTS (context)")
+        for p in prompts:
+            raw_parts.append(f"- [{p['ts']}] {p['text'][:200]}")
+    if timeline:
+        raw_parts.append("")
+        raw_parts.append("## Timeline (context)")
+        for line in timeline[:30]:
+            raw_parts.append(line)
+
+    raw_note = "\n".join(raw_parts)
+
+    # Try Claude summarization, fall back to raw sections
+    summarized = _summarize_with_claude(raw_note, project_name)
+
     parts = [f"# Session {session_id}", ""]
     parts.append(f"**Project:** `{project_dir}`")
     parts.append(f"**Actions:** {len(entries)} total, {len(write_actions)} substantive")
     parts.append("")
 
-    parts.append("## Summary")
-    parts.append(", ".join(summary_items) + f" in `{project_name}`." if summary_items else "")
-    parts.append("")
+    if summarized:
+        # Insert prompts section before the Claude-rewritten sections
+        parts.append("## PROMPTS")
+        if prompts:
+            for i, p in enumerate(prompts, 1):
+                parts.append(f"### {i}. [{p['ts']}]")
+                parts.append(f"> {p['text']}")
+                parts.append("")
+        parts.append("")
+        parts.append(summarized)
+    else:
+        parts.append("## Summary")
+        parts.append(", ".join(summary_items) + f" in `{project_name}`." if summary_items else "")
+        parts.append("")
 
-    parts.append("## PROMPTS")
-    if prompts:
-        for i, p in enumerate(prompts, 1):
-            parts.append(f"### {i}. [{p['ts']}]")
-            parts.append(f"> {p['text']}")
-            parts.append("")
-    parts.append("")
+        parts.append("## PROMPTS")
+        if prompts:
+            for i, p in enumerate(prompts, 1):
+                parts.append(f"### {i}. [{p['ts']}]")
+                parts.append(f"> {p['text']}")
+                parts.append("")
+        parts.append("")
 
-    parts.append("## INVESTIGATED")
-    if investigated:
-        parts.extend(investigated)
-    parts.append("")
+        parts.append("## INVESTIGATED")
+        if investigated:
+            parts.extend(investigated)
+        parts.append("")
 
-    parts.append("## LEARNED")
-    if learned:
-        parts.extend(learned)
-    parts.append("")
+        parts.append("## LEARNED")
+        if learned:
+            parts.extend(learned)
+        parts.append("")
 
-    parts.append("## COMPLETED")
-    if completed:
-        parts.extend(completed)
-    parts.append("")
+        parts.append("## COMPLETED")
+        if completed:
+            parts.extend(completed)
+        parts.append("")
 
-    parts.append("## NEXT STEPS")
-    if next_steps:
-        parts.extend(next_steps)
-    parts.append("")
-
-    if timeline:
-        parts.append("## Timeline")
-        for line in timeline[:40]:
-            parts.append(line)
-        if len(timeline) > 40:
-            parts.append(f"  ... and {len(timeline) - 40} more actions")
+        parts.append("## NEXT STEPS")
+        if next_steps:
+            parts.extend(next_steps)
+        parts.append("")
 
     content = "\n".join(parts)
     tags = ["session", "auto-captured", project_name]
