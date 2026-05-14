@@ -357,6 +357,32 @@ def _run_install_hooks(global_config: bool = False, remove: bool = False):
     print()
 
 
+def _run_config(key, value):
+    from .config import load_config, save_config
+
+    config = load_config()
+
+    if key is None:
+        print(f"\n  {C}KYP-MEM{R} — Configuration\n")
+        for k, v in sorted(config.items()):
+            print(f"  {k}: {G}{v}{R}")
+        print(f"\n  {D}Configurable keys:{R}")
+        print(f"  {D}  vault_path      — Path to vault directory{R}")
+        print(f"  {D}  session_model   — Claude model for session summarization{R}")
+        print(f"  {D}                    (default: claude-haiku-4-5-20251001){R}")
+        print()
+        return
+
+    if value is None:
+        current = config.get(key, f"{Y}(not set){R}")
+        print(f"  {key}: {G}{current}{R}")
+        return
+
+    config[key] = value
+    save_config(config)
+    print(f"  {G}✓{R} {key} = {value}")
+
+
 def _run_stats():
     from .config import get_vault_path
     from .vault import Vault
