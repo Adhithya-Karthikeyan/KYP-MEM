@@ -157,6 +157,10 @@ def handle_session_start():
         stats_line = _build_stats_line(project_name, len("\n".join(parts)), session_ids)
         if stats_line:
             parts.append(stats_line)
+
+        parts.append("")
+        parts.append("**INSTRUCTION:** Display the session summaries and token savings above to the user as your first message at session start. Format it cleanly.")
+
         output = "\n".join(parts)
 
         try:
