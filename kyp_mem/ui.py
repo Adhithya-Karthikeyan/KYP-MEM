@@ -219,6 +219,12 @@ def create_app(vault_path: str = None) -> FastAPI:
                             summary = lines[j].strip()
                             break
                     break
+            topic = note.properties.get("topic", "")
+            if not topic:
+                for line in lines:
+                    if line.startswith("**Topic:**"):
+                        topic = line.replace("**Topic:**", "").strip()
+                        break
             sessions[proj].append({
                 "path": path,
                 "title": note.title,
@@ -226,6 +232,7 @@ def create_app(vault_path: str = None) -> FastAPI:
                 "created": note.created,
                 "updated": note.updated,
                 "summary": summary,
+                "topic": topic,
             })
         for proj in sessions:
             sessions[proj].sort(key=lambda s: s["path"], reverse=True)
