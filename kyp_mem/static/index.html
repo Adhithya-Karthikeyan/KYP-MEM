@@ -1136,7 +1136,10 @@ function renderRail(note) {
   renderLocalGraph(graphBody, note);
   rail.appendChild(graphCard);
 
-  graphCard.querySelector('#rail-graph-expand')?.addEventListener('click', () => setView('graph'));
+  graphCard.querySelector('#rail-graph-expand')?.addEventListener('click', () => {
+    _graphData = null;
+    setView('graph');
+  });
 
   // Outline
   const headings = [];
