@@ -583,6 +583,42 @@ def handle_stop():
 
     raw_note = "\n".join(raw_parts)
 
+    # Compute exploration tokens from captured response sizes
+    files_read_chars = 0
+    commands_chars = 0
+    files_read_count = len(files_read)
+    commands_run_count = len(commands)
+
+    for e in entries:
+        rc = e.get("response_chars", 0)
+        if e.get("action") == "read":
+            if rc > 0:
+                files_read_chars += rc
+            else:
+                try:
+                    files_read_chars += Path(e.get("file", "")).stat().st_size
+                except OSError:
+                    pass
+        elif e.get("action") == "command":
+            if rc > 0:
+                commands_chars += rc
+            else:
+                cls, _ = _classify_command(e.get("command", ""))
+                commands_chars += COMMAND_OUTPUT_ESTIMATES.get(cls, 300)
+
+    exploration_chars = files_read_chars + commands_chars
+    exploration_tokens = exploration_chars // CHARS_PER_TOKEN
+
+    try:
+        _record_session_tokens(
+            session_id, project_name, exploration_tokens,
+            files_read_count, files_read_chars,
+            commands_run_count, commands_chars,
+            len(files_edited), len(files_created),
+        )
+    except Exception:
+        pass
+
     # Try Claude summarization, fall back to raw sections
     summarized = _summarize_with_claude(raw_note, project_name)
 
