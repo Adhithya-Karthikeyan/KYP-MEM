@@ -92,6 +92,25 @@ def _extract_session_summary(content, max_chars=800):
     return "\n".join(parts)[:max_chars] if parts else content[:200]
 
 
+def _build_stats_line(project_name, injected_chars):
+    try:
+        stats = _load_token_stats()
+        project_sessions = [s for s in stats.get("sessions", []) if s.get("project") == project_name]
+        total_sessions = len(project_sessions)
+        if total_sessions == 0:
+            return None
+        total_exploration = sum(s.get("exploration_tokens", 0) for s in project_sessions)
+        injected_tokens = injected_chars // CHARS_PER_TOKEN
+        return (
+            f"---\n"
+            f"*kyp-mem: {total_sessions} sessions captured · "
+            f"~{total_exploration:,} exploration tokens learned · "
+            f"~{injected_tokens:,} tokens injected this session*"
+        )
+    except Exception:
+        return None
+
+
 def handle_session_start():
     """Inject recent session memory into the conversation at session start."""
     sys.stdin.read()
