@@ -405,17 +405,19 @@ def _build_next_steps(files_edited, files_created, commands_classified):
 
 
 def _summarize_with_claude(raw_note, project_name):
-    """Use Claude to rewrite session sections in plain, human-readable language."""
+    """Use Claude CLI to rewrite session sections — uses existing Claude Code auth."""
     try:
-        from .config import get_session_model
-        import anthropic
+        import shutil
+        claude_bin = shutil.which("claude")
+        if not claude_bin:
+            return None
 
+        from .config import get_session_model
         model = get_session_model()
-        client = anthropic.Anthropic()
 
         prompt = f"""Rewrite this raw coding session into a structured summary. A future AI agent reads this to pick up where you left off — be precise and technical.
 
-You have: user prompts (the objectives), a timeline of file edits/reads/commands, and raw section data. Synthesize into a dense, specific narrative.
+You have: user prompts (the objectives), a timeline of file edits/reads/commands with their actual content and output. Synthesize into a dense, specific narrative.
 
 ## Format rules
 
@@ -452,12 +454,13 @@ Return ONLY this format (no preamble):
 Raw session data:
 {raw_note}"""
 
-        response = client.messages.create(
-            model=model,
-            max_tokens=1024,
-            messages=[{"role": "user", "content": prompt}],
+        result = subprocess.run(
+            [claude_bin, "-p", prompt, "--max-turns", "1", "--model", model],
+            capture_output=True, text=True, timeout=120,
         )
-        return response.content[0].text.strip()
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip()
+        return None
     except Exception:
         return None
 
