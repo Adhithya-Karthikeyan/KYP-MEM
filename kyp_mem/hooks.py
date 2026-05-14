@@ -349,20 +349,20 @@ def _summarize_with_claude(raw_note, project_name):
         model = get_session_model()
         client = anthropic.Anthropic()
 
-        prompt = f"""You are summarizing a coding session for the project "{project_name}".
-Below is a raw session note with sections: Summary, INVESTIGATED, LEARNED, COMPLETED, NEXT STEPS.
-The raw data contains file names, grep patterns, and command output — rewrite each section in plain, conversational English describing what was actually done and why.
+        prompt = f"""Summarize this coding session for "{project_name}" in plain English. A future AI agent will read this to understand what happened — write for that audience.
+
+You have: user prompts (what was asked), a timeline of file edits/reads/commands (what happened), and raw section data. Synthesize these into a coherent narrative.
 
 Rules:
-- Summary: 1-2 sentences describing what the session accomplished in plain words
-- INVESTIGATED: Bullet points explaining what was analyzed or explored and why, not raw grep patterns or file paths
-- LEARNED: Bullet points of insights or discoveries made during the session
-- COMPLETED: Bullet points of concrete deliverables or changes made
-- NEXT STEPS: Bullet points of what should be done next
-- Keep each section concise (2-5 bullets max)
-- Do NOT include raw command output, grep patterns, or technical file paths
-- Write as if explaining to a teammate what you did today
-- Return ONLY the rewritten sections in this exact format (no other text):
+- Summary: 2-3 sentences. State the objective (from prompts), what was done, and the outcome. Be specific: "Fixed navigation bug where clicking sessions broke the back button" not "Modified files and ran commands."
+- INVESTIGATED: What was explored and WHY. "Examined the session hook pipeline to understand why summaries were empty" not "Searched for `session-view`". Max 4 bullets.
+- LEARNED: Insights or discoveries. "The config CLI command was defined but never wired to the dispatcher" not "Investigated and modified: `cli.py`". Max 4 bullets.
+- COMPLETED: Concrete deliverables. "Added AI-powered session summarization using Claude Haiku" not "Modified `hooks.py`". Max 5 bullets.
+- NEXT STEPS: What should happen next session. Infer from context — unfinished work, unfixed bugs, natural follow-ups. Max 3 bullets.
+
+NEVER include raw grep patterns, CSS class names, file paths, or command output. Write like you're telling a teammate what you did today.
+
+Return ONLY this format (no preamble):
 
 ## Summary
 <text>
@@ -379,7 +379,7 @@ Rules:
 ## NEXT STEPS
 - <item>
 
-Raw session note:
+Raw session data:
 {raw_note}"""
 
         response = client.messages.create(
