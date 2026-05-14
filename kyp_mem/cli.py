@@ -75,6 +75,8 @@ def main():
         _run_tree()
     elif args.command == "install-hooks":
         _run_install_hooks(global_config=args.global_config, remove=args.remove)
+    elif args.command == "config":
+        _run_config(args.key, args.value)
     elif args.command == "doctor":
         _run_doctor()
     elif args.command == "hook":
