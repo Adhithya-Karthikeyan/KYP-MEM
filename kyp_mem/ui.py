@@ -30,13 +30,17 @@ def create_app(vault_path: str = None) -> FastAPI:
         return JSONResponse(vault.get_stats())
 
     @app.get("/api/graph")
-    def graph():
+    def graph(kind: str = "all"):
         nodes = []
         edges = []
         seen_edges = set()
         for path, note in vault.index.notes.items():
-            kind = "session" if "/Sessions/" in path else "note"
-            nodes.append({"id": path, "title": note.title, "kind": kind, "tags": note.tags})
+            node_kind = "session" if "/Sessions/" in path else "note"
+            if kind == "projects" and node_kind == "session":
+                continue
+            if kind == "sessions" and node_kind == "note":
+                continue
+            nodes.append({"id": path, "title": note.title, "kind": node_kind, "tags": note.tags})
             for link in (note.links or []):
                 target = None
                 link_lower = link.lower()
@@ -46,6 +50,11 @@ def create_app(vault_path: str = None) -> FastAPI:
                         target = p
                         break
                 if target and target != path:
+                    target_kind = "session" if "/Sessions/" in target else "note"
+                    if kind == "projects" and target_kind == "session":
+                        continue
+                    if kind == "sessions" and target_kind == "note":
+                        continue
                     key = tuple(sorted([path, target]))
                     if key not in seen_edges:
                         seen_edges.add(key)
