@@ -490,16 +490,18 @@ def handle_stop():
     if next_steps:
         raw_parts.extend(next_steps)
 
-    # Add prompts and timeline as context for Claude
+    # Prompts go FIRST — they define the session's objective
     if prompts:
-        raw_parts.append("")
-        raw_parts.append("## PROMPTS (context)")
-        for p in prompts:
-            raw_parts.append(f"- [{p['ts']}] {p['text'][:200]}")
+        raw_parts.insert(0, "## USER PROMPTS (what was asked)")
+        for i, p in enumerate(prompts):
+            raw_parts.insert(i + 1, f"- [{p['ts']}] {p['text'][:300]}")
+        raw_parts.insert(len(prompts) + 1, "")
+
+    # Full timeline gives Claude the narrative arc
     if timeline:
         raw_parts.append("")
-        raw_parts.append("## Timeline (context)")
-        for line in timeline[:30]:
+        raw_parts.append("## TIMELINE (what happened, chronological)")
+        for line in timeline[:50]:
             raw_parts.append(line)
 
     raw_note = "\n".join(raw_parts)
