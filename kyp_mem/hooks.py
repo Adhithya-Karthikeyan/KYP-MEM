@@ -74,9 +74,15 @@ def _record_injection(project, chars):
     _save_token_stats(stats)
 
 
+def _is_subprocess():
+    return os.environ.get("KYP_MEM_SUMMARIZING") == "1"
+
+
 def handle_session_start():
     """Inject recent session memory into the conversation at session start."""
     sys.stdin.read()
+    if _is_subprocess():
+        return
 
     cwd = os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd())
     project_name = Path(cwd).name
