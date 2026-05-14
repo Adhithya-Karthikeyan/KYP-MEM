@@ -781,7 +781,7 @@ function setView(v) {
 $('view-switch').addEventListener('click', e => {
   if (e.target.dataset.view) {
     setView(e.target.dataset.view);
-    if (view === 'graph') renderGraphView();
+    if (view === 'graph') { _graphData = null; renderGraphView(); }
     else if (view === 'session' && activeSession) loadNote(activeSession);
     else if (view === 'note' && currentPath) loadNote(currentPath);
   }
