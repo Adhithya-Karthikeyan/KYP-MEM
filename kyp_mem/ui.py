@@ -200,6 +200,7 @@ def create_app(vault_path: str = None) -> FastAPI:
 
     @app.get("/api/sessions")
     def list_sessions(project: str = ""):
+        vault.refresh_if_stale()
         sessions = {}
         for path, note in vault.index.notes.items():
             if "/Sessions/" not in path and not path.startswith("Sessions/"):
