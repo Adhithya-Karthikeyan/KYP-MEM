@@ -23,6 +23,7 @@ def create_app(vault_path: str = None) -> FastAPI:
 
     @app.get("/api/tree")
     def tree():
+        vault.refresh_if_stale()
         return JSONResponse(vault.get_full_tree())
 
     @app.get("/api/stats")
