@@ -1876,6 +1876,7 @@ async function init() {
   renderSidebar(sessionsData);
   $('stat-notes').textContent = stats.notes;
   $('stat-folders').textContent = stats.folders;
+  loadTokenEconomics();
 
   // Show empty state
   $('content-area').innerHTML = `
