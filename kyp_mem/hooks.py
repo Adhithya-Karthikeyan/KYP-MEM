@@ -12,6 +12,7 @@ CURRENT_SESSION = SESSION_DIR / "current.jsonl"
 
 MIN_ACTIONS = 5
 CHARS_PER_TOKEN = 4
+IDLE_TIMEOUT_SECS = 1800  # 30 minutes — gap longer than this starts a new session
 
 COMMAND_OUTPUT_ESTIMATES = {
     "search": 2000,
