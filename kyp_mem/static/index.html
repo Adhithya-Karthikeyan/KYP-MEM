@@ -1059,11 +1059,10 @@ async function loadNote(path) {
   markActiveItems();
   updateBreadcrumb(path);
 
-  if (view === 'session' || isSessionPath(path)) {
-    if (view !== 'session') { view = 'session'; setView('session'); }
+  if (view === 'session') {
     activeSession = path;
     renderSessionView(note);
-  } else if (view === 'note') {
+  } else {
     renderNoteView(note);
   }
 }
