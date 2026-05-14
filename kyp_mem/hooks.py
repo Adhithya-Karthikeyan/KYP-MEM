@@ -103,11 +103,12 @@ def _build_stats_line(project_name, injected_chars, session_ids):
         injected_tokens = injected_chars // CHARS_PER_TOKEN
         if exploration_tokens == 0:
             return None
-        reduction = 100 - (100 * injected_tokens // exploration_tokens) if exploration_tokens > injected_tokens else 0
+        saved = exploration_tokens - injected_tokens
+        if saved <= 0:
+            return None
         return (
             f"---\n"
-            f"*kyp-mem: those {len(matched)} sessions originally used ~{exploration_tokens:,} tokens exploring · "
-            f"injected as ~{injected_tokens:,} tokens ({reduction}% reduction)*"
+            f"*kyp-mem saved ~{saved:,} tokens this session (injected ~{injected_tokens:,} tokens instead of re-exploring ~{exploration_tokens:,})*"
         )
     except Exception:
         return None
