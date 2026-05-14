@@ -1800,6 +1800,24 @@ document.addEventListener('keydown', e => {
 });
 
 // ─── Refresh & Polling ───────────────────────────────────────────────────────
+function fmtTokens(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+  return String(n);
+}
+
+async function loadTokenEconomics() {
+  try {
+    const te = await fetchJSON('/api/token-economics');
+    if (te && te.session_count > 0) {
+      $('te-explore').textContent = fmtTokens(te.total_exploration_tokens) + 't';
+      $('te-inject').textContent = te.latest_injection_tokens > 0 ? fmtTokens(te.latest_injection_tokens) + 't' : '—';
+      $('te-savings').textContent = te.savings_pct > 0 ? te.savings_pct + '%' : '—';
+      $('token-economics').style.display = '';
+    }
+  } catch {}
+}
+
 async function refreshTree() {
   const [rawTree, sessionsData, stats] = await Promise.all([
     fetchJSON('/api/tree'), fetchJSON('/api/sessions'), fetchJSON('/api/stats'),
@@ -1815,6 +1833,7 @@ async function refreshTree() {
   $('stat-notes').textContent = stats.notes;
   $('stat-folders').textContent = stats.folders;
   markActiveItems();
+  loadTokenEconomics();
 }
 
 async function pollForChanges() {
