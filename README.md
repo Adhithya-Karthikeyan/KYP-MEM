@@ -5,7 +5,7 @@
 
 KYP-MEM gives AI coding agents two-layer memory:
 
-- **Session Memory(Episodic)** → remembers what happened across coding sessions
+- **Session Memory (Episodic)** → remembers what happened across coding sessions
 
 - **Project Intelligence** → understands architecture, decisions, docs, and relationships
 
@@ -27,74 +27,74 @@ By intercepting the prompt, KYP-MEM automatically provided the agent with:
 - The vectorized semantic search results of past session logs.
 - The relevant markdown files from the project knowledge base.
 
-
-
-
-## How it works
+## How It Works
 
 KYP-MEM operates as a Model Context Protocol (MCP) server that runs silently in the background, integrating directly with Claude Code.
 
-## Two-Layer Memory System
+### 1. Episodic Memory (Sessions)
 
-### 1. Episodic Memory
+Every coding session is automatically captured with full context:
 
-Every coding session is automatically captured:
+- User prompts (what was asked)
+- File reads with content (what was found)
+- File edits with diffs (what changed and why)
+- Command outputs (what happened)
 
-- prompts
-- commands
-- files changed
-- bugs investigated
-- decisions made
+At session end, Claude Sonnet synthesizes raw activity into a structured summary with **Summary**, **Investigated**, **Learned**, **Completed**, and **Next Steps** sections. Sessions are semantically searchable via ChromaDB vector embeddings.
 
-Sessions are semantically searchable.
+### 2. Project Intelligence (Vault)
 
-### 2. Project Intelligence
+KYP-MEM maintains structured project knowledge as Markdown files with `[[wikilinks]]`:
 
-KYP-MEM maintains structured project knowledge:
+- Architecture docs, API references, setup guides
+- Known issues, decision history, linked concepts
 
-- architecture
-- APIs
-- setup docs
-- known issues
-- linked concepts
-- decision history
+The agent searches this on-demand via `kyp_search` when it needs project context.
 
-The agent continuously updates this knowledge as it learns.
+### How It All Connects
 
-1. **Vault Storage:** Your knowledge base and session logs are stored locally as Markdown files in your `~/.kyp-mem/vault` directory.
-2. **Vector Database:** Session logs are embedded into a local ChromaDB vector database, enabling semantic search ("Find me the session where we debugged the database connection").
-3. **Auto-Learning Hooks:** KYP-MEM hooks into Claude Code's execution lifecycle. It silently listens to prompts, file reads, edits, and terminal commands. When a session ends, it automatically generates a comprehensive summary and timeline using an LLM and saves it to your Vault.
-4. **Agent Tooling:** Claude is equipped with 14 custom MCP tools to read, write, search, and navigate your project's knowledge graph using `[[wikilinks]]`.
+1. **Session Start:** Recent session summaries are injected automatically — the agent knows what happened last time.
+2. **During Work:** Hooks capture tool activity (reads, edits, commands) with actual content, not just file names.
+3. **Session End:** Sonnet synthesizes a rich, semantic summary and saves it to the vault + vector DB.
+4. **Future Sessions:** The agent can search past sessions semantically or look up project knowledge on demand.
 
 ## Installation
 
 ```bash
-npm i kyp-mem
-
-pip install kyp-mem (coming soon)
+npm install -g kyp-mem
 ```
 
-## Setup
+That's it. The postinstall script automatically:
 
-Run the initialization commands to get started:
+1. Installs the Python package
+2. Creates the default vault at `~/.kyp-mem/vault`
+3. Registers the MCP server with Claude Code
+4. Installs session capture hooks
+
+Restart Claude Code and you're ready to go.
+
+### Requirements
+
+- Node.js 18+
+- Python 3.10+
+- Claude Code CLI
+- Anthropic API key (for session summarization with Sonnet)
+
+### Custom Vault Path
+
+If you want to store your vault somewhere other than `~/.kyp-mem/vault`:
 
 ```bash
-kyp-mem init              # Choose where to store your vault
-kyp-mem setup-claude      # Register the MCP server with Claude Code
-kyp-mem install-hooks     # Enable automatic session capture (Episodic Memory)
+kyp-mem init    # Interactive prompt to choose vault location
 ```
-
-Restart Claude Code. The agent will automatically have access to the memory tools.
-
-*(To enable globally for all projects run: `kyp-mem setup-claude --global` and `kyp-mem install-hooks --global`)*
 
 ## The Agent's Workflow
 
-KYP-MEM embeds behavioral instructions directly into its tools. Without any prompting required from you, the agent will automatically:
+KYP-MEM embeds behavioral instructions directly into its tools. Without any prompting from you, the agent will automatically:
 
-1. **Load Context:** On session start, it loads the project's ground truth (`Knowledge.md`) and recent session summaries.
-2. **Search Before Acting:** Before investigating bugs or making architectural decisions, it searches past episodic memory to avoid repeating work.
-3. **Persist Knowledge:** After fixing a bug or making a decision, it uses its tools to update the project's knowledge base for future sessions.
+1. **Load Context:** On session start, it loads recent session summaries so it knows what happened last time.
+2. **Search Before Acting:** Before investigating bugs or making decisions, it searches past sessions to avoid repeating work.
+3. **Persist Knowledge:** After fixing a bug or making a decision, it updates the project's knowledge base for future sessions.
 
 ## Web UI
 
@@ -109,14 +109,29 @@ kyp-mem ui
 
 | Command | Description |
 |---------|-------------|
-| `kyp-mem init` | First-time setup — choose vault location |
+| `kyp-mem init` | Choose vault location (default: `~/.kyp-mem/vault`) |
 | `kyp-mem setup-claude` | Register MCP server with Claude Code |
 | `kyp-mem install-hooks` | Enable automatic session capture |
 | `kyp-mem serve` | Start MCP server (stdio, used by the agent) |
 | `kyp-mem ui` | Open the local web UI |
 | `kyp-mem stats` | Print vault statistics |
 | `kyp-mem tree` | Print vault file tree |
+| `kyp-mem config` | View or set configuration (e.g. `kyp-mem config session_model`) |
 | `kyp-mem doctor` | Check installation and configuration health |
+| `kyp-mem uninstall` | Remove hooks and MCP server from Claude Code |
+
+## Uninstall
+
+```bash
+# Remove from Claude Code (keeps your vault data)
+kyp-mem uninstall
+
+# Remove from Claude Code AND delete all data
+kyp-mem uninstall --purge
+
+# Remove the npm package
+npm uninstall -g kyp-mem
+```
 
 ## License
 
