@@ -1618,36 +1618,44 @@ async function buildFullGraph(layout) {
     const s = typeof l.source === 'object' ? l.source : nodeMap.get(l.source);
     const t = typeof l.target === 'object' ? l.target : nodeMap.get(l.target);
     if (!s || !t) return;
-    const isSession = s.kind === 'session' || t.kind === 'session';
+    const isTemporal = _graphMode === 'sessions';
     edgeGroup.append('line')
       .attr('x1', s.x).attr('y1', s.y).attr('x2', t.x).attr('y2', t.y)
-      .attr('stroke', 'var(--line-2)').attr('stroke-width', 1.2)
-      .attr('stroke-opacity', isSession ? 0.35 : 0.6)
-      .attr('stroke-dasharray', isSession ? '4 3' : '')
+      .attr('stroke', 'var(--line-2)').attr('stroke-width', isTemporal ? 1 : 1.2)
+      .attr('stroke-opacity', isTemporal ? 0.3 : 0.6)
+      .attr('stroke-dasharray', isTemporal ? '4 3' : '')
       .attr('stroke-linecap', 'round');
   });
 
   // Draw nodes
   const nodeGroup = g.append('g');
   nodes.forEach(n => {
-    const r = n.kind === 'session' ? 6 : 10;
+    const isPrimary = _graphMode === 'sessions' ? n.kind === 'session' : n.kind === 'note';
+    const r = isPrimary ? 10 : 6;
     const ng = nodeGroup.append('g').style('cursor', 'pointer');
 
-    if (n.kind === 'session') {
-      ng.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
-        .attr('fill', 'var(--bg-2)').attr('stroke', 'var(--muted)').attr('stroke-width', 1.2);
-    } else {
+    if (isPrimary) {
       ng.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r + 4)
         .attr('fill', 'var(--accent)').attr('fill-opacity', 0.12);
       ng.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
         .attr('fill', 'var(--panel-2)').attr('stroke', 'var(--accent)').attr('stroke-width', 1.5);
+    } else {
+      ng.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
+        .attr('fill', 'var(--bg-2)').attr('stroke', 'var(--muted)').attr('stroke-width', 1.2);
     }
+
+    let label = n.title;
+    if (_graphMode === 'sessions' && n.kind === 'session') {
+      const m = n.id.match(/(\d{4}-\d{2}-\d{2})_(\d{2})(\d{2})/);
+      label = m ? `${m[1]} ${m[2]}:${m[3]}` : n.title;
+    }
+    if (label.length > 22) label = label.substring(0, 20) + '…';
 
     ng.append('text').attr('x', n.x).attr('y', n.y + r + 14)
       .attr('text-anchor', 'middle').attr('font-size', 11)
-      .attr('fill', n.kind === 'session' ? 'var(--dim)' : 'var(--muted)').attr('opacity', 0.9)
+      .attr('fill', isPrimary ? 'var(--muted)' : 'var(--dim)').attr('opacity', 0.9)
       .style('font-family', 'JetBrains Mono, monospace')
-      .text(n.title.length > 20 ? n.title.substring(0, 18) + '…' : n.title);
+      .text(label);
 
     ng.on('click', () => {
       updateGraphRail(n, links, nodes);
