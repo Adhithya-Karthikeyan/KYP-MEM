@@ -681,6 +681,13 @@ def handle_stop():
         parts.append("")
         parts.append(summarized)
     else:
+        summary_items = []
+        if files_edited:
+            summary_items.append(f"Modified {len(files_edited)} file{'s' if len(files_edited) != 1 else ''}")
+        if files_created:
+            summary_items.append(f"Created {len(files_created)} file{'s' if len(files_created) != 1 else ''}")
+        if commands:
+            summary_items.append(f"Ran {len(commands)} command{'s' if len(commands) != 1 else ''}")
         parts.append("## Summary")
         parts.append(", ".join(summary_items) + f" in `{project_name}`." if summary_items else "")
         parts.append("")
