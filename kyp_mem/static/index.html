@@ -1459,103 +1459,142 @@ function renderGraphView() {
   `;
 
   $('graph-close').addEventListener('click', () => setView('note'));
-  buildFullGraph();
+
+  // Layout toggle buttons
+  const chips = document.querySelectorAll('.graph-header-right .tool-chip');
+  chips.forEach(chip => {
+    chip.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      buildFullGraph(chip.textContent.trim());
+    });
+  });
+
+  buildFullGraph('force');
 }
 
-function buildFullGraph() {
+let _graphData = null;
+
+async function buildFullGraph(layout) {
   const wrap = $('graph-svg-wrap');
   if (!wrap) return;
+  wrap.innerHTML = '';
 
-  const nodes = [];
-  const links = [];
-  const nodeMap = new Map();
-
-  // Build nodes from allNotes
-  for (const [path, note] of Object.entries(allNotes)) {
-    const kind = isSessionPath(path) ? 'session' : 'note';
-    const n = { id: path, title: note.title, kind };
-    nodes.push(n);
-    nodeMap.set(path, n);
+  if (!_graphData) {
+    _graphData = await fetchJSON('/api/graph');
   }
 
-  // We need link data — fetch from current knowledge
-  // For the full graph we use the tree structure to infer connections
-  // In practice we'd need to fetch all notes, but we'll use what we have
-  if (currentNote) {
-    (currentNote.links || []).forEach(link => {
-      const target = findNotePath(link);
-      if (target && nodeMap.has(target)) links.push({ source: currentNote.path, target });
-    });
-    (currentNote.backlinks || []).forEach(bl => {
-      if (bl.path && nodeMap.has(bl.path)) links.push({ source: bl.path, target: currentNote.path });
-    });
-  }
+  const nodes = _graphData.nodes.map(n => ({ ...n }));
+  const links = _graphData.edges.map(e => ({ ...e }));
+  const nodeMap = new Map(nodes.map(n => [n.id, n]));
 
   $('graph-stats').textContent = `${nodes.length}n · ${links.length}e`;
-
   if (nodes.length === 0) return;
 
+  const rect = wrap.getBoundingClientRect();
+  const W = rect.width || 800;
+  const H = rect.height || 500;
+
   const svg = d3.select(wrap).append('svg')
-    .attr('viewBox', '0 0 100 100')
-    .attr('preserveAspectRatio', 'xMidYMid meet');
+    .attr('width', W).attr('height', H);
 
-  // Dot pattern
   const defs = svg.append('defs');
-  const pattern = defs.append('pattern').attr('id', 'dotgrid').attr('width', 3).attr('height', 3).attr('patternUnits', 'userSpaceOnUse');
-  pattern.append('circle').attr('cx', 1.5).attr('cy', 1.5).attr('r', 0.12).attr('fill', 'var(--line)');
-  svg.append('rect').attr('width', 100).attr('height', 100).attr('fill', 'url(#dotgrid)');
+  const pattern = defs.append('pattern').attr('id', 'dotgrid').attr('width', 20).attr('height', 20).attr('patternUnits', 'userSpaceOnUse');
+  pattern.append('circle').attr('cx', 10).attr('cy', 10).attr('r', 0.8).attr('fill', 'var(--line)');
+  svg.append('rect').attr('width', W).attr('height', H).attr('fill', 'url(#dotgrid)');
 
-  const simulation = d3.forceSimulation(nodes)
-    .force('link', d3.forceLink(links).id(d => d.id).distance(12))
-    .force('charge', d3.forceManyBody().strength(-30))
-    .force('center', d3.forceCenter(50, 50))
-    .force('collision', d3.forceCollide(4));
+  const g = svg.append('g');
+  const zoom = d3.zoom().scaleExtent([0.3, 5]).on('zoom', e => g.attr('transform', e.transform));
+  svg.call(zoom);
 
-  for (let i = 0; i < 200; i++) simulation.tick();
-  simulation.stop();
+  // Compute positions based on layout
+  const noteNodes = nodes.filter(n => n.kind === 'note');
+  const sessionNodes = nodes.filter(n => n.kind === 'session');
+  const cx = W / 2, cy = H / 2;
 
-  nodes.forEach(d => { d.x = Math.max(5, Math.min(95, d.x)); d.y = Math.max(5, Math.min(95, d.y)); });
+  if (layout === 'radial') {
+    const noteR = Math.min(W, H) * 0.25;
+    const sessionR = Math.min(W, H) * 0.42;
+    noteNodes.forEach((n, i) => {
+      const a = (2 * Math.PI * i) / Math.max(noteNodes.length, 1) - Math.PI / 2;
+      n.x = cx + noteR * Math.cos(a);
+      n.y = cy + noteR * Math.sin(a);
+    });
+    sessionNodes.forEach((n, i) => {
+      const a = (2 * Math.PI * i) / Math.max(sessionNodes.length, 1) - Math.PI / 2;
+      n.x = cx + sessionR * Math.cos(a);
+      n.y = cy + sessionR * Math.sin(a);
+    });
+  } else if (layout === 'time') {
+    const sorted = [...nodes].sort((a, b) => a.id.localeCompare(b.id));
+    const pad = 80;
+    const usableW = W - pad * 2;
+    sorted.forEach((n, i) => {
+      const src = nodes.find(x => x.id === n.id);
+      src.x = pad + (usableW * i) / Math.max(sorted.length - 1, 1);
+      src.y = n.kind === 'note' ? cy - 60 : cy + 60;
+    });
+  } else {
+    const sim = d3.forceSimulation(nodes)
+      .force('link', d3.forceLink(links).id(d => d.id).distance(80).strength(0.6))
+      .force('charge', d3.forceManyBody().strength(-200))
+      .force('center', d3.forceCenter(cx, cy))
+      .force('collision', d3.forceCollide(30))
+      .force('x', d3.forceX(cx).strength(0.05))
+      .force('y', d3.forceY(cy).strength(0.05));
+    for (let i = 0; i < 300; i++) sim.tick();
+    sim.stop();
+  }
+
+  nodes.forEach(d => {
+    d.x = Math.max(40, Math.min(W - 40, d.x || cx));
+    d.y = Math.max(40, Math.min(H - 40, d.y || cy));
+  });
 
   // Draw edges
-  const edgeGroup = svg.append('g');
+  const edgeGroup = g.append('g');
   links.forEach(l => {
-    const s = typeof l.source === 'object' ? l.source : nodes.find(n => n.id === l.source);
-    const t = typeof l.target === 'object' ? l.target : nodes.find(n => n.id === l.target);
+    const s = typeof l.source === 'object' ? l.source : nodeMap.get(l.source);
+    const t = typeof l.target === 'object' ? l.target : nodeMap.get(l.target);
     if (!s || !t) return;
     const isSession = s.kind === 'session' || t.kind === 'session';
     edgeGroup.append('line')
       .attr('x1', s.x).attr('y1', s.y).attr('x2', t.x).attr('y2', t.y)
-      .attr('stroke', 'var(--line-2)').attr('stroke-width', 0.2)
-      .attr('stroke-opacity', isSession ? 0.45 : 0.75)
-      .attr('stroke-dasharray', isSession ? '0.9 0.9' : '')
+      .attr('stroke', 'var(--line-2)').attr('stroke-width', 1.2)
+      .attr('stroke-opacity', isSession ? 0.35 : 0.6)
+      .attr('stroke-dasharray', isSession ? '4 3' : '')
       .attr('stroke-linecap', 'round');
   });
 
   // Draw nodes
-  let selected = null;
-  const nodeGroup = svg.append('g');
+  const nodeGroup = g.append('g');
   nodes.forEach(n => {
-    const r = n.kind === 'session' ? 1.5 : 2.5;
-    const g = nodeGroup.append('g').style('cursor', 'pointer');
+    const r = n.kind === 'session' ? 6 : 10;
+    const ng = nodeGroup.append('g').style('cursor', 'pointer');
 
-    g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
-      .attr('fill', n.kind === 'session' ? 'var(--bg)' : 'var(--panel-2)')
-      .attr('stroke', n.kind === 'session' ? 'var(--muted)' : 'var(--accent)')
-      .attr('stroke-width', n.kind === 'session' ? 0.35 : 0.5);
+    if (n.kind === 'session') {
+      ng.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
+        .attr('fill', 'var(--bg-2)').attr('stroke', 'var(--muted)').attr('stroke-width', 1.2);
+    } else {
+      ng.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r + 4)
+        .attr('fill', 'var(--accent)').attr('fill-opacity', 0.12);
+      ng.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
+        .attr('fill', 'var(--panel-2)').attr('stroke', 'var(--accent)').attr('stroke-width', 1.5);
+    }
 
-    g.append('text').attr('x', n.x).attr('y', n.y + r + 2.6)
-      .attr('text-anchor', 'middle').attr('font-size', 1.7)
-      .attr('fill', 'var(--muted)').attr('opacity', 0.7)
+    ng.append('text').attr('x', n.x).attr('y', n.y + r + 14)
+      .attr('text-anchor', 'middle').attr('font-size', 11)
+      .attr('fill', n.kind === 'session' ? 'var(--dim)' : 'var(--muted)').attr('opacity', 0.9)
       .style('font-family', 'JetBrains Mono, monospace')
-      .text(n.title.length > 16 ? n.title.substring(0, 14) + '…' : n.title);
+      .text(n.title.length > 20 ? n.title.substring(0, 18) + '…' : n.title);
 
-    g.on('click', () => {
-      selected = n;
+    ng.on('click', () => {
       updateGraphRail(n, links, nodes);
-      if (!isSessionPath(n.id)) { view = 'note'; setView('note'); loadNote(n.id); }
+      if (isSessionPath(n.id)) { openSession(n.id); }
+      else { setView('note'); loadNote(n.id); }
     });
 
-    g.on('mouseenter', () => updateGraphRail(n, links, nodes));
+    ng.on('mouseenter', () => updateGraphRail(n, links, nodes));
   });
 }
 
