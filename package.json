@@ -1,6 +1,6 @@
 {
   "name": "kyp-mem",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Know Your Project — Persistent & Session level knowledge base for AI agents. MCP-powered with wikilinks, backlinks, auto-learning, and neon web UI.",
   "bin": {
     "kyp-mem": "bin/cli.mjs"
