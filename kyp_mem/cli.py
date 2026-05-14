@@ -41,6 +41,8 @@ def main():
                     help="Add hooks to global ~/.claude/settings.json (default: project)")
     ih.add_argument("--remove", action="store_true", help="Remove KYP-MEM hooks")
 
+    un = subparsers.add_parser("uninstall", help="Remove KYP-MEM from Claude Code (hooks + MCP server)")
+    un.add_argument("--purge", action="store_true", help="Also delete vault data and config at ~/.kyp-mem")
     subparsers.add_parser("doctor", help="Check installation and config health")
 
     cfg_parser = subparsers.add_parser("config", help="Get or set configuration values")
