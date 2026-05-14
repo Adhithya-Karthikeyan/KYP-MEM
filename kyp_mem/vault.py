@@ -210,14 +210,23 @@ class Vault:
         init_vector_db(str(self.root))
         self._load_all()
         self._sync_vector_db()
+        self._last_mtime = self._max_mtime()
 
     def _disk_note_paths(self) -> set[str]:
         return {str(f.relative_to(self.root)) for f in self.root.rglob("*.md")}
 
+    def _max_mtime(self) -> float:
+        mtimes = [f.stat().st_mtime for f in self.root.rglob("*.md")]
+        return max(mtimes) if mtimes else 0.0
+
     def refresh_if_stale(self):
-        if self._disk_note_paths() != set(self.index.notes.keys()):
+        current_mtime = self._max_mtime()
+        paths_changed = self._disk_note_paths() != set(self.index.notes.keys())
+        content_changed = current_mtime != self._last_mtime
+        if paths_changed or content_changed:
             self._load_all()
             self._sync_vector_db()
+            self._last_mtime = current_mtime
 
     def _sync_vector_db(self):
         mem = get_session_memory()
