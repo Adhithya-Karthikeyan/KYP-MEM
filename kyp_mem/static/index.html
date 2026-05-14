@@ -1812,7 +1812,12 @@ async function loadTokenEconomics() {
     if (te && te.session_count > 0) {
       $('te-explore').textContent = fmtTokens(te.total_exploration_tokens) + 't';
       $('te-inject').textContent = te.latest_injection_tokens > 0 ? fmtTokens(te.latest_injection_tokens) + 't' : '—';
-      $('te-savings').textContent = te.savings_pct > 0 ? te.savings_pct + '%' : '—';
+      if (te.compression_ratio > 0) {
+        $('te-savings').textContent = te.compression_ratio + 'x';
+        $('te-savings').parentElement.title = `${te.per_session_savings_pct}% per session — injection is ${te.compression_ratio}x smaller than avg exploration (${fmtTokens(te.avg_exploration_per_session)}t)`;
+      } else {
+        $('te-savings').textContent = '—';
+      }
       $('token-economics').style.display = '';
     }
   } catch {}
