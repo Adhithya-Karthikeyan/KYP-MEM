@@ -28,6 +28,29 @@ def create_app(vault_path: str = None) -> FastAPI:
     def stats():
         return JSONResponse(vault.get_stats())
 
+    @app.get("/api/graph")
+    def graph():
+        nodes = []
+        edges = []
+        seen_edges = set()
+        for path, note in vault.index.notes.items():
+            kind = "session" if "/Sessions/" in path else "note"
+            nodes.append({"id": path, "title": note.title, "kind": kind, "tags": note.tags})
+            for link in (note.links or []):
+                target = None
+                link_lower = link.lower()
+                for p in vault.index.notes:
+                    stem = p.split("/")[-1].replace(".md", "").lower()
+                    if stem == link_lower:
+                        target = p
+                        break
+                if target:
+                    key = tuple(sorted([path, target]))
+                    if key not in seen_edges:
+                        seen_edges.add(key)
+                        edges.append({"source": path, "target": target})
+        return JSONResponse({"nodes": nodes, "edges": edges})
+
     @app.get("/api/note/{path:path}")
     def read_note(path: str):
         note = vault.read(path)
