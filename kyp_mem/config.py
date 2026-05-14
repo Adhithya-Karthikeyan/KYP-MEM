@@ -6,6 +6,7 @@ from pathlib import Path
 
 CONFIG_DIR = Path.home() / ".kyp-mem"
 CONFIG_FILE = CONFIG_DIR / "config.json"
+STATS_FILE = CONFIG_DIR / "token_stats.json"
 DEFAULT_VAULT = str(CONFIG_DIR / "vault")
 
 
