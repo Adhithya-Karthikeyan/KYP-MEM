@@ -438,14 +438,6 @@ body.resizing #resize-handle { pointer-events: auto !important; }
 }
 .session-status.live { border: 1px solid var(--accent-dim); background: color-mix(in oklch, var(--accent) 14%, var(--panel)); color: var(--accent); }
 .session-status.done { border: 1px solid var(--line); background: var(--panel); color: var(--muted); }
-.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 22px; }
-.stat-card {
-  border: 1px solid var(--line); background: var(--panel);
-  border-radius: var(--r); padding: 10px 12px;
-  display: flex; flex-direction: column; gap: 2px;
-}
-.stat-card .sc-label { font-size: var(--fz-xs); letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
-.stat-card .sc-value { font-size: var(--fz-lg); font-weight: 500; font-variant-numeric: tabular-nums; }
 
 /* Session sections */
 .session-section {
