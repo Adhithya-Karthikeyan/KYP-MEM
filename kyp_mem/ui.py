@@ -263,6 +263,51 @@ def create_app(vault_path: str = None) -> FastAPI:
         vault.write_note(path, content, tags, {})
         return JSONResponse({"ok": True, "path": path})
 
+    @app.get("/api/token-economics")
+    def token_economics(project: str = ""):
+        from .config import STATS_FILE
+        try:
+            raw = json.loads(STATS_FILE.read_text()) if STATS_FILE.exists() else {}
+        except (json.JSONDecodeError, OSError):
+            raw = {}
+
+        sessions = raw.get("sessions", [])
+        injections = raw.get("injections", [])
+
+        if project:
+            sessions = [s for s in sessions if s.get("project") == project]
+            injections = [i for i in injections if i.get("project") == project]
+
+        total_exploration = sum(s.get("exploration_tokens", 0) for s in sessions)
+        total_files_read = sum(s.get("files_read", 0) for s in sessions)
+        total_commands = sum(s.get("commands_run", 0) for s in sessions)
+        total_files_read_chars = sum(s.get("files_read_chars", 0) for s in sessions)
+        total_commands_chars = sum(s.get("commands_chars", 0) for s in sessions)
+
+        avg_injection_tokens = 0
+        latest_injection_tokens = 0
+        if injections:
+            avg_injection_tokens = sum(i.get("tokens", 0) for i in injections) // len(injections)
+            latest_injection_tokens = injections[-1].get("tokens", 0)
+
+        savings_pct = 0
+        if total_exploration > 0 and latest_injection_tokens > 0:
+            savings_pct = round((1 - latest_injection_tokens / total_exploration) * 100, 1)
+
+        return JSONResponse({
+            "session_count": len(sessions),
+            "total_exploration_tokens": total_exploration,
+            "total_files_read": total_files_read,
+            "total_files_read_chars": total_files_read_chars,
+            "total_commands": total_commands,
+            "total_commands_chars": total_commands_chars,
+            "injection_count": len(injections),
+            "avg_injection_tokens": avg_injection_tokens,
+            "latest_injection_tokens": latest_injection_tokens,
+            "savings_pct": max(savings_pct, 0),
+            "sessions": sessions[-20:],
+        })
+
     @app.post("/api/reload")
     def reload():
         vault._load_all()
