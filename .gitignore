@@ -9,3 +9,8 @@ node_modules/
 .claude/
 package-lock.json
 chroma/
+CLAUDE.md
+PLAN-ui-rewrite.md
+templates/
+design_handoff_kyp_mem_ui/
+AGENTS.override.md
