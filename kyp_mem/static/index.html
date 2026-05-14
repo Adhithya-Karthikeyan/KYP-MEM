@@ -1470,10 +1470,15 @@ function renderGraphView() {
     </div>
   `;
 
-  $('graph-close').addEventListener('click', () => {
-    setView('note');
-    if (currentPath) loadNote(currentPath);
-  });
+  const closeBtn = $('graph-close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setView('note');
+      if (currentPath) loadNote(currentPath);
+      else $('content-area').innerHTML = '<div style="padding:40px;color:var(--muted)">Select a note from the sidebar</div>';
+    });
+  }
 
   // Layout toggle buttons
   const chips = document.querySelectorAll('.graph-header-right .tool-chip');
