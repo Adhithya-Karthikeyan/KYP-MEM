@@ -92,20 +92,22 @@ def _extract_session_summary(content, max_chars=800):
     return "\n".join(parts)[:max_chars] if parts else content[:200]
 
 
-def _build_stats_line(project_name, injected_chars):
+def _build_stats_line(project_name, injected_chars, session_ids):
     try:
         stats = _load_token_stats()
         project_sessions = [s for s in stats.get("sessions", []) if s.get("project") == project_name]
-        total_sessions = len(project_sessions)
-        if total_sessions == 0:
+        if not project_sessions:
             return None
-        total_exploration = sum(s.get("exploration_tokens", 0) for s in project_sessions)
+        matched = [s for s in project_sessions if s.get("id") in session_ids]
+        exploration_tokens = sum(s.get("exploration_tokens", 0) for s in matched)
         injected_tokens = injected_chars // CHARS_PER_TOKEN
+        if exploration_tokens == 0:
+            return None
+        reduction = 100 - (100 * injected_tokens // exploration_tokens) if exploration_tokens > injected_tokens else 0
         return (
             f"---\n"
-            f"*kyp-mem: {total_sessions} sessions captured · "
-            f"~{total_exploration:,} exploration tokens learned · "
-            f"~{injected_tokens:,} tokens injected this session*"
+            f"*kyp-mem: those {len(matched)} sessions originally used ~{exploration_tokens:,} tokens exploring · "
+            f"injected as ~{injected_tokens:,} tokens ({reduction}% reduction)*"
         )
     except Exception:
         return None
