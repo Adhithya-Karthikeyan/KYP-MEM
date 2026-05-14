@@ -44,7 +44,7 @@ def create_app(vault_path: str = None) -> FastAPI:
                     if stem == link_lower:
                         target = p
                         break
-                if target:
+                if target and target != path:
                     key = tuple(sorted([path, target]))
                     if key not in seen_edges:
                         seen_edges.add(key)
