@@ -10,6 +10,7 @@ SESSION_DIR = Path.home() / ".kyp-mem" / "sessions"
 CURRENT_SESSION = SESSION_DIR / "current.jsonl"
 
 MIN_ACTIONS = 3
+CHARS_PER_TOKEN = 4
 
 
 def handle_session_start():
