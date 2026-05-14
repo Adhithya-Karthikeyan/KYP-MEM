@@ -78,12 +78,18 @@ def _is_subprocess():
     return os.environ.get("KYP_MEM_SUMMARIZING") == "1"
 
 
-def _extract_session_summary(content):
+def _extract_session_summary(content, max_chars=800):
     import re
-    m = re.search(r"(?:^|\n)##\s+Summary\s*\n(.*?)(?=\n##\s|\Z)", content, re.DOTALL)
-    if m:
-        return m.group(1).strip()
-    return content[:200]
+    parts = []
+    for heading in ("Summary", "LEARNED", "COMPLETED"):
+        m = re.search(rf"(?:^|\n)##\s+{re.escape(heading)}\s*\n(.*?)(?=\n##\s|\Z)", content, re.DOTALL)
+        if m:
+            text = m.group(1).strip()
+            if heading == "Summary":
+                parts.append(text)
+            else:
+                parts.append(f"**{heading.title()}:** {text[:250]}")
+    return "\n".join(parts)[:max_chars] if parts else content[:200]
 
 
 def handle_session_start():
