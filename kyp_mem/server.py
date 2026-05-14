@@ -255,14 +255,17 @@ def kyp_stats() -> str:
         injections = raw.get("injections", [])
         if sessions:
             total_exploration = sum(s.get("exploration_tokens", 0) for s in sessions)
+            avg_exploration = total_exploration // len(sessions)
             latest_inj = injections[-1].get("tokens", 0) if injections else 0
-            savings = round((1 - latest_inj / total_exploration) * 100, 1) if total_exploration > 0 and latest_inj > 0 else 0
             lines.append("")
             lines.append("Token economics:")
-            lines.append(f"  Exploration: ~{total_exploration:,} tokens across {len(sessions)} sessions")
-            lines.append(f"  Injection: ~{latest_inj:,} tokens (latest session start)")
-            if savings > 0:
-                lines.append(f"  Savings: {savings}% — memory replaces {total_exploration:,}t of re-exploration with {latest_inj:,}t injection")
+            lines.append(f"  Total exploration: ~{total_exploration:,}t across {len(sessions)} sessions")
+            lines.append(f"  Avg per session: ~{avg_exploration:,}t (cold-start cost)")
+            lines.append(f"  Memory injection: ~{latest_inj:,}t (session start)")
+            if latest_inj > 0 and avg_exploration > 0:
+                ratio = round(avg_exploration / latest_inj, 1)
+                pct = round((1 - latest_inj / avg_exploration) * 100, 1)
+                lines.append(f"  Compression: {ratio}x — {pct}% smaller than re-exploring")
     except Exception:
         pass
 
