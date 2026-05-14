@@ -461,9 +461,11 @@ Return ONLY this format (no preamble):
 Raw session data:
 {raw_note}"""
 
+        env = os.environ.copy()
+        env["KYP_MEM_SUMMARIZING"] = "1"
         result = subprocess.run(
             [claude_bin, "-p", prompt, "--max-turns", "1", "--model", model],
-            capture_output=True, text=True, timeout=120,
+            capture_output=True, text=True, timeout=120, env=env,
         )
         if result.returncode == 0 and result.stdout.strip():
             return result.stdout.strip()
