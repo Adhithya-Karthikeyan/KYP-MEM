@@ -118,6 +118,16 @@ if (args[0] === "hook") {
     process.exit(0);
   }
 
+  if (hookType === "session-start") {
+    const py = findPython();
+    if (py) {
+      const [cmd, pre] = py;
+      const r = run(cmd, [...pre, "-m", "kyp_mem.cli", "hook", "session-start"], "inherit");
+      process.exit(r.status ?? 0);
+    }
+    process.exit(0);
+  }
+
   console.error("Unknown hook type:", hookType);
   process.exit(1);
 }
