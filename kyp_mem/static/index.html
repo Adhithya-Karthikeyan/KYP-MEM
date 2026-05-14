@@ -1617,7 +1617,7 @@ function updateGraphRail(node, links, nodes) {
       <i style="width:9px;height:9px;border-radius:999px;background:${dotColor}"></i>
       <span style="font-weight:500">${node.title}</span>
     </div>
-    <div class="dim" style="font-size:var(--fz-xs);margin-top:6px">degree ${neighbors.size} · kind ${node.kind}</div>
+    <div class="dim" style="font-size:var(--fz-xs);margin-top:6px">degree ${neighbors.size} · ${node.kind}</div>
   `;
 
   conns.innerHTML = '';
@@ -1626,8 +1626,12 @@ function updateGraphRail(node, links, nodes) {
     if (!n) return;
     const btn = document.createElement('button');
     btn.className = 'conn-item';
-    btn.innerHTML = `<span class="dim" style="font-size:var(--fz-xs)">└─</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n.title}</span><span class="dim" style="font-size:var(--fz-xs);flex-shrink:0">${n.kind}</span>`;
-    btn.addEventListener('click', () => { if (!isSessionPath(n.id)) loadNote(n.id); });
+    const kindColor = n.kind === 'session' ? 'var(--dim)' : 'var(--accent)';
+    btn.innerHTML = `<i style="width:6px;height:6px;border-radius:999px;background:${kindColor};flex-shrink:0"></i><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n.title}</span><span class="dim" style="font-size:var(--fz-xs);flex-shrink:0">${n.kind}</span>`;
+    btn.addEventListener('click', () => {
+      if (isSessionPath(n.id)) openSession(n.id);
+      else { setView('note'); loadNote(n.id); }
+    });
     conns.appendChild(btn);
   });
 }
