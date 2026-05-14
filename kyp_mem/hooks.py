@@ -625,6 +625,7 @@ def handle_stop():
     parts = [f"# Session {session_id}", ""]
     parts.append(f"**Project:** `{project_dir}`")
     parts.append(f"**Actions:** {len(entries)} total, {len(write_actions)} substantive")
+    parts.append(f"**Exploration:** ~{exploration_tokens:,} tokens ({files_read_count} reads, {commands_run_count} commands)")
     parts.append("")
 
     if summarized:
