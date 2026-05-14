@@ -1470,7 +1470,11 @@ function renderGraphView() {
     </div>
   `;
 
-  $('graph-close').addEventListener('click', () => setView('note'));
+  $('graph-close').addEventListener('click', () => {
+    setView('note');
+    if (currentPath) loadNote(currentPath);
+    else renderEmpty();
+  });
 
   // Layout toggle buttons
   const chips = document.querySelectorAll('.graph-header-right .tool-chip');
