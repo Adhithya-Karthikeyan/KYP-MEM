@@ -195,6 +195,10 @@ def handle_post_tool_use():
     cwd = os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd())
     entry["cwd"] = cwd
 
+    # Measure response size for token economics
+    tool_response = data.get("tool_response", "")
+    response_chars = len(str(tool_response)) if tool_response else 0
+
     if tool_name == "Edit":
         entry["action"] = "edit"
         entry["file"] = tool_input.get("file_path", "")
@@ -204,9 +208,16 @@ def handle_post_tool_use():
     elif tool_name == "Read":
         entry["action"] = "read"
         entry["file"] = tool_input.get("file_path", "")
+        if response_chars == 0:
+            try:
+                response_chars = Path(tool_input.get("file_path", "")).stat().st_size
+            except OSError:
+                pass
+        entry["response_chars"] = response_chars
     elif tool_name == "Bash":
         entry["action"] = "command"
         entry["command"] = tool_input.get("command", "")
+        entry["response_chars"] = response_chars
     else:
         return
 
