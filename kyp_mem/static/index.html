@@ -720,7 +720,7 @@ let _graphData = null;
 let searchTimeout, sessionSearchTimeout;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
-async function fetchJSON(url) { const r = await fetch(url); return r.json(); }
+async function fetchJSON(url) { const r = await fetch(url, { cache: 'no-store' }); return r.json(); }
 
 function $(id) { return document.getElementById(id); }
 
