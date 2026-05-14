@@ -1042,6 +1042,18 @@ function openSession(path) {
   loadNote(path);
 }
 
+async function deleteSession(path) {
+  if (!confirm('Delete this session?')) return;
+  const res = await fetch(`/api/note/${path}`, { method: 'DELETE' });
+  const data = await res.json();
+  if (data.ok) {
+    activeSession = null;
+    currentPath = null;
+    $('content-area').innerHTML = '<div class="dim" style="padding:40px;text-align:center">Session deleted</div>';
+    refreshAll();
+  }
+}
+
 // ─── Load Note ───────────────────────────────────────────────────────────────
 async function loadNote(path) {
   currentPath = path;
