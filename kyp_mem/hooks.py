@@ -652,14 +652,42 @@ def handle_stop():
     # Try Claude summarization, fall back to raw sections
     summarized = _summarize_with_claude(raw_note, project_name)
 
+    # Extract topic from summarized output
+    topic = ""
+    if summarized:
+        for line in summarized.split("\n"):
+            stripped = line.strip()
+            if stripped.startswith("## Topic"):
+                continue
+            if stripped and not stripped.startswith("#") and not topic:
+                topic = stripped
+                break
+
     parts = [f"# Session {session_id}", ""]
     parts.append(f"**Project:** `{project_dir}`")
+    if topic:
+        parts.append(f"**Topic:** {topic}")
     parts.append(f"**Actions:** {len(entries)} total, {len(write_actions)} substantive")
     parts.append(f"**Exploration:** ~{exploration_tokens:,} tokens ({files_read_count} reads, {commands_run_count} commands)")
     parts.append("")
 
     if summarized:
-        # Insert prompts section before the Claude-rewritten sections
+        # Remove the Topic section from summarized output (already in header)
+        cleaned_lines = []
+        skip_topic = False
+        for line in summarized.split("\n"):
+            if line.strip() == "## Topic":
+                skip_topic = True
+                continue
+            if skip_topic:
+                if line.strip().startswith("## "):
+                    skip_topic = False
+                else:
+                    continue
+            if not skip_topic:
+                cleaned_lines.append(line)
+        summarized_clean = "\n".join(cleaned_lines).strip()
+
         parts.append("## PROMPTS")
         if prompts:
             for i, p in enumerate(prompts, 1):
@@ -667,7 +695,7 @@ def handle_stop():
                 parts.append(f"> {p['text']}")
                 parts.append("")
         parts.append("")
-        parts.append(summarized)
+        parts.append(summarized_clean)
     else:
         summary_items = []
         if files_edited:
