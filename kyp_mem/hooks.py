@@ -74,7 +74,7 @@ def _record_injection(project, chars):
 
 
 def handle_session_start():
-    """Inject project context into the conversation at session start."""
+    """Inject recent session memory into the conversation at session start."""
     sys.stdin.read()
 
     cwd = os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd())
@@ -90,58 +90,31 @@ def handle_session_start():
         if not project_notes:
             return
 
-        parts = [f"# [kyp-mem] {project_name} — Project Context"]
-        parts.append(f"Vault: {get_vault_path()}")
-        parts.append("")
-
-        knowledge_path = f"{project_name}/Knowledge.md"
-        knowledge = vault.read(knowledge_path)
-        if knowledge:
-            parts.append("## Knowledge")
-            content = knowledge.content
-            timeline_idx = content.find("## Timeline")
-            if timeline_idx > 0:
-                content = content[:timeline_idx].strip()
-            if len(content) > 2000:
-                parts.append(content[:2000] + "\n...")
-            else:
-                parts.append(content)
-            parts.append("")
-
-        other_notes = sorted(
-            p for p in project_notes
-            if "/Sessions/" not in p and p != knowledge_path
-        )
-        if other_notes:
-            parts.append("## Project Notes")
-            for p in other_notes:
-                note = vault.index.notes.get(p)
-                title = note.title if note else p
-                tags = f" [{', '.join(note.tags)}]" if note and note.tags else ""
-                parts.append(f"- {title} ({p}){tags}")
-            parts.append("")
-
         sessions = sorted(
             (p for p in project_notes if "/Sessions/" in p),
             reverse=True,
         )[:3]
-        if sessions:
-            parts.append(f"## Recent Sessions (last {len(sessions)})")
-            for sp in sessions:
-                note = vault.read(sp)
-                if not note:
-                    continue
-                parts.append(f"### {note.title}")
-                content = note.content
-                timeline_idx = content.find("## Timeline")
-                if timeline_idx > 0:
-                    content = content[:timeline_idx].strip()
-                if len(content) > 300:
-                    content = content[:300] + "..."
-                parts.append(content)
-                parts.append("")
+        if not sessions:
+            return
 
-        parts.append("Use `kyp_project_context` for full details. Use `kyp_session_search` to search past sessions.")
+        parts = [f"# [kyp-mem] {project_name} — Recent Sessions"]
+        parts.append(f"Use `kyp_search` or `kyp_project_context` for architecture/project knowledge on demand.")
+        parts.append("")
+
+        parts.append(f"## Last {len(sessions)} Sessions")
+        for sp in sessions:
+            note = vault.read(sp)
+            if not note:
+                continue
+            parts.append(f"### {note.title}")
+            content = note.content
+            timeline_idx = content.find("## TIMELINE")
+            if timeline_idx < 0:
+                timeline_idx = content.find("## Timeline")
+            if timeline_idx > 0:
+                content = content[:timeline_idx].strip()
+            parts.append(content)
+            parts.append("")
 
         output = "\n".join(parts)
         try:
