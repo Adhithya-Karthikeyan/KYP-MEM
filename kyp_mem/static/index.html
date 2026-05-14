@@ -1529,15 +1529,27 @@ async function buildFullGraph(layout) {
   wrap.innerHTML = '';
 
   if (!_graphData) {
-    _graphData = await fetchJSON('/api/graph');
+    _graphData = await fetchJSON(`/api/graph?kind=${_graphMode}`);
   }
 
-  const nodes = _graphData.nodes.map(n => ({ ...n }));
-  const links = _graphData.edges.map(e => ({ ...e }));
+  let nodes = _graphData.nodes.map(n => ({ ...n }));
+  let links = _graphData.edges.map(e => ({ ...e }));
+
+  // For sessions mode, create temporal links between consecutive sessions
+  if (_graphMode === 'sessions' && links.length === 0 && nodes.length > 1) {
+    const sorted = [...nodes].sort((a, b) => a.id.localeCompare(b.id));
+    for (let i = 1; i < sorted.length; i++) {
+      links.push({ source: sorted[i - 1].id, target: sorted[i].id });
+    }
+  }
+
   const nodeMap = new Map(nodes.map(n => [n.id, n]));
 
   $('graph-stats').textContent = `${nodes.length}n · ${links.length}e`;
-  if (nodes.length === 0) return;
+  if (nodes.length === 0) {
+    wrap.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:var(--fz-sm)">No nodes to display</div>';
+    return;
+  }
 
   const rect = wrap.getBoundingClientRect();
   const W = rect.width || 800;
