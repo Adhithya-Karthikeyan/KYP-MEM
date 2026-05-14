@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-density="regular">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,44 +10,45 @@
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <style>
-/* ══════════════════════════════════════════════════════════════════
-   KYP-MEM — Design Tokens & Base Styles (OKLCH)
-   ══════════════════════════════════════════════════════════════════ */
 :root {
-  --bg:        oklch(0.165 0.008 60);
-  --bg-2:      oklch(0.195 0.009 60);
-  --panel:     oklch(0.215 0.010 60);
-  --panel-2:   oklch(0.245 0.010 60);
-  --line:      oklch(0.305 0.012 55);
-  --line-2:    oklch(0.385 0.014 55);
-  --fg:        oklch(0.945 0.012 75);
-  --muted:     oklch(0.68 0.012 65);
-  --dim:       oklch(0.50 0.010 60);
-  --accent:    oklch(0.78 0.13 45);
-  --accent-dim:oklch(0.55 0.10 45);
-  --warn:      oklch(0.82 0.13 80);
-  --pin:       oklch(0.78 0.13 30);
-  --link:      oklch(0.78 0.10 220);
-
+  --bg: oklch(0.165 0.008 60);
+  --bg-2: oklch(0.195 0.009 60);
+  --panel: oklch(0.215 0.010 60);
+  --panel-2: oklch(0.245 0.010 60);
+  --line: oklch(0.305 0.012 55);
+  --line-2: oklch(0.385 0.014 55);
+  --fg: oklch(0.945 0.012 75);
+  --muted: oklch(0.68 0.012 65);
+  --dim: oklch(0.50 0.010 60);
+  --accent: oklch(0.78 0.13 45);
+  --accent-dim: oklch(0.55 0.10 45);
+  --warn: oklch(0.82 0.13 80);
+  --pin: oklch(0.78 0.13 30);
+  --link: oklch(0.78 0.10 220);
   --r-sm: 3px;
-  --r:    5px;
+  --r: 5px;
   --r-lg: 8px;
-
   --pad-y: 14px;
   --pad-x: 18px;
   --row-y: 10px;
-  --gap:   14px;
-
-  --fz:    13px;
+  --gap: 14px;
+  --fz: 13px;
   --fz-sm: 11.5px;
   --fz-xs: 10.5px;
   --fz-lg: 15px;
   --fz-xl: 22px;
 }
+html[data-density="dense"] {
+  --pad-y: 10px; --pad-x: 14px; --row-y: 6px; --gap: 10px;
+  --fz: 12px; --fz-sm: 11px; --fz-xs: 10px; --fz-lg: 14px; --fz-xl: 20px;
+}
+html[data-density="comfy"] {
+  --pad-y: 18px; --pad-x: 22px; --row-y: 14px; --gap: 18px;
+  --fz: 14px; --fz-sm: 12px; --fz-xs: 11px; --fz-lg: 16px; --fz-xl: 24px;
+}
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; }
-
+html, body, #app { height: 100%; }
 body {
   background: var(--bg);
   color: var(--fg);
@@ -56,915 +57,552 @@ body {
   -webkit-font-smoothing: antialiased;
   overflow: hidden;
 }
+::selection { background: color-mix(in oklch, var(--accent) 35%, transparent); color: var(--fg); }
+@keyframes kypBlink { 0%, 55% { opacity: 0.7; } 56%, 100% { opacity: 0; } }
+@keyframes kypCaret { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; border: 2px solid var(--bg); }
+::-webkit-scrollbar-thumb:hover { background: var(--line-2); }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { background: none; border: 0; padding: 0; cursor: pointer; }
+a, .lnk { color: var(--link); text-decoration: none; }
+a:hover, .lnk:hover { text-decoration: underline; text-underline-offset: 3px; }
+.acc { color: var(--accent); }
+.mut { color: var(--muted); }
+.dim { color: var(--dim); }
+.tab-nums { font-variant-numeric: tabular-nums; }
 
-::selection {
-  background: color-mix(in oklch, var(--accent) 35%, transparent);
-  color: var(--fg);
-}
-
-/* ── Animations ──────────────────────────────────── */
-@keyframes kypBlink  { 0%,55% { opacity:0.7 } 56%,100% { opacity:0 } }
-@keyframes kypCaret  { 0%,50% { opacity:1 }   51%,100% { opacity:0 } }
-@keyframes fadeIn    { from { opacity:0; transform:translateY(3px) } to { opacity:1; transform:translateY(0) } }
-
-/* ── Scrollbar ───────────────────────────────────── */
-::-webkit-scrollbar       { width:10px; height:10px }
-::-webkit-scrollbar-track { background:transparent }
-::-webkit-scrollbar-thumb { background:var(--line); border-radius:10px; border:2px solid var(--bg) }
-::-webkit-scrollbar-thumb:hover { background:var(--line-2) }
-
-/* ── Reset ───────────────────────────────────────── */
-button, input, select, textarea { font:inherit; color:inherit }
-button { background:none; border:0; padding:0; cursor:pointer }
-a, .lnk { color:var(--link); text-decoration:none }
-a:hover, .lnk:hover { text-decoration:underline; text-underline-offset:3px }
-
-/* ── Utility Classes ─────────────────────────────── */
-.pin      { color:var(--pin) }
-.acc      { color:var(--accent) }
-.mut      { color:var(--muted) }
-.dim      { color:var(--dim) }
-.tab-nums { font-variant-numeric:tabular-nums }
-.hairline { border:0; border-top:1px solid var(--line); margin:0 }
-
-/* ══════════════════════════════════════════════════════════════════
-   LAYOUT — 3-row grid: topbar | main | statusbar
-   ══════════════════════════════════════════════════════════════════ */
+/* Layout */
 #app {
   display: grid;
   grid-template-rows: 44px 1fr 24px;
   height: 100vh;
   min-height: 0;
 }
-
-/* ── TopBar ──────────────────────────────────────── */
-.topbar {
+#main {
   display: grid;
-  grid-template-columns: minmax(0,1fr) auto;
+  grid-template-columns: var(--sidebar-w, 236px) auto minmax(0, 1fr);
+  min-height: 0;
+  border-top: 1px solid var(--line);
+}
+#main.sidebar-hidden {
+  grid-template-columns: 0 0 minmax(0, 1fr);
+}
+#main.sidebar-hidden #sidebar,
+#main.sidebar-hidden #resize-handle { display: none; }
+
+/* Resize handle */
+#resize-handle {
+  width: 1px;
+  background: var(--line);
+  cursor: col-resize;
+  position: relative;
+  z-index: 10;
+  transition: background 0.2s;
+}
+#resize-handle::before {
+  content: '';
+  position: absolute;
+  inset: 0 -4px;
+  z-index: 1;
+}
+#resize-handle:hover, #resize-handle.dragging {
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in oklch, var(--accent) 40%, transparent);
+}
+body.resizing { cursor: col-resize !important; user-select: none !important; }
+body.resizing * { cursor: col-resize !important; pointer-events: none !important; }
+body.resizing #resize-handle { pointer-events: auto !important; }
+
+/* TopBar */
+#topbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   padding: 0 12px;
   gap: 12px;
-  border-bottom: 1px solid var(--line);
-  background: var(--bg);
 }
-
-.topbar-left {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-width: 0;
-}
-
-.topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-/* Sidebar toggle */
+.topbar-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
+.topbar-right { display: flex; align-items: center; gap: 8px; }
 .toggle-btn {
   width: 22px; height: 22px;
   display: inline-flex; align-items: center; justify-content: center;
-  color: var(--muted);
-  border-radius: var(--r-sm);
+  color: var(--muted); border-radius: var(--r-sm);
   border: 1px solid transparent;
 }
-.toggle-btn:hover { border-color: var(--line); color: var(--fg) }
-
-/* Rail toggle */
+.toggle-btn:hover { border-color: var(--line); color: var(--fg); }
 .rail-toggle-btn {
   width: 26px; height: 24px;
   display: inline-flex; align-items: center; justify-content: center;
-  color: var(--muted);
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line);
-  background: var(--panel);
+  color: var(--muted); border-radius: var(--r-sm);
+  border: 1px solid var(--line); background: var(--panel);
 }
-.rail-toggle-btn:hover { color: var(--fg); border-color: var(--line-2) }
+.rail-toggle-btn:hover { border-color: var(--line-2); color: var(--fg); }
 
 /* Logo */
 .logo {
   display: inline-flex; align-items: center; gap: 8px;
   font-weight: 700; letter-spacing: 0.08em;
-  color: var(--accent);
-  font-size: var(--fz-lg);
+  color: var(--accent); font-size: var(--fz-lg);
   white-space: nowrap;
 }
-.logo-dot {
+.logo-mark {
   display: inline-block; width: 8px; height: 8px;
-  background: currentColor;
-  border-radius: 1.5px;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent),
-              0 0 10px color-mix(in srgb, var(--accent) 60%, transparent);
-}
-.tagline {
-  color: var(--dim);
-  font-size: var(--fz-sm);
-  letter-spacing: 0.01em;
-  white-space: nowrap;
+  background: currentColor; border-radius: 1.5px;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent), 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent);
 }
 
 /* Breadcrumb */
-.breadcrumb {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: var(--fz-sm);
-  color: var(--muted);
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-}
-.breadcrumb .bc-last { color: var(--fg) }
-.breadcrumb .bc-sep  { color: var(--dim) }
+.breadcrumb { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fz-sm); color: var(--muted); }
+.breadcrumb .bc-last { color: var(--fg); }
+.breadcrumb .bc-sep { color: var(--dim); }
 
-/* View Switcher */
+/* View switcher */
 .view-switch {
-  display: inline-flex;
-  border: 1px solid var(--line);
-  border-radius: var(--r-sm);
-  padding: 2px;
-  background: var(--panel);
+  display: inline-flex; border: 1px solid var(--line);
+  border-radius: var(--r-sm); padding: 2px; background: var(--panel);
 }
 .view-switch button {
-  padding: 2px 10px;
-  font-size: var(--fz-sm);
-  color: var(--muted);
-  background: transparent;
-  border-radius: 3px;
+  padding: 2px 10px; font-size: var(--fz-sm);
+  color: var(--muted); background: transparent; border-radius: 3px;
 }
 .view-switch button.active {
   color: var(--accent);
   background: color-mix(in oklch, var(--accent) 14%, var(--panel));
 }
-.view-switch button:hover:not(.active) { color: var(--fg) }
 
-/* Ghost Button */
+/* Ghost button */
 .ghost-btn {
-  padding: 3px 9px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--muted);
-  border-radius: var(--r-sm);
-  font-size: var(--fz-sm);
-  white-space: nowrap;
+  padding: 3px 9px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--muted);
+  border-radius: var(--r-sm); font-size: var(--fz-sm);
+  white-space: nowrap; transition: all 0.12s;
 }
-.ghost-btn:hover { border-color: var(--line-2); background: var(--panel-2); color: var(--fg) }
+.ghost-btn:hover { border-color: var(--line-2); background: var(--panel-2); color: var(--fg); }
 
-/* Search */
-.search-box {
+/* Search bar */
+.search-bar {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 3px 8px 3px 10px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  border-radius: var(--r-sm);
-  width: 220px;
-  font-size: var(--fz-sm);
-  position: relative;
+  padding: 3px 8px 3px 10px; border: 1px solid var(--line);
+  background: var(--panel); border-radius: var(--r-sm);
+  width: 220px; font-size: var(--fz-sm); position: relative;
 }
-.search-box .s-dollar { color: var(--accent) }
-.search-box input {
+.search-bar .s-prompt { color: var(--accent); }
+.search-bar input {
   flex: 1; min-width: 0; background: transparent; border: 0; outline: 0;
-  color: var(--fg); font-size: var(--fz-sm);
-  caret-color: var(--accent);
+  color: var(--fg); font-size: var(--fz-sm); caret-color: var(--accent);
 }
-.search-box input::placeholder { color: var(--dim) }
-.search-box .s-caret {
+.search-bar input::placeholder { color: var(--dim); }
+.search-bar .s-caret {
   width: 6px; height: 12px; background: var(--accent);
   opacity: 0.6; margin-right: 2px;
   animation: kypCaret 1.05s steps(1) infinite;
 }
-.search-box .s-hint {
-  font-size: var(--fz-xs);
-  color: var(--dim);
-  border: 1px solid var(--line);
-  border-radius: 3px;
-  padding: 0 5px;
+.search-bar .s-hint {
+  font-size: var(--fz-xs); border: 1px solid var(--line);
+  border-radius: 3px; padding: 0 5px; color: var(--dim);
   font-variant-numeric: tabular-nums;
 }
-
-/* Search Results Dropdown */
 .search-dropdown {
-  position: absolute;
-  top: calc(100% + 6px);
-  right: 0;
-  width: 380px;
-  max-height: 360px;
-  overflow-y: auto;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  z-index: 100;
-  display: none;
-  box-shadow: 0 12px 40px oklch(0 0 0 / 0.5);
+  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--r); max-height: 320px; overflow-y: auto;
+  z-index: 100; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
 }
-.search-dropdown.active { display: block }
-.search-dropdown .sr-item {
-  padding: 8px 12px;
-  cursor: pointer;
-  border-bottom: 1px solid var(--line);
+.search-dropdown.active { display: block; }
+.search-result {
+  padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--line);
   transition: background 0.1s;
 }
-.search-dropdown .sr-item:last-child { border-bottom: none }
-.search-dropdown .sr-item:hover { background: var(--panel-2) }
-.search-dropdown .sr-title { font-size: var(--fz-sm); font-weight: 500; color: var(--accent) }
-.search-dropdown .sr-path  { font-size: var(--fz-xs); color: var(--dim); margin-top: 2px }
-.search-dropdown .sr-snippet { font-size: var(--fz-sm); color: var(--muted); margin-top: 3px }
+.search-result:last-child { border-bottom: none; }
+.search-result:hover { background: var(--panel-2); }
+.search-result .sr-title { font-size: var(--fz-sm); color: var(--accent); font-weight: 500; }
+.search-result .sr-path { font-size: var(--fz-xs); color: var(--dim); margin-top: 2px; }
+.search-result .sr-snippet { font-size: var(--fz-xs); color: var(--muted); margin-top: 3px; }
 
-/* ── Main Area ───────────────────────────────────── */
-.main-area {
-  display: grid;
-  min-height: 0;
-  border-top: 1px solid var(--line);
-  overflow: hidden;
-}
-
-/* ── Sidebar ─────────────────────────────────────── */
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  background: var(--bg);
-  overflow: hidden;
-  min-height: 0;
-  border-right: 1px solid var(--line);
+/* Sidebar */
+#sidebar {
+  display: flex; flex-direction: column;
+  background: var(--bg); overflow: hidden; min-height: 0;
 }
 .sidebar-scroll {
-  overflow: auto;
-  padding: 12px 4px 12px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-  min-height: 0;
-  flex: 1;
+  overflow-y: auto; padding: 12px 4px 12px 12px;
+  display: flex; flex-direction: column; gap: 16px;
+  min-height: 0; flex: 1;
 }
-
-/* Side section headers */
 .side-section-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 0 0 8px;
 }
-.side-section-label {
+.side-section-title {
   display: inline-flex; align-items: center; gap: 6px;
-  font-size: var(--fz-xs); letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--dim);
+  font-size: var(--fz-xs); letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--dim);
 }
-.side-section-label .ss-dot {
+.side-dot {
   display: inline-block; width: 6px; height: 6px; border-radius: 999px;
 }
-.side-section-label .ss-count { margin-left: 2px; font-variant-numeric: tabular-nums }
-.side-section-label .ss-caret {
-  margin-left: 4px;
-  display: inline-block;
-  transition: transform 0.15s;
-}
-.side-section-label .ss-caret.collapsed { transform: rotate(-90deg) }
-.side-new-btn {
+.side-add-btn {
   font-size: var(--fz-xs); color: var(--dim); padding: 0 5px;
   border-radius: var(--r-sm); border: 1px solid transparent;
+  transition: all 0.12s;
 }
-.side-new-btn:hover { border-color: var(--line); color: var(--fg) }
+.side-add-btn:hover { border-color: var(--line); color: var(--fg); }
+.side-collapse-arrow {
+  display: inline-block; transition: transform 0.15s; margin-left: 4px;
+}
+.side-collapse-arrow.collapsed { transform: rotate(-90deg); }
 
-/* Session search */
-.session-search-input {
+/* Sidebar search */
+.side-search {
   width: 100%; background: var(--panel);
   border: 1px solid var(--line); border-radius: var(--r-sm);
   padding: 4px 8px; font-size: var(--fz-sm);
   color: var(--fg); outline: 0; margin-bottom: 6px;
 }
-.session-search-input::placeholder { color: var(--dim) }
-.session-search-input:focus { border-color: var(--accent-dim) }
-
-/* Session search results */
-.ss-results { margin-bottom: 4px }
-.ss-result-item {
-  padding: 4px 8px;
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  margin: 1px 0;
-}
-.ss-result-item:hover { background: var(--panel) }
-.ss-result-item .ssr-title { font-size: var(--fz-sm); color: var(--accent); font-weight: 500 }
-.ss-result-item .ssr-meta  { font-size: var(--fz-xs); color: var(--dim); margin-top: 1px }
+.side-search::placeholder { color: var(--dim); }
+.side-search:focus { border-color: var(--accent-dim); }
 
 /* Tree folder header */
-.tree-folder-header {
+.tree-folder {
   display: flex; align-items: center; gap: 6px;
-  padding: 3px 0; font-size: var(--fz-sm);
-  width: 100%; text-align: left;
+  padding: 3px 0; font-size: var(--fz-sm); cursor: pointer;
+  user-select: none;
 }
-.tree-folder-header .tf-caret { font-size: 10px; color: var(--dim) }
-.tree-folder-header .tf-bars  { width: 11px; color: var(--muted); font-size: 11px }
-.tree-folder-header .tf-name  { flex: 1; color: var(--fg) }
-.tree-folder-header .tf-count { font-size: var(--fz-xs); color: var(--dim); font-variant-numeric: tabular-nums }
+.tree-folder .tf-arrow { font-size: 10px; color: var(--dim); transition: transform 0.15s; }
+.tree-folder .tf-arrow.closed { transform: rotate(-90deg); }
+.tree-folder .tf-icon { color: var(--muted); font-size: 11px; }
+.tree-folder .tf-label { flex: 1; color: var(--fg); }
+.tree-folder .tf-count { font-size: var(--fz-xs); color: var(--dim); font-variant-numeric: tabular-nums; }
 
-/* Sidebar row */
+/* Sidebar rows */
 .sidebar-row {
   display: flex; align-items: center; gap: 8px;
-  width: 100%; text-align: left;
-  padding: 3px 8px 3px 6px;
-  border-radius: var(--r-sm);
-  border-left: 2px solid transparent;
+  width: 100%; text-align: left; padding: 3px 8px 3px 6px;
+  border-radius: var(--r-sm); border-left: 2px solid transparent;
+  background: transparent; transition: background 0.1s;
 }
-.sidebar-row:hover { background: var(--panel) }
+.sidebar-row:hover { background: var(--panel); }
 .sidebar-row.active {
   border-left-color: var(--accent);
   background: color-mix(in oklch, var(--accent) 10%, transparent);
 }
-.sidebar-row .sr-dot  { font-size: 9px }
-.sidebar-row .sr-diamond { font-size: 10px; color: var(--muted) }
-.sidebar-row .sr-label {
-  flex: 1; font-size: var(--fz-sm);
-  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
+.sidebar-row .sr-dot { font-size: 9px; }
+.sidebar-row .sr-label { flex: 1; font-size: var(--fz-sm); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sidebar-row.active .sr-label { color: var(--accent); }
 
-/* Tag chips */
+/* Tag chip */
 .tag-chip {
   display: inline-flex; align-items: center; gap: 5px;
-  padding: 1px 7px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--muted);
-  border-radius: var(--r-sm);
-  font-size: var(--fz-sm);
-  white-space: nowrap;
-  transition: color 0.12s, border-color 0.12s;
+  padding: 1px 7px; border: 1px solid var(--line);
+  background: var(--panel); color: var(--muted);
+  border-radius: var(--r-sm); font-size: var(--fz-sm);
+  white-space: nowrap; transition: color 0.12s, border-color 0.12s;
 }
-.tag-chip:hover { border-color: var(--line-2); color: var(--fg) }
-.tag-chip.active {
-  border-color: var(--accent-dim);
-  background: color-mix(in srgb, var(--accent) 12%, var(--panel));
-  color: var(--accent);
-}
-.tag-chip .tc-hash { color: var(--dim) }
-.tag-chip .tc-count { margin-left: 2px; font-size: var(--fz-xs); color: var(--dim); font-variant-numeric: tabular-nums }
+.tag-chip:hover { border-color: var(--line-2); color: var(--fg); }
+.tag-chip.active { border-color: var(--accent-dim); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); color: var(--accent); }
+.tag-chip .tc-hash { color: var(--dim); }
+.tag-chip .tc-count { margin-left: 2px; font-size: var(--fz-xs); color: var(--dim); font-variant-numeric: tabular-nums; }
 
-/* ── Resize Handle ───────────────────────────────── */
-.resize-handle {
-  width: 4px;
-  cursor: col-resize;
-  position: relative;
-  z-index: 10;
-  background: transparent;
+/* StatusBar */
+#statusbar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 14px; font-size: var(--fz-xs); color: var(--dim);
+  border-top: 1px solid var(--line); background: var(--bg);
 }
-.resize-handle::before {
-  content: '';
-  position: absolute;
-  inset: 0 -2px;
-  z-index: 1;
-}
-.resize-handle:hover, .resize-handle.dragging {
-  background: var(--accent);
-  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 40%, transparent);
-}
-body.resizing { cursor: col-resize !important; user-select: none !important }
-body.resizing * { cursor: col-resize !important; pointer-events: none !important }
-body.resizing .resize-handle { pointer-events: auto !important }
+.sb-left, .sb-right { display: flex; gap: 14px; align-items: center; }
+.sb-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--accent); display: inline-block; margin-right: 5px; }
 
-/* ── Content Area ────────────────────────────────── */
-.content-area {
+/* Content area */
+#content-area {
   padding: var(--pad-y) var(--pad-x);
   min-height: 0; min-width: 0;
-  overflow: hidden;
-  display: flex; flex-direction: column;
+  border-left: 1px solid var(--line);
+  overflow: hidden; display: flex; flex-direction: column;
 }
 
-/* ── Note View ───────────────────────────────────── */
+/* Note view */
 .note-view {
-  display: grid;
-  gap: var(--gap);
-  height: 100%; min-height: 0;
+  display: grid; grid-template-columns: minmax(0,1fr) 300px;
+  gap: var(--gap); height: 100%; min-height: 0;
 }
-.note-view.with-rail {
-  grid-template-columns: minmax(0,1fr) 300px;
-}
-.note-view.no-rail {
-  grid-template-columns: minmax(0,1fr);
-}
-
-.note-article {
-  overflow: auto;
-  min-width: 0;
-  padding-right: 6px;
-}
+.note-view.no-rail { grid-template-columns: minmax(0,1fr); }
+.note-article { overflow-y: auto; min-width: 0; padding-right: 6px; }
+.note-rail { display: flex; flex-direction: column; gap: var(--gap); overflow-y: auto; padding-bottom: 8px; }
 
 /* Command prompt strip */
 .cmd-strip {
   display: flex; align-items: center; gap: 8px;
-  font-size: var(--fz-xs);
-  color: var(--dim);
-  padding: 2px 0 10px;
-  font-variant-numeric: tabular-nums;
-}
-
-/* Tag strip */
-.tag-strip {
-  display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; padding: 0 0 14px; flex-wrap: wrap;
-}
-.tag-strip-left {
-  display: flex; gap: 6px; flex-wrap: wrap; align-items: center;
-}
-.tag-strip-right {
-  display: flex; gap: 6px;
-}
-.tag-strip .ts-meta {
   font-size: var(--fz-xs); color: var(--dim);
-  margin-left: 8px;
+  padding: 2px 0 10px; font-variant-numeric: tabular-nums;
 }
+.cmd-strip .cs-right { margin-left: auto; }
 
 /* Note title */
 .note-title {
-  margin: 12px 0 4px;
-  font-size: 30px;
-  letter-spacing: -0.01em;
-  font-weight: 500;
-  line-height: 1.15;
+  margin: 12px 0 4px; font-size: calc(var(--fz-xl) + 8px);
+  letter-spacing: -0.01em; font-weight: 500; line-height: 1.15;
 }
 .note-title .title-caret {
-  display: inline-block;
-  width: 0.5em; height: 0.85em;
-  background: var(--accent);
-  margin-left: 6px;
-  vertical-align: -0.08em;
-  opacity: 0.6;
+  display: inline-block; width: 0.5em; height: 0.85em;
+  background: var(--accent); margin-left: 6px;
+  vertical-align: -0.08em; opacity: 0.6;
   animation: kypBlink 1.05s steps(1) infinite;
 }
-
-/* Word count bar */
-.note-meta-bar {
+.note-meta {
   font-size: var(--fz-xs); color: var(--dim);
-  margin-bottom: 22px;
-  display: flex; gap: 14px;
+  margin-bottom: 22px; display: flex; gap: 14px;
 }
+.note-tags-strip {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px; padding: 0 0 14px; flex-wrap: wrap;
+}
+.note-tags-left { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.note-tags-right { display: flex; gap: 6px; }
+.note-dates { font-size: var(--fz-xs); color: var(--dim); margin-left: 8px; }
 
-/* ── Markdown Body ───────────────────────────────── */
-.md-body h1 {
-  font-size: 28px; font-weight: 500;
-  margin: 0 0 20px;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
-}
+/* Markdown body */
+.md-body h1 { font-size: calc(var(--fz-xl) + 4px); font-weight: 500; margin: 32px 0 14px; color: var(--fg); }
 .md-body h2 {
-  margin: 32px 0 14px;
-  font-size: calc(var(--fz-lg) + 4px);
-  font-weight: 500;
-  letter-spacing: -0.005em;
-  display: flex; align-items: center; gap: 12px;
+  margin: 32px 0 14px; font-size: calc(var(--fz-lg) + 4px);
+  font-weight: 500; color: var(--fg); letter-spacing: -0.005em;
 }
-.md-body h2::before {
-  content: "##";
-  font-size: var(--fz-sm); font-weight: 400;
-  color: var(--dim);
-}
-.md-body h3 {
-  margin: 26px 0 10px;
-  font-size: var(--fz-lg);
-  font-weight: 500;
-  color: var(--accent);
-  letter-spacing: -0.005em;
-}
-.md-body p {
-  margin: 0 0 14px;
-  line-height: 1.65;
-  color: var(--muted);
-  font-size: var(--fz);
-}
-.md-body ul, .md-body ol {
-  margin: 0 0 16px; padding-left: 0; list-style: none;
-}
-.md-body li {
-  position: relative;
-  padding-left: 22px;
-  margin: 5px 0;
-  color: var(--muted);
-  font-size: var(--fz);
-  line-height: 1.6;
-}
-.md-body li::before {
-  content: "\00B7";
-  position: absolute; left: 4px; top: 0;
-  color: var(--dim);
-}
-.md-body a { color: var(--link); text-decoration: none }
-.md-body a:hover { text-decoration: underline; text-underline-offset: 3px }
-.md-body strong { color: var(--fg); font-weight: 500 }
+.md-body h3 { margin: 26px 0 10px; font-size: var(--fz-lg); font-weight: 500; color: var(--accent); }
+.md-body p { margin: 0 0 14px; line-height: 1.65; color: var(--muted); font-size: var(--fz); }
+.md-body ul, .md-body ol { padding-left: 22px; margin: 0 0 14px; }
+.md-body li { line-height: 1.65; color: var(--muted); font-size: var(--fz); margin: 4px 0; }
+.md-body li::marker { color: var(--dim); }
+.md-body a { color: var(--link); text-decoration: none; }
+.md-body a:hover { text-decoration: underline; text-underline-offset: 3px; }
+.md-body strong { color: var(--fg); font-weight: 500; }
 .md-body code {
-  font-size: 0.92em;
-  padding: 1px 6px;
+  font-size: 0.92em; padding: 1px 6px; border-radius: var(--r-sm);
   background: color-mix(in oklch, var(--accent) 14%, var(--bg));
   color: var(--accent);
   border: 1px solid color-mix(in oklch, var(--accent) 28%, transparent);
-  border-radius: var(--r-sm);
 }
 .md-body pre {
-  background: var(--bg);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  padding: 16px;
-  overflow-x: auto;
-  margin: 16px 0;
+  background: var(--bg); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 14px 16px;
+  overflow-x: auto; margin: 14px 0;
 }
-.md-body pre code {
-  background: none; padding: 0; border: none;
-  color: var(--muted);
-  font-size: var(--fz-sm);
-  line-height: 1.7;
-}
-.md-body table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  margin: 20px 0;
-  font-size: var(--fz-sm);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  overflow: hidden;
-}
-.md-body th {
-  text-align: left; padding: 8px 12px;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--fg);
-  font-weight: 500;
-  font-size: var(--fz-xs);
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-}
-.md-body td {
-  padding: 8px 12px;
-  border-bottom: 1px solid var(--line);
-  color: var(--muted);
-}
-.md-body tr:last-child td { border-bottom: none }
-.md-body tr:hover td { background: var(--panel) }
-.md-body blockquote {
-  border-left: 3px solid var(--accent);
-  padding: 10px 16px;
-  margin: 16px 0;
-  color: var(--muted);
-  background: color-mix(in oklch, var(--accent) 5%, var(--bg));
-  border-radius: 0 var(--r) var(--r) 0;
-}
-.md-body hr {
-  border: none; height: 1px;
-  background: var(--line);
-  margin: 28px 0;
-}
-.wikilink {
-  color: var(--link);
-  cursor: pointer;
-  text-decoration: none;
-  border-bottom: 1px dashed color-mix(in oklch, var(--link) 40%, transparent);
-  font-weight: 500;
-}
-.wikilink:hover { color: var(--accent); border-bottom-color: var(--accent) }
+.md-body pre code { background: none; padding: 0; border: none; color: var(--muted); font-size: var(--fz); line-height: 1.6; }
+.md-body table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: var(--fz-sm); }
+.md-body th { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); color: var(--fg); font-weight: 500; }
+.md-body td { padding: 8px 12px; border-bottom: 1px solid var(--line); color: var(--muted); }
+.md-body tr:last-child td { border-bottom: none; }
+.md-body blockquote { border-left: 2px solid var(--accent); padding: 8px 16px; margin: 14px 0; color: var(--muted); }
+.md-body hr { border: none; height: 1px; background: var(--line); margin: 24px 0; }
+.wikilink { color: var(--accent); cursor: pointer; border-bottom: 1px dashed var(--accent-dim); font-weight: 500; }
+.wikilink:hover { border-bottom-style: solid; }
 
-/* ── Right Rail ──────────────────────────────────── */
-.right-rail {
-  display: flex; flex-direction: column;
-  gap: var(--gap);
-  overflow: auto;
-  padding-bottom: 8px;
-}
-.rail-section header {
+/* Rail cards */
+.rail-card { margin-bottom: 0; }
+.rail-card-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 2px 2px 8px;
 }
-.rail-section-label {
+.rail-card-title {
   display: flex; align-items: center; gap: 6px;
-  font-size: var(--fz-xs); letter-spacing: 0.08em; text-transform: uppercase;
-  color: var(--dim);
+  font-size: var(--fz-xs); letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--dim);
 }
-.rail-section-label .rs-caret {
-  display: inline-block; transition: transform 0.15s;
-}
-.rail-section-label .rs-caret.collapsed { transform: rotate(-90deg) }
-.rail-section-body {
-  border: 1px solid var(--line);
-  background: var(--panel);
-  border-radius: var(--r);
-  padding: 10px 12px;
+.rail-card-body {
+  border: 1px solid var(--line); background: var(--panel);
+  border-radius: var(--r); padding: 10px 12px;
 }
 .rail-icon-btn {
   width: 20px; height: 18px; line-height: 16px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line);
-  color: var(--muted);
-  font-size: 11px;
+  border-radius: var(--r-sm); border: 1px solid var(--line);
+  color: var(--muted); font-size: 11px;
   display: inline-flex; align-items: center; justify-content: center;
 }
-.rail-icon-btn:hover { color: var(--fg); border-color: var(--line-2) }
+.rail-icon-btn:hover { color: var(--fg); border-color: var(--line-2); }
 
-/* Outline items */
+/* Outline */
 .outline-item {
-  font-size: var(--fz-sm);
-  padding: 3px 4px;
-  color: var(--muted);
-  border-radius: var(--r-sm);
-  cursor: pointer;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: block;
+  display: block; font-size: var(--fz-sm); padding: 3px 4px;
+  color: var(--muted); font-weight: 400; text-decoration: none;
+  border-radius: var(--r-sm); cursor: pointer;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
-.outline-item:hover { background: var(--panel-2) }
-.outline-item.h1 { color: var(--fg); font-weight: 500 }
-.outline-item.h3 { padding-left: 16px }
+.outline-item:hover { background: var(--panel-2); }
+.outline-item.lv1 { color: var(--fg); font-weight: 500; }
 
 /* Backlink items */
-.backlink-item {
+.bl-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 5px 2px;
-  font-size: var(--fz-sm);
-  color: var(--muted);
-  cursor: pointer;
+  padding: 5px 2px; font-size: var(--fz-sm); color: var(--muted); cursor: pointer;
 }
-.backlink-item:hover { color: var(--fg) }
-.backlink-item .bl-arrow { color: var(--dim) }
+.bl-item:hover { color: var(--fg); }
 
-/* ── Session View ────────────────────────────────── */
-.session-view {
-  overflow: auto;
-  height: 100%; min-height: 0;
-  padding-right: 6px;
-}
-.session-status-pill {
+/* Session view */
+.session-view { overflow-y: auto; height: 100%; min-height: 0; padding-right: 6px; }
+.session-status {
   display: inline-flex; align-items: center; gap: 6px;
-  padding: 2px 8px;
-  border: 1px solid var(--line);
-  background: var(--panel);
-  color: var(--muted);
-  border-radius: var(--r-sm);
-  font-size: var(--fz-sm);
+  padding: 2px 8px; border-radius: var(--r-sm); font-size: var(--fz-sm);
 }
-.session-status-pill.live {
-  border-color: var(--accent-dim);
-  background: color-mix(in oklch, var(--accent) 14%, var(--panel));
-  color: var(--accent);
-}
-.session-status-pill .sp-dot {
-  width: 6px; height: 6px; border-radius: 999px;
-}
-.stat-grid {
-  display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 22px;
-}
+.session-status.live { border: 1px solid var(--accent-dim); background: color-mix(in oklch, var(--accent) 14%, var(--panel)); color: var(--accent); }
+.session-status.done { border: 1px solid var(--line); background: var(--panel); color: var(--muted); }
+.stat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 22px; }
 .stat-card {
   border: 1px solid var(--line); background: var(--panel);
   border-radius: var(--r); padding: 10px 12px;
   display: flex; flex-direction: column; gap: 2px;
 }
-.stat-card .sc-label {
-  font-size: var(--fz-xs); letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim);
-}
-.stat-card .sc-value {
-  font-size: var(--fz-lg); font-weight: 500; font-variant-numeric: tabular-nums;
-}
+.stat-card .sc-label { font-size: var(--fz-xs); letter-spacing: 0.06em; text-transform: uppercase; color: var(--dim); }
+.stat-card .sc-value { font-size: var(--fz-lg); font-weight: 500; font-variant-numeric: tabular-nums; }
 
 /* Timeline */
 .tl-row {
   display: grid; grid-template-columns: 44px 56px 1fr;
   gap: 12px; padding: 6px 0; position: relative;
 }
-.tl-time { font-size: var(--fz-xs); color: var(--dim); font-variant-numeric: tabular-nums }
+.tl-time { font-size: var(--fz-xs); color: var(--dim); font-variant-numeric: tabular-nums; }
 .tl-badge {
   text-align: center; font-size: var(--fz-xs);
-  border: 1px solid currentColor;
-  border-radius: var(--r-sm);
-  height: 18px; line-height: 16px; padding: 0 4px; align-self: center;
+  border-radius: var(--r-sm); height: 18px; line-height: 16px;
+  padding: 0 4px; align-self: center;
 }
-.tl-text { font-size: var(--fz-sm); color: var(--muted); line-height: 1.55 }
+.tl-text { font-size: var(--fz-sm); color: var(--muted); line-height: 1.55; }
 .tl-guide {
   position: absolute; left: 72px; top: 28px; bottom: -4px;
   width: 1px; background: var(--line);
 }
 
-/* ── Graph View ──────────────────────────────────── */
+/* Graph view */
 .graph-view {
-  display: grid;
-  gap: var(--gap);
-  height: 100%; min-height: 0;
+  display: grid; grid-template-columns: minmax(0,1fr) 300px;
+  gap: var(--gap); height: 100%; min-height: 0;
 }
-.graph-view.with-rail {
-  grid-template-columns: minmax(0,1fr) 300px;
-}
-.graph-canvas-wrap {
-  border: 1px solid var(--line);
-  background: var(--panel);
-  border-radius: var(--r);
-  position: relative;
-  overflow: hidden;
+.graph-canvas {
+  border: 1px solid var(--line); background: var(--panel);
+  border-radius: var(--r); position: relative; overflow: hidden;
   display: flex; flex-direction: column;
 }
 .graph-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--line);
-  background: var(--bg-2);
-  gap: 12px; flex-wrap: nowrap;
+  padding: 10px 14px; border-bottom: 1px solid var(--line);
+  background: var(--bg-2); gap: 12px;
 }
-.graph-header-left {
-  display: flex; align-items: center; gap: 10px;
-  font-size: var(--fz-sm); white-space: nowrap; min-width: 0;
-}
-.graph-header-right {
-  display: flex; gap: 6px; flex-shrink: 0;
-}
+.graph-header-left { display: flex; align-items: center; gap: 10px; font-size: var(--fz-sm); white-space: nowrap; }
+.graph-header-right { display: flex; gap: 6px; flex-shrink: 0; }
 .tool-chip {
-  padding: 3px 9px;
-  border-radius: var(--r-sm);
-  border: 1px solid var(--line);
-  color: var(--muted);
-  background: transparent;
-  font-size: var(--fz-xs);
+  padding: 3px 9px; border-radius: var(--r-sm);
+  border: 1px solid var(--line); color: var(--muted);
+  background: transparent; font-size: var(--fz-xs);
 }
-.tool-chip.active {
-  border-color: var(--accent-dim);
-  color: var(--accent);
-  background: color-mix(in oklch, var(--accent) 10%, var(--panel));
-}
-.graph-svg-area {
-  position: relative; flex: 1; min-height: 0;
-}
-.graph-svg-area svg {
-  position: absolute; inset: 0; width: 100%; height: 100%;
-}
+.tool-chip.active { border-color: var(--accent-dim); color: var(--accent); background: color-mix(in oklch, var(--accent) 10%, var(--panel)); }
+.graph-svg-wrap { position: relative; flex: 1; min-height: 0; }
+.graph-svg-wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .graph-legend {
   position: absolute; left: 14px; bottom: 14px;
   background: color-mix(in oklch, var(--bg) 85%, transparent);
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  padding: 8px 10px;
-  font-size: var(--fz-xs);
+  border: 1px solid var(--line); border-radius: var(--r);
+  padding: 8px 10px; font-size: var(--fz-xs);
   display: flex; flex-direction: column; gap: 5px;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
-.graph-legend-item { display: flex; align-items: center; gap: 8px }
-.graph-legend-dot {
-  width: 8px; height: 8px; border-radius: 999px;
-}
-.graph-legend-line {
-  width: 12px; height: 1px;
-}
-
-/* ── StatusBar ───────────────────────────────────── */
-.statusbar {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 14px;
-  font-size: var(--fz-xs);
-  color: var(--dim);
-  border-top: 1px solid var(--line);
-  background: var(--bg);
-}
-.statusbar-left, .statusbar-right {
-  display: flex; gap: 14px; align-items: center;
-}
-.statusbar .sync-dot {
-  width: 6px; height: 6px; border-radius: 999px;
-  background: var(--accent); display: inline-block; margin-right: 5px;
-}
-
-/* ── Overlays / Modals ───────────────────────────── */
-.overlay {
-  position: fixed; inset: 0;
-  background: oklch(0.1 0 0 / 0.6);
-  z-index: 200;
-  display: none;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 15vh;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-.overlay.active { display: flex }
-.overlay.center { align-items: center; padding-top: 0 }
-
-.modal {
-  background: color-mix(in oklch, var(--panel) 90%, var(--bg));
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  box-shadow: 0 24px 64px oklch(0 0 0 / 0.8), 0 0 0 1px color-mix(in oklch, var(--accent) 10%, transparent);
-  overflow: hidden;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-}
-
-/* Quick Switcher */
-.qs-modal { width: 480px }
-.qs-modal input {
-  width: 100%; background: transparent;
-  border: none; border-bottom: 1px solid var(--line);
-  color: var(--fg);
-  font-size: 14px; padding: 16px 20px; outline: 0;
-}
-.qs-modal input::placeholder { color: var(--dim) }
-.qs-results { max-height: 320px; overflow-y: auto }
-.qs-item {
-  padding: 10px 20px; cursor: pointer;
-  display: flex; align-items: center; gap: 10px;
+.graph-legend-title { color: var(--dim); letter-spacing: 0.08em; text-transform: uppercase; }
+.graph-legend-item { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.graph-rail { display: flex; flex-direction: column; gap: var(--gap); overflow-y: auto; }
+.conn-item {
+  display: flex; align-items: center; gap: 8px;
+  width: 100%; padding: 4px 6px; border-radius: var(--r-sm);
+  font-size: var(--fz-sm); color: var(--muted); text-align: left;
   transition: background 0.1s;
 }
-.qs-item:hover, .qs-item.selected { background: var(--panel-2) }
-.qs-item .qi-icon { color: var(--link); font-size: 12px; flex-shrink: 0; opacity: 0.7 }
-.qs-item .qi-name { font-size: var(--fz); font-weight: 500 }
-.qs-item .qi-path { font-size: var(--fz-xs); color: var(--dim); margin-left: auto }
-.qs-item.selected .qi-name { color: var(--accent) }
-.qs-empty { padding: 20px; text-align: center; color: var(--dim); font-size: var(--fz-sm) }
+.conn-item:hover { background: var(--panel-2); }
 
-/* Edit Modal */
-.edit-modal { width: 640px; max-height: 80vh; display: flex; flex-direction: column }
-.edit-modal-header {
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 12px 16px; border-bottom: 1px solid var(--line);
-  font-size: var(--fz-sm); color: var(--muted);
+/* Modals */
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  z-index: 200; display: none; align-items: flex-start;
+  justify-content: center; padding-top: 15vh;
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
 }
-.edit-modal-header .em-path { opacity: 0.6 }
-.edit-modal-actions { display: flex; gap: 8px }
-.edit-btn {
-  font-size: var(--fz-xs); padding: 5px 14px;
-  border-radius: var(--r); border: 1px solid var(--line);
+.modal-overlay.active { display: flex; }
+.modal-overlay.center { align-items: center; padding-top: 0; }
+.modal {
+  width: 480px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: var(--r-lg);
+  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  overflow: hidden;
+}
+.modal-sm { width: 420px; }
+.modal-header {
+  padding: 16px 20px 12px; border-bottom: 1px solid var(--line);
+  font-size: var(--fz-sm); font-weight: 600; color: var(--muted);
   letter-spacing: 0.5px;
 }
-.edit-btn.cancel { background: transparent; color: var(--dim) }
-.edit-btn.cancel:hover { color: var(--muted); border-color: var(--line-2) }
-.edit-btn.save {
-  background: color-mix(in oklch, var(--accent) 10%, var(--panel));
-  color: var(--accent); border-color: var(--accent-dim);
-}
-.edit-btn.save:hover { background: color-mix(in oklch, var(--accent) 20%, var(--panel)) }
-.edit-textarea {
-  flex: 1; min-height: 300px;
-  background: var(--bg); border: none;
-  color: var(--fg);
-  font-size: var(--fz); line-height: 1.8;
-  padding: 16px 20px; resize: none; outline: 0;
-}
-.edit-textarea::placeholder { color: var(--dim) }
-
-/* Create modals */
-.create-modal { width: 420px }
-.create-modal-header {
-  padding: 16px 20px 12px; border-bottom: 1px solid var(--line);
-  font-size: var(--fz-sm); font-weight: 600;
-  color: var(--muted); letter-spacing: 0.5px;
-}
-.create-modal-body {
-  padding: 16px 20px; display: flex; flex-direction: column; gap: 12px;
-}
-.create-field label {
+.modal-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
+.modal-footer { padding: 12px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px; }
+.modal-field label {
   display: block; font-size: var(--fz-xs); font-weight: 600;
-  text-transform: uppercase; letter-spacing: 1px;
-  color: var(--dim); margin-bottom: 4px;
+  text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 4px;
 }
-.create-field input,
-.create-field textarea {
-  width: 100%; background: var(--bg);
-  border: 1px solid var(--line); color: var(--fg);
-  font-size: var(--fz-sm); padding: 8px 12px;
-  border-radius: var(--r); outline: 0;
+.modal-field input, .modal-field textarea {
+  width: 100%; background: var(--bg); border: 1px solid var(--line);
+  color: var(--fg); padding: 8px 12px; border-radius: var(--r); outline: none;
 }
-.create-field input:focus,
-.create-field textarea:focus { border-color: var(--accent-dim) }
-.create-field textarea { min-height: 60px; resize: vertical }
-.create-modal-footer {
-  padding: 12px 20px; border-top: 1px solid var(--line);
-  display: flex; justify-content: flex-end; gap: 8px;
+.modal-field input:focus, .modal-field textarea:focus { border-color: var(--accent-dim); }
+.modal-field textarea { min-height: 60px; resize: vertical; }
+.modal-btn {
+  padding: 6px 14px; border-radius: var(--r-sm); font-size: var(--fz-sm);
+  border: 1px solid var(--line); color: var(--muted); background: var(--panel);
 }
+.modal-btn:hover { border-color: var(--line-2); color: var(--fg); }
+.modal-btn.primary { border-color: var(--accent-dim); color: var(--accent); background: color-mix(in oklch, var(--accent) 10%, var(--panel)); }
+.modal-btn.primary:hover { background: color-mix(in oklch, var(--accent) 18%, var(--panel)); }
 
-/* Empty state */
-.empty-state {
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  height: 100%; gap: 12px;
+/* Edit modal */
+.edit-textarea {
+  width: 100%; height: 50vh; background: var(--bg);
+  border: 1px solid var(--line); color: var(--fg);
+  padding: 16px; border-radius: var(--r); outline: none;
+  font-size: var(--fz); line-height: 1.6; resize: none;
 }
-.empty-state .es-logo {
-  font-size: 28px; font-weight: 700;
-  color: var(--accent); letter-spacing: 4px; opacity: 0.6;
+.edit-textarea:focus { border-color: var(--accent-dim); }
+
+/* Quick switcher */
+.qs-input {
+  width: 100%; background: transparent; border: none;
+  border-bottom: 1px solid var(--line); color: var(--fg);
+  font-size: 14px; padding: 16px 20px; outline: none;
 }
-.empty-state .es-tagline {
-  font-size: var(--fz-sm); color: var(--dim);
-  letter-spacing: 3px; text-transform: uppercase;
+.qs-input::placeholder { color: var(--dim); }
+.qs-results { max-height: 320px; overflow-y: auto; }
+.qs-item {
+  padding: 10px 20px; cursor: pointer;
+  display: flex; align-items: center; gap: 10px; transition: background 0.1s;
 }
-.empty-state .es-hint {
-  font-size: var(--fz-sm); color: var(--dim); margin-top: 24px;
-}
-.empty-state kbd {
-  font-size: var(--fz-xs); background: var(--panel);
-  border: 1px solid var(--line); padding: 2px 6px;
-  border-radius: 3px; color: var(--muted);
-}
+.qs-item:hover, .qs-item.selected { background: var(--panel-2); }
+.qs-item .qs-icon { color: var(--accent); font-size: 10px; opacity: 0.7; }
+.qs-item .qs-name { font-size: var(--fz); color: var(--fg); font-weight: 500; }
+.qs-item .qs-path { font-size: var(--fz-xs); color: var(--dim); margin-left: auto; }
+.qs-item.selected .qs-name { color: var(--accent); }
+.qs-empty { padding: 20px; text-align: center; color: var(--dim); font-size: var(--fz-sm); }
+
+/* Session search results in sidebar */
+.ss-results { max-height: 160px; overflow-y: auto; margin-bottom: 6px; }
+.ss-result { padding: 5px 8px; border-radius: var(--r-sm); cursor: pointer; margin: 1px 0; }
+.ss-result:hover { background: var(--panel); }
+.ss-result .ssr-title { font-size: var(--fz-sm); color: var(--accent); font-weight: 500; }
+.ss-result .ssr-snippet { font-size: var(--fz-xs); color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>
 </head>
 <body>
-
 <div id="app">
-  <!-- ── TopBar ──────────────────────────────────── -->
-  <header class="topbar">
+  <!-- TopBar -->
+  <header id="topbar">
     <div class="topbar-left">
       <button class="toggle-btn" id="sidebar-toggle" title="Toggle sidebar">
         <svg width="14" height="14" viewBox="0 0 14 14"><rect x="0.5" y="1.5" width="13" height="11" rx="1.5" fill="none" stroke="currentColor"/><line x1="5" y1="1.5" x2="5" y2="12.5" stroke="currentColor"/></svg>
       </button>
-      <span class="logo"><span class="logo-dot" aria-hidden="true"></span>KYP&middot;MEM</span>
-      <span class="tagline">know your project</span>
-      <span class="dim">&middot;</span>
+      <span class="logo"><span class="logo-mark"></span>KYP·MEM</span>
+      <span class="dim" style="font-size:var(--fz-sm);letter-spacing:0.01em">know your project</span>
+      <span class="dim">·</span>
       <span class="breadcrumb" id="breadcrumb"></span>
     </div>
     <div class="topbar-right">
@@ -974,11 +612,11 @@ body.resizing .resize-handle { pointer-events: auto !important }
         <button data-view="graph">graph</button>
       </div>
       <button class="ghost-btn" id="new-project-btn">+ project</button>
-      <div class="search-box" id="search-box">
-        <span class="s-dollar">$</span>
+      <div class="search-bar" id="search-bar">
+        <span class="s-prompt">$</span>
         <input type="text" id="search-input" placeholder="search vault">
-        <span class="s-caret" aria-hidden="true"></span>
-        <span class="s-hint">&#8984;K</span>
+        <span class="s-caret"></span>
+        <span class="s-hint">⌘K</span>
         <div class="search-dropdown" id="search-dropdown"></div>
       </div>
       <button class="rail-toggle-btn" id="rail-toggle" title="Toggle right rail">
@@ -987,209 +625,115 @@ body.resizing .resize-handle { pointer-events: auto !important }
     </div>
   </header>
 
-  <!-- ── Main ────────────────────────────────────── -->
-  <main class="main-area" id="main-area">
-    <!-- Sidebar -->
-    <aside class="sidebar" id="sidebar">
-      <div class="sidebar-scroll">
-        <!-- Sessions Section -->
-        <section id="sessions-section">
-          <div class="side-section-header">
-            <button class="side-section-label">
-              <span class="ss-dot" style="background:var(--accent)"></span>
-              sessions
-              <span class="ss-count dim" id="session-count"></span>
-            </button>
-            <button class="side-new-btn" id="new-session-btn">+ new</button>
-          </div>
-          <input class="session-search-input" id="session-search-input" placeholder="&#9909; semantic search session...">
-          <div class="ss-results" id="session-search-results"></div>
-          <div id="session-tree"></div>
-        </section>
-
-        <!-- Projects Section -->
-        <section id="projects-section">
-          <div class="side-section-header">
-            <button class="side-section-label">
-              <span class="ss-dot" style="background:var(--accent)"></span>
-              projects
-            </button>
-            <button class="side-new-btn" id="new-project-sidebar-btn">+ new</button>
-          </div>
-          <div id="file-tree"></div>
-        </section>
-
-        <!-- Tags Section -->
-        <section id="tags-section">
-          <div class="side-section-header">
-            <button class="side-section-label" id="tags-toggle">
-              <span class="ss-dot" style="background:var(--muted);opacity:0.4"></span>
-              tags
-              <span class="ss-caret">&#9662;</span>
-            </button>
-          </div>
-          <div id="tag-cloud-wrap">
-            <div id="active-tags" style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:4px"></div>
-            <div id="filter-info" style="display:none;font-size:var(--fz-xs);color:var(--dim);padding:2px 0 4px;align-items:center;justify-content:space-between">
-              <span id="filter-count"></span>
-              <button style="color:var(--accent);font-size:var(--fz-xs)" id="clear-filters">clear</button>
-            </div>
-            <div id="tag-cloud" style="display:flex;flex-wrap:wrap;gap:5px"></div>
-          </div>
-        </section>
-      </div>
+  <!-- Main -->
+  <main id="main">
+    <aside id="sidebar">
+      <div class="sidebar-scroll" id="sidebar-scroll"></div>
     </aside>
-
-    <!-- Resize Handle -->
-    <div class="resize-handle" id="resize-handle"></div>
-
-    <!-- Content -->
-    <section class="content-area" id="content-area">
-      <div class="empty-state" id="empty-state">
-        <div class="es-logo">KYP&middot;MEM</div>
-        <div class="es-tagline">know your project memory</div>
-        <div class="es-hint">Select a note or press <kbd>&#8984;O</kbd> to quick-switch &middot; <kbd>&#8984;K</kbd> to search</div>
-      </div>
-      <div id="note-view-container" style="display:none;height:100%"></div>
-      <div id="session-view-container" style="display:none;height:100%"></div>
-      <div id="graph-view-container" style="display:none;height:100%"></div>
-    </section>
+    <div id="resize-handle"></div>
+    <section id="content-area"></section>
   </main>
 
-  <!-- ── StatusBar ───────────────────────────────── -->
-  <footer class="statusbar" id="statusbar">
-    <div class="statusbar-left">
-      <span><span class="mut tab-nums" id="sb-notes">0</span> notes</span>
-      <span><span class="mut tab-nums" id="sb-folders">0</span> folders</span>
-      <span>&middot;</span>
-      <span>store <span class="mut" id="sb-store">~/.kyp</span></span>
-      <span><i class="sync-dot"></i>sync ok</span>
+  <!-- StatusBar -->
+  <footer id="statusbar">
+    <div class="sb-left">
+      <span><span class="mut tab-nums" id="stat-notes">0</span> notes</span>
+      <span><span class="mut tab-nums" id="stat-folders">0</span> folders</span>
+      <span>·</span>
+      <span>store <span class="mut">~/.kyp-mem/vault</span></span>
+      <span><i class="sb-dot"></i>sync ok</span>
     </div>
-    <div class="statusbar-right">
+    <div class="sb-right">
       <span>idx <span class="mut">up to date</span></span>
-      <span>&middot;</span>
-      <span class="tab-nums" id="sb-clock"></span>
-      <span>&middot;</span>
-      <span class="tab-nums mut">v0.4.4</span>
+      <span>·</span>
+      <span class="tab-nums" id="clock"></span>
+      <span>·</span>
+      <span class="tab-nums mut">v0.4.3</span>
     </div>
   </footer>
 </div>
 
-<!-- ── Quick Switcher Overlay ────────────────────── -->
-<div class="overlay" id="qs-overlay">
-  <div class="modal qs-modal">
-    <input type="text" id="qs-input" placeholder="Jump to note...">
+<!-- Quick Switcher -->
+<div class="modal-overlay" id="qs-overlay">
+  <div class="modal">
+    <input type="text" class="qs-input" id="qs-input" placeholder="Jump to note...">
     <div class="qs-results" id="qs-results"></div>
   </div>
 </div>
 
-<!-- ── Edit Overlay ──────────────────────────────── -->
-<div class="overlay center" id="edit-overlay">
-  <div class="modal edit-modal">
-    <div class="edit-modal-header">
-      <span class="em-path" id="edit-path"></span>
-      <div class="edit-modal-actions">
-        <button class="edit-btn cancel" id="edit-cancel">ESC</button>
-        <button class="edit-btn save" id="edit-save">SAVE</button>
-      </div>
+<!-- Edit Modal -->
+<div class="modal-overlay center" id="edit-overlay">
+  <div class="modal" style="width:640px">
+    <div class="modal-header" id="edit-path"></div>
+    <div style="padding:16px 20px">
+      <textarea class="edit-textarea" id="edit-textarea" placeholder="Write markdown..."></textarea>
     </div>
-    <textarea class="edit-textarea" id="edit-textarea" placeholder="Write markdown..."></textarea>
-  </div>
-</div>
-
-<!-- ── Session Create Overlay ────────────────────── -->
-<div class="overlay center" id="session-create-overlay">
-  <div class="modal create-modal">
-    <div class="create-modal-header">NEW SESSION</div>
-    <div class="create-modal-body">
-      <div class="create-field">
-        <label>Project</label>
-        <input type="text" id="session-project-input" list="project-datalist" placeholder="Project name...">
-        <datalist id="project-datalist"></datalist>
-      </div>
-      <div class="create-field">
-        <label>Summary</label>
-        <textarea id="session-summary-input" placeholder="What are you working on?"></textarea>
-      </div>
-    </div>
-    <div class="create-modal-footer">
-      <button class="edit-btn cancel" id="session-cancel">CANCEL</button>
-      <button class="edit-btn save" id="session-create-confirm">CREATE</button>
+    <div class="modal-footer">
+      <button class="modal-btn" id="edit-cancel">ESC</button>
+      <button class="modal-btn primary" id="edit-save">SAVE</button>
     </div>
   </div>
 </div>
 
-<!-- ── Project Create Overlay ────────────────────── -->
-<div class="overlay center" id="project-create-overlay">
-  <div class="modal create-modal">
-    <div class="create-modal-header">NEW PROJECT</div>
-    <div class="create-modal-body">
-      <div class="create-field">
-        <label>Project Name</label>
-        <input type="text" id="project-name-input" placeholder="My Project...">
-      </div>
-      <div class="create-field">
-        <label>Overview (optional)</label>
-        <textarea id="project-overview-input" placeholder="Brief project description, goals, tech stack..."></textarea>
-      </div>
+<!-- Session Create Modal -->
+<div class="modal-overlay center" id="session-create-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">NEW SESSION</div>
+    <div class="modal-body">
+      <div class="modal-field"><label>Project</label><input type="text" id="sc-project" list="sc-project-list" placeholder="Project name..."><datalist id="sc-project-list"></datalist></div>
+      <div class="modal-field"><label>Summary</label><textarea id="sc-summary" placeholder="What are you working on?"></textarea></div>
     </div>
-    <div class="create-modal-footer">
-      <button class="edit-btn cancel" id="project-cancel">CANCEL</button>
-      <button class="edit-btn save" id="project-create-confirm">CREATE</button>
+    <div class="modal-footer">
+      <button class="modal-btn" id="sc-cancel">CANCEL</button>
+      <button class="modal-btn primary" id="sc-create">CREATE</button>
+    </div>
+  </div>
+</div>
+
+<!-- Project Create Modal -->
+<div class="modal-overlay center" id="project-create-overlay">
+  <div class="modal modal-sm">
+    <div class="modal-header">NEW PROJECT</div>
+    <div class="modal-body">
+      <div class="modal-field"><label>Project Name</label><input type="text" id="pc-name" placeholder="My Project..."></div>
+      <div class="modal-field"><label>Overview (optional)</label><textarea id="pc-overview" placeholder="Brief description..."></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="modal-btn" id="pc-cancel">CANCEL</button>
+      <button class="modal-btn primary" id="pc-create">CREATE</button>
     </div>
   </div>
 </div>
 
 <script>
-/* ══════════════════════════════════════════════════════════════════
-   KYP-MEM — Application JavaScript
-   ══════════════════════════════════════════════════════════════════ */
-
-// ── State ───────────────────────────────────────────────────────
+// ─── State ───────────────────────────────────────────────────────────────────
 let currentPath = null;
 let currentNote = null;
 let treeData = null;
 let allNotes = {};
 let activeTagFilters = new Set();
+let view = 'note';
+let activeSession = null;
+let sidebarOpen = localStorage.getItem('kyp-sidebar-open') !== 'false';
+let railOpen = localStorage.getItem('kyp-rail-open') !== 'false';
 let qsSelectedIndex = 0;
+let editingPath = null;
+let editingNote = null;
+let lastKnownStats = null;
+let graphHeight = parseInt(localStorage.getItem('kyp-graph-h')) || 240;
+let searchTimeout, sessionSearchTimeout;
 
-// Persisted state
-let showSidebar = localStorage.getItem('kyp-sidebar') !== 'false';
-let showRail = localStorage.getItem('kyp-rail') !== 'false';
-let sidebarWidth = parseInt(localStorage.getItem('kyp-sidebar-w')) || 236;
-let currentView = localStorage.getItem('kyp-view') || 'note';
-
-// ── Helpers ─────────────────────────────────────────────────────
-async function fetchJSON(url) {
-  const r = await fetch(url);
-  return r.json();
-}
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+async function fetchJSON(url) { const r = await fetch(url); return r.json(); }
 
 function $(id) { return document.getElementById(id); }
 
-function escapeHtml(s) {
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
-}
-
-function wordCount(text) {
-  if (!text) return 0;
-  return text.trim().split(/\s+/).filter(Boolean).length;
-}
-
-function readingTime(words) {
-  const mins = Math.ceil(words / 200);
-  return mins < 1 ? '< 1 min' : mins + ' min';
-}
-
-function formatSessionTimestamp(filename) {
+function formatSessionTime(filename) {
   const stem = filename.replace('.md', '');
-  const match = stem.match(/^(\d{4})-(\d{2})-(\d{2})_(\d{2})(\d{2})(\d{2})$/);
-  if (!match) return stem;
-  const [, y, mo, d, h, mi] = match;
-  const hr = parseInt(h);
-  const ampm = hr >= 12 ? 'PM' : 'AM';
+  const m = stem.match(/^(\d{4})-(\d{2})-(\d{2})_(\d{2})(\d{2})(\d{2})$/);
+  if (!m) return stem;
+  const [, , mo, d, h, mi] = m;
+  const hr = parseInt(h), ampm = hr >= 12 ? 'PM' : 'AM';
   const hr12 = hr % 12 || 12;
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return `${months[parseInt(mo)-1]} ${parseInt(d)}, ${hr12}:${mi} ${ampm}`;
@@ -1212,141 +756,87 @@ function collectAllTags() {
   return tags;
 }
 
-function getProjects() {
-  const projects = new Set();
-  for (const path of Object.keys(allNotes)) {
-    const parts = path.split('/');
-    if (parts.length > 1) projects.add(parts[0]);
-  }
-  return [...projects].sort();
+function isSessionPath(path) {
+  return path.includes('/Sessions/') || path.startsWith('Sessions/');
 }
 
-// ── Clock ───────────────────────────────────────────────────────
+// ─── Clock ───────────────────────────────────────────────────────────────────
 function updateClock() {
   const d = new Date();
   const h = d.getHours() % 12 || 12;
   const m = String(d.getMinutes()).padStart(2, '0');
   const ampm = d.getHours() >= 12 ? 'PM' : 'AM';
-  $('sb-clock').textContent = `${h}:${m} ${ampm}`;
+  $('clock').textContent = `${h}:${m} ${ampm}`;
 }
 updateClock();
 setInterval(updateClock, 30000);
 
-// ── Layout Updates ──────────────────────────────────────────────
-function updateLayout() {
-  const main = $('main-area');
-  const sidebar = $('sidebar');
-  const handle = $('resize-handle');
-
-  if (showSidebar) {
-    sidebar.style.display = '';
-    handle.style.display = '';
-    main.style.gridTemplateColumns = sidebarWidth + 'px 4px minmax(0,1fr)';
-  } else {
-    sidebar.style.display = 'none';
-    handle.style.display = 'none';
-    main.style.gridTemplateColumns = 'minmax(0,1fr)';
-  }
-
-  localStorage.setItem('kyp-sidebar', showSidebar);
-  localStorage.setItem('kyp-sidebar-w', sidebarWidth);
-}
-
-function updateViewSwitch() {
-  document.querySelectorAll('.view-switch button').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.view === currentView);
-  });
-  localStorage.setItem('kyp-view', currentView);
-}
-
-function updateBreadcrumb() {
+// ─── Breadcrumb ──────────────────────────────────────────────────────────────
+function updateBreadcrumb(path) {
   const bc = $('breadcrumb');
-  let path = '';
-  if (currentView === 'graph') {
-    path = 'vault / graph';
-  } else if (currentView === 'session' && currentPath) {
-    path = 'sessions / ' + currentPath.split('/').pop().replace('.md', '');
-  } else if (currentPath) {
-    path = currentPath.replace('.md', '').replace(/\//g, ' / ');
-  }
   if (!path) { bc.innerHTML = ''; return; }
-  const parts = path.split('/').map(s => s.trim()).filter(Boolean);
+  const parts = path.replace('.md', '').split('/').filter(Boolean);
   bc.innerHTML = parts.map((p, i) =>
-    i === parts.length - 1
-      ? `<span class="bc-last">${escapeHtml(p)}</span>`
-      : `<span>${escapeHtml(p)}</span><span class="bc-sep">/</span>`
+    i < parts.length - 1
+      ? `<span>${p}</span><span class="bc-sep">/</span>`
+      : `<span class="bc-last">${p}</span>`
   ).join('');
 }
 
-// ── Sidebar Toggle ──────────────────────────────────────────────
-$('sidebar-toggle').addEventListener('click', () => {
-  showSidebar = !showSidebar;
-  updateLayout();
-});
-
-// ── Rail Toggle ─────────────────────────────────────────────────
-$('rail-toggle').addEventListener('click', () => {
-  showRail = !showRail;
-  localStorage.setItem('kyp-rail', showRail);
-  if (currentView === 'note' && currentNote) renderNoteView(currentNote);
-  if (currentView === 'graph') renderGraphView();
-});
-
-// ── View Switch ─────────────────────────────────────────────────
-$('view-switch').addEventListener('click', (e) => {
-  const btn = e.target.closest('button[data-view]');
-  if (!btn) return;
-  currentView = btn.dataset.view;
-  updateViewSwitch();
-  showCurrentView();
-  updateBreadcrumb();
-});
-
-function showCurrentView() {
-  $('empty-state').style.display = 'none';
-  $('note-view-container').style.display = 'none';
-  $('session-view-container').style.display = 'none';
-  $('graph-view-container').style.display = 'none';
-
-  if (currentView === 'note') {
-    if (currentNote) {
-      $('note-view-container').style.display = '';
-      renderNoteView(currentNote);
-    } else {
-      $('empty-state').style.display = '';
-    }
-  } else if (currentView === 'session') {
-    if (currentNote) {
-      $('session-view-container').style.display = '';
-      renderSessionView(currentNote);
-    } else {
-      $('empty-state').style.display = '';
-    }
-  } else if (currentView === 'graph') {
-    $('graph-view-container').style.display = '';
-    renderGraphView();
-  }
+// ─── View Switching ──────────────────────────────────────────────────────────
+function setView(v) {
+  view = v;
+  $('view-switch').querySelectorAll('button').forEach(b => {
+    b.classList.toggle('active', b.dataset.view === v);
+  });
+  if (v === 'graph') renderGraphView();
+  else if (v === 'session' && activeSession) loadNote(activeSession);
+  else if (v === 'note' && currentPath) loadNote(currentPath);
 }
 
-// ── Resize Handle ───────────────────────────────────────────────
+$('view-switch').addEventListener('click', e => {
+  if (e.target.dataset.view) setView(e.target.dataset.view);
+});
+
+// ─── Sidebar Toggle ──────────────────────────────────────────────────────────
+function applySidebar() {
+  $('main').classList.toggle('sidebar-hidden', !sidebarOpen);
+}
+$('sidebar-toggle').addEventListener('click', () => {
+  sidebarOpen = !sidebarOpen;
+  localStorage.setItem('kyp-sidebar-open', sidebarOpen);
+  applySidebar();
+});
+applySidebar();
+
+// ─── Rail Toggle ─────────────────────────────────────────────────────────────
+$('rail-toggle').addEventListener('click', () => {
+  railOpen = !railOpen;
+  localStorage.setItem('kyp-rail-open', railOpen);
+  if (currentPath && view === 'note') loadNote(currentPath);
+});
+
+// ─── Resize Handle ───────────────────────────────────────────────────────────
 (function initResize() {
   const handle = $('resize-handle');
-  handle.addEventListener('mousedown', (e) => {
+  const main = $('main');
+  let sidebarW = parseInt(localStorage.getItem('kyp-sidebar-w')) || 236;
+  main.style.setProperty('--sidebar-w', sidebarW + 'px');
+
+  handle.addEventListener('mousedown', e => {
     e.preventDefault();
-    const startX = e.clientX;
-    const startW = sidebarWidth;
+    const startX = e.clientX, startW = sidebarW;
     handle.classList.add('dragging');
     document.body.classList.add('resizing');
 
     function onMove(ev) {
-      const delta = ev.clientX - startX;
-      sidebarWidth = Math.max(180, Math.min(400, startW + delta));
-      updateLayout();
+      sidebarW = Math.max(180, Math.min(400, startW + (ev.clientX - startX)));
+      main.style.setProperty('--sidebar-w', sidebarW + 'px');
     }
     function onUp() {
       handle.classList.remove('dragging');
       document.body.classList.remove('resizing');
-      localStorage.setItem('kyp-sidebar-w', sidebarWidth);
+      localStorage.setItem('kyp-sidebar-w', sidebarW);
       document.removeEventListener('mousemove', onMove);
       document.removeEventListener('mouseup', onUp);
     }
@@ -1355,896 +845,894 @@ function showCurrentView() {
   });
 })();
 
-// ══════════════════════════════════════════════════════════════════
-// SIDEBAR RENDERING
-// ══════════════════════════════════════════════════════════════════
-
-// ── Session Tree ────────────────────────────────────────────────
-function renderSessionTree(sessionsData) {
-  const container = $('session-tree');
+// ─── Sidebar Rendering ───────────────────────────────────────────────────────
+function renderSidebar(sessionsData) {
+  const container = $('sidebar-scroll');
   container.innerHTML = '';
 
-  let totalSessions = 0;
-  const sortedProjects = Object.keys(sessionsData).sort();
+  // Sessions section
+  const sessSection = document.createElement('section');
+  sessSection.innerHTML = `
+    <div class="side-section-header">
+      <span class="side-section-title"><span class="side-dot" style="background:var(--accent)"></span>sessions</span>
+      <button class="side-add-btn" id="sidebar-new-session">+ new</button>
+    </div>
+  `;
+  const sessSearch = document.createElement('input');
+  sessSearch.className = 'side-search';
+  sessSearch.placeholder = '⌕ semantic search session…';
+  sessSection.appendChild(sessSearch);
 
+  const ssResults = document.createElement('div');
+  ssResults.className = 'ss-results';
+  sessSection.appendChild(ssResults);
+
+  // Session search
+  sessSearch.addEventListener('input', () => {
+    clearTimeout(sessionSearchTimeout);
+    const q = sessSearch.value.trim();
+    if (!q) { ssResults.innerHTML = ''; return; }
+    sessionSearchTimeout = setTimeout(async () => {
+      const results = await fetchJSON(`/api/sessions/search?q=${encodeURIComponent(q)}`);
+      ssResults.innerHTML = '';
+      results.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'ss-result';
+        div.innerHTML = `<div class="ssr-title">${r.title}</div><div class="ssr-snippet">${(r.snippet || '').substring(0, 100)}</div>`;
+        div.addEventListener('click', () => { openSession(r.path); sessSearch.value = ''; ssResults.innerHTML = ''; });
+        ssResults.appendChild(div);
+      });
+    }, 250);
+  });
+
+  // Session groups
+  const sortedProjects = Object.keys(sessionsData).sort();
   sortedProjects.forEach(project => {
     const sessions = sessionsData[project];
-    totalSessions += sessions.length;
-
-    // Project folder header
-    const folderBtn = document.createElement('button');
-    folderBtn.className = 'tree-folder-header';
-    folderBtn.innerHTML = `<span class="tf-caret">&#9662;</span><span class="tf-bars">&#8801;</span><span class="tf-name">${escapeHtml(project)}</span><span class="tf-count">${sessions.length}</span>`;
+    const group = document.createElement('div');
+    const folder = document.createElement('div');
+    folder.className = 'tree-folder';
+    folder.innerHTML = `<span class="tf-arrow">▾</span><span class="tf-icon">≡</span><span class="tf-label">${project}</span><span class="tf-count">${sessions.length}</span>`;
 
     const list = document.createElement('div');
-    list.style.cssText = 'display:flex;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px';
+    list.style.cssText = 'display:flex;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px;';
 
     sessions.sort((a, b) => b.path.localeCompare(a.path));
-    sessions.forEach(session => {
+    sessions.forEach(s => {
       const row = document.createElement('button');
       row.className = 'sidebar-row';
-      row.dataset.path = session.path;
-      const displayTime = formatSessionTimestamp(session.path.split('/').pop());
-      const isLive = session.tags && session.tags.includes('live');
-      row.innerHTML = `<span class="sr-dot" style="color:${isLive ? 'var(--accent)' : 'var(--dim)'}">&#9679;</span><span class="sr-label" style="color:var(--muted)">${escapeHtml(displayTime)}</span>`;
-      row.title = session.summary || session.title || session.path;
-      row.addEventListener('click', () => {
-        currentView = 'session';
-        updateViewSwitch();
-        loadNote(session.path);
-      });
+      row.dataset.path = s.path;
+      const displayTime = formatSessionTime(s.path.split('/').pop());
+      row.innerHTML = `<span class="sr-dot" style="color:var(--dim)">●</span><span class="sr-label">${displayTime}</span>`;
+      row.addEventListener('click', () => openSession(s.path));
       list.appendChild(row);
     });
 
-    let open = true;
-    folderBtn.addEventListener('click', () => {
-      open = !open;
-      list.style.display = open ? '' : 'none';
-      folderBtn.querySelector('.tf-caret').textContent = open ? '▾' : '▸';
+    folder.addEventListener('click', () => {
+      const arrow = folder.querySelector('.tf-arrow');
+      const isOpen = arrow.textContent === '▾';
+      arrow.textContent = isOpen ? '▸' : '▾';
+      arrow.classList.toggle('closed', isOpen);
+      list.style.display = isOpen ? 'none' : 'flex';
     });
 
-    container.appendChild(folderBtn);
-    container.appendChild(list);
+    group.appendChild(folder);
+    group.appendChild(list);
+    sessSection.appendChild(group);
+  });
+  container.appendChild(sessSection);
+
+  // Projects section
+  const projSection = document.createElement('section');
+  projSection.innerHTML = `
+    <div class="side-section-header">
+      <span class="side-section-title"><span class="side-dot" style="background:var(--accent)"></span>projects</span>
+      <button class="side-add-btn" id="sidebar-new-project">+ new</button>
+    </div>
+  `;
+  renderProjectTree(projSection);
+  container.appendChild(projSection);
+
+  // Tags section
+  const tagSection = document.createElement('section');
+  let tagsOpen = true;
+  tagSection.innerHTML = `
+    <div class="side-section-header">
+      <button class="side-section-title" id="tags-toggle"><span class="side-dot" style="background:var(--muted);opacity:0.4"></span>tags<span class="side-collapse-arrow">▾</span></button>
+    </div>
+  `;
+  const tagBody = document.createElement('div');
+  tagBody.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;';
+  renderTagCloud(tagBody);
+  tagSection.appendChild(tagBody);
+  container.appendChild(tagSection);
+
+  // Wire tag toggle
+  tagSection.querySelector('#tags-toggle').addEventListener('click', () => {
+    tagsOpen = !tagsOpen;
+    tagBody.style.display = tagsOpen ? 'flex' : 'none';
+    tagSection.querySelector('.side-collapse-arrow').classList.toggle('collapsed', !tagsOpen);
   });
 
-  $('session-count').textContent = totalSessions ? `· ${totalSessions}` : '';
+  // Wire add buttons
+  container.querySelector('#sidebar-new-session')?.addEventListener('click', () => openSessionCreate(''));
+  container.querySelector('#sidebar-new-project')?.addEventListener('click', () => openProjectCreate());
 }
 
-// ── File Tree (Projects) ────────────────────────────────────────
-function renderTree(node, container) {
-  if (node.type === 'folder' && node.name !== 'vault') {
-    if (node.name === 'Sessions') return;
+function renderProjectTree(container) {
+  if (!treeData) return;
+  function walk(node, parent) {
+    if (node.type === 'folder' && node.name !== 'vault') {
+      if (node.name === 'Sessions') return;
+      const group = document.createElement('div');
+      const folder = document.createElement('div');
+      folder.className = 'tree-folder';
+      folder.innerHTML = `<span class="tf-arrow">▾</span><span class="tf-icon">≡</span><span class="tf-label">${node.name}</span>`;
+      const children = document.createElement('div');
+      children.style.cssText = 'display:flex;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px;';
 
-    const folderBtn = document.createElement('button');
-    folderBtn.className = 'tree-folder-header';
-    folderBtn.innerHTML = `<span class="tf-caret">&#9662;</span><span class="tf-bars">&#8801;</span><span class="tf-name">${escapeHtml(node.name)}</span>`;
+      folder.addEventListener('click', () => {
+        const arrow = folder.querySelector('.tf-arrow');
+        const isOpen = arrow.textContent === '▾';
+        arrow.textContent = isOpen ? '▸' : '▾';
+        children.style.display = isOpen ? 'none' : 'flex';
+      });
 
-    const children = document.createElement('div');
-    children.style.cssText = 'display:flex;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px';
-
-    let open = true;
-    folderBtn.addEventListener('click', () => {
-      open = !open;
-      children.style.display = open ? '' : 'none';
-      folderBtn.querySelector('.tf-caret').textContent = open ? '▾' : '▸';
-    });
-
-    container.appendChild(folderBtn);
-    container.appendChild(children);
-    (node.children || []).forEach(c => renderTree(c, children));
-
-  } else if (node.type === 'note') {
-    const row = document.createElement('button');
-    row.className = 'sidebar-row';
-    row.dataset.path = node.path;
-    const displayName = node.name.replace('.md', '');
-    row.innerHTML = `<span class="sr-diamond">&#9671;</span><span class="sr-label" style="color:var(--muted)">${escapeHtml(displayName)}</span>`;
-    row.addEventListener('click', () => {
-      currentView = 'note';
-      updateViewSwitch();
-      loadNote(node.path);
-    });
-    container.appendChild(row);
-
-  } else if (node.children) {
-    node.children.forEach(c => renderTree(c, container));
+      group.appendChild(folder);
+      group.appendChild(children);
+      parent.appendChild(group);
+      (node.children || []).forEach(c => walk(c, children));
+    } else if (node.type === 'note') {
+      const row = document.createElement('button');
+      row.className = 'sidebar-row';
+      row.dataset.path = node.path;
+      const name = node.name.replace('.md', '');
+      row.innerHTML = `<span style="color:var(--muted);font-size:10px">◇</span><span class="sr-label">${name}</span>`;
+      row.addEventListener('click', () => { view = 'note'; setView('note'); loadNote(node.path); });
+      parent.appendChild(row);
+    } else if (node.children) {
+      node.children.forEach(c => walk(c, parent));
+    }
   }
+  walk(treeData, container);
 }
 
-// ── Tag Cloud ───────────────────────────────────────────────────
-function renderTagCloud(tags) {
-  const cloud = $('tag-cloud');
-  cloud.innerHTML = '';
+function renderTagCloud(container) {
+  container.innerHTML = '';
+  const tags = collectAllTags();
   const sorted = Object.entries(tags).sort((a, b) => b[1] - a[1]);
   sorted.forEach(([tag, count]) => {
     const chip = document.createElement('button');
     chip.className = 'tag-chip' + (activeTagFilters.has(tag) ? ' active' : '');
-    chip.innerHTML = `<span class="tc-hash">#</span>${escapeHtml(tag)}<span class="tc-count">${count}</span>`;
+    chip.innerHTML = `<span class="tc-hash">#</span>${tag}<span class="tc-count">${count}</span>`;
     chip.addEventListener('click', () => {
       if (activeTagFilters.has(tag)) activeTagFilters.delete(tag);
       else activeTagFilters.add(tag);
       applyTagFilter();
     });
-    cloud.appendChild(chip);
+    container.appendChild(chip);
   });
 }
 
 function applyTagFilter() {
-  const activeEl = $('active-tags');
-  const filterInfo = $('filter-info');
-  const filterCount = $('filter-count');
-
-  activeEl.innerHTML = '';
-  activeTagFilters.forEach(tag => {
-    const el = document.createElement('button');
-    el.className = 'tag-chip active';
-    el.innerHTML = `<span class="tc-hash">#</span>${escapeHtml(tag)} <span style="margin-left:4px;opacity:0.5">&times;</span>`;
-    el.addEventListener('click', () => {
-      activeTagFilters.delete(tag);
-      applyTagFilter();
-    });
-    activeEl.appendChild(el);
-  });
-
-  const treeItems = document.querySelectorAll('.sidebar-row[data-path]');
-  let visibleCount = 0;
-
+  const rows = document.querySelectorAll('.sidebar-row[data-path]');
   if (activeTagFilters.size === 0) {
-    treeItems.forEach(el => { el.style.display = ''; });
-    filterInfo.style.display = 'none';
-    renderTagCloud(collectAllTags());
-    return;
+    rows.forEach(el => { el.style.display = ''; });
+  } else {
+    rows.forEach(el => {
+      const path = el.dataset.path;
+      if (isSessionPath(path)) { el.style.display = ''; return; }
+      const note = allNotes[path];
+      if (!note) { el.style.display = 'none'; return; }
+      const noteTags = (note.tags || []).map(t => t.toLowerCase());
+      const matches = [...activeTagFilters].every(f => noteTags.includes(f.toLowerCase()));
+      el.style.display = matches ? '' : 'none';
+    });
   }
-
-  const matchingPaths = new Set();
-  for (const [path, note] of Object.entries(allNotes)) {
-    const noteTags = (note.tags || []).map(t => t.toLowerCase());
-    const matches = [...activeTagFilters].every(f => noteTags.includes(f.toLowerCase()));
-    if (matches) matchingPaths.add(path);
-  }
-
-  // Only filter project tree items, not session items
-  document.querySelectorAll('#file-tree .sidebar-row[data-path]').forEach(el => {
-    const path = el.dataset.path;
-    if (matchingPaths.has(path)) {
-      el.style.display = '';
-      visibleCount++;
-    } else {
-      el.style.display = 'none';
-    }
-  });
-
-  filterInfo.style.display = 'flex';
-  filterCount.textContent = `${visibleCount} note${visibleCount !== 1 ? 's' : ''}`;
-  renderTagCloud(collectAllTags());
+  // Re-render tag chips
+  const tagBody = document.querySelector('.sidebar-scroll section:last-child > div[style*="flex-wrap"]');
+  if (tagBody) renderTagCloud(tagBody);
 }
 
-// Tags toggle
-$('tags-toggle').addEventListener('click', () => {
-  const wrap = $('tag-cloud-wrap');
-  const caret = document.querySelector('#tags-toggle .ss-caret');
-  const hidden = wrap.style.display === 'none';
-  wrap.style.display = hidden ? '' : 'none';
-  caret.classList.toggle('collapsed', !hidden);
-});
+function markActiveItems() {
+  document.querySelectorAll('.sidebar-row[data-path]').forEach(el => {
+    el.classList.toggle('active', el.dataset.path === currentPath);
+  });
+}
 
-$('clear-filters').addEventListener('click', () => {
-  activeTagFilters.clear();
-  applyTagFilter();
-});
+// ─── Open Session ────────────────────────────────────────────────────────────
+function openSession(path) {
+  activeSession = path;
+  view = 'session';
+  setView('session');
+  loadNote(path);
+}
 
-// ══════════════════════════════════════════════════════════════════
-// NOTE LOADING
-// ══════════════════════════════════════════════════════════════════
+// ─── Load Note ───────────────────────────────────────────────────────────────
 async function loadNote(path) {
   currentPath = path;
   const note = await fetchJSON(`/api/note/${path}`);
   if (note.error) return;
   currentNote = note;
+  markActiveItems();
+  updateBreadcrumb(path);
 
-  // Mark active in sidebar
-  document.querySelectorAll('.sidebar-row[data-path]').forEach(el => {
-    const isActive = el.dataset.path === path;
-    el.classList.toggle('active', isActive);
-    const label = el.querySelector('.sr-label');
-    if (label) label.style.color = isActive ? 'var(--accent)' : 'var(--muted)';
-  });
-
-  updateBreadcrumb();
-
-  // Determine if session
-  const isSession = path.includes('/Sessions/') || path.startsWith('Sessions/');
-  if (isSession && currentView !== 'session') {
-    currentView = 'session';
-    updateViewSwitch();
-  } else if (!isSession && currentView === 'session') {
-    currentView = 'note';
-    updateViewSwitch();
+  if (view === 'session' || isSessionPath(path)) {
+    if (view !== 'session') { view = 'session'; setView('session'); }
+    activeSession = path;
+    renderSessionView(note);
+  } else if (view === 'note') {
+    renderNoteView(note);
   }
-
-  showCurrentView();
 }
 
-// ══════════════════════════════════════════════════════════════════
-// NOTE VIEW
-// ══════════════════════════════════════════════════════════════════
+// ─── Note View ───────────────────────────────────────────────────────────────
 function renderNoteView(note) {
-  const container = $('note-view-container');
-  const words = wordCount(note.content);
-  const rTime = readingTime(words);
-  const path = note.path || currentPath;
+  const area = $('content-area');
+  const wordCount = (note.content || '').split(/\s+/).filter(Boolean).length;
+  const readTime = Math.ceil(wordCount / 200) + ' min';
 
-  let html = `<div class="note-view ${showRail ? 'with-rail' : 'no-rail'}" style="animation:fadeIn 0.15s ease">`;
-
-  // ── Article column
-  html += '<article class="note-article">';
-
-  // Command prompt strip
-  html += `<div class="cmd-strip">
-    <span class="acc">$</span>
-    <span class="mut">kyp_read</span>
-    <span>${escapeHtml(path.replace('.md', ''))}</span>
-    <span style="margin-left:auto" class="dim">↳ ok · ${words.toLocaleString()} words · ${rTime}</span>
-  </div>`;
-
-  // Tag strip
-  html += '<div class="tag-strip"><div class="tag-strip-left">';
-  (note.tags || []).forEach(t => {
-    html += `<button class="tag-chip clickable-tag" data-tag="${escapeHtml(t)}"><span class="tc-hash">#</span>${escapeHtml(t)}</button>`;
-  });
-  html += `<span class="ts-meta">created <span class="mut tab-nums">${note.created || ''}</span>`;
-  if (note.updated && note.updated !== note.created) {
-    html += ` <span style="margin:0 6px">·</span> edited <span class="mut">${note.updated}</span>`;
-  }
-  html += '</span></div>';
-  html += `<div class="tag-strip-right">
-    <button class="ghost-btn">↗ share</button>
-    <button class="ghost-btn" onclick="openEditor('${escapeHtml(path)}')">⌥ edit</button>
-  </div></div>`;
-
-  // Title
-  html += `<h1 class="note-title">${escapeHtml(note.title)}<span class="title-caret"></span></h1>`;
-
-  // Meta bar
-  html += `<div class="note-meta-bar">
-    <span><span class="mut tab-nums">${words.toLocaleString()}</span> words</span>
-    <span>·</span>
-    <span><span class="mut">${rTime}</span> read</span>
-  </div>`;
-
-  // Markdown body
   let md = note.content || '';
-  // Strip the first H1 to avoid duplication
-  md = md.replace(/^#\s+.+\n?/, '');
   md = md.replace(/\[\[([^\]]+)\]\]/g, (_, link) => {
     const display = link.includes('#') ? link.split('#').pop() : link;
-    return `<span class="wikilink" data-link="${escapeHtml(link)}">${escapeHtml(display)}</span>`;
+    return `<span class="wikilink" data-link="${link}">${display}</span>`;
   });
-  html += `<div class="md-body">${marked.parse(md)}</div>`;
-  html += '<div style="height:80px"></div>';
-  html += '</article>';
 
-  // ── Right Rail
-  if (showRail) {
-    html += '<aside class="right-rail">';
-    html += renderLocalGraphRail(note);
-    html += renderOutlineRail(note);
-    html += renderBacklinksRail(note);
-    html += '</aside>';
-  }
+  const tagsHtml = (note.tags || []).map(t =>
+    `<button class="tag-chip" data-tag="${t}"><span class="tc-hash">#</span>${t}</button>`
+  ).join('');
 
-  html += '</div>';
-  container.innerHTML = html;
+  const railClass = railOpen ? '' : ' no-rail';
+  area.innerHTML = `
+    <div class="note-view${railClass}">
+      <article class="note-article">
+        <div class="cmd-strip">
+          <span class="acc">$</span>
+          <span class="mut">kyp_read</span>
+          <span>${note.path.replace('.md','')}</span>
+          <span class="cs-right dim">↳ ok · ${wordCount.toLocaleString()} words · ${readTime}</span>
+        </div>
+        <div class="note-tags-strip">
+          <div class="note-tags-left">
+            ${tagsHtml}
+            <span class="note-dates">created <span class="mut tab-nums">${note.created || ''}</span> · edited <span class="mut">${note.updated || ''}</span></span>
+          </div>
+          <div class="note-tags-right">
+            <button class="ghost-btn" id="note-edit-btn">⌥ edit</button>
+          </div>
+        </div>
+        <h1 class="note-title">${note.title}<span class="title-caret"></span></h1>
+        <div class="note-meta">
+          <span><span class="mut tab-nums">${wordCount.toLocaleString()}</span> words</span>
+          <span>·</span>
+          <span><span class="mut">${readTime}</span> read</span>
+        </div>
+        <div class="md-body">${marked.parse(md)}</div>
+        <div style="height:80px"></div>
+      </article>
+      ${railOpen ? `<aside class="note-rail" id="note-rail"></aside>` : ''}
+    </div>
+  `;
 
-  // Bind wikilinks
-  container.querySelectorAll('.wikilink').forEach(el => {
+  // Wire wikilinks
+  area.querySelectorAll('.wikilink').forEach(el => {
     el.addEventListener('click', () => {
       const target = findNotePath(el.dataset.link.split('#')[0]);
       if (target) loadNote(target);
     });
   });
 
-  // Bind clickable tags
-  container.querySelectorAll('.clickable-tag').forEach(el => {
+  // Wire tag clicks
+  area.querySelectorAll('.tag-chip[data-tag]').forEach(el => {
     el.addEventListener('click', () => {
       activeTagFilters.add(el.dataset.tag);
       applyTagFilter();
     });
   });
 
-  // Bind outline clicks
-  container.querySelectorAll('.outline-item').forEach(el => {
-    el.addEventListener('click', () => {
-      const article = container.querySelector('.note-article');
-      const headings = article.querySelectorAll('h1,h2,h3');
-      const target = Array.from(headings).find(h => h.textContent.trim() === el.textContent.trim());
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  });
+  // Wire edit button
+  area.querySelector('#note-edit-btn')?.addEventListener('click', () => openEditor(note.path));
 
-  // Bind backlink clicks
-  container.querySelectorAll('.backlink-item').forEach(el => {
-    el.addEventListener('click', () => {
-      if (el.dataset.path) loadNote(el.dataset.path);
-    });
-  });
-
-  // Initialize local graph SVG
-  if (showRail) initLocalGraph(note);
+  // Render rail
+  if (railOpen) renderRail(note);
 }
 
-function renderLocalGraphRail(note) {
-  let html = '<section class="rail-section">';
-  html += '<header>';
-  html += '<span class="rail-section-label">local graph</span>';
-  html += '<div style="display:flex;gap:2px">';
-  html += '<button class="rail-icon-btn" id="rail-zoom-out">&minus;</button>';
-  html += '<button class="rail-icon-btn" id="rail-zoom-in">+</button>';
-  html += '<button class="rail-icon-btn" id="rail-expand" title="open full graph">&nesear;</button>';
-  html += '</div></header>';
-  html += '<div class="rail-section-body" style="position:relative;height:240px;margin:-2px -2px;padding:0">';
-  html += '<svg id="local-graph-svg" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet" style="width:100%;height:100%;display:block"></svg>';
-  html += '</div></section>';
-  return html;
-}
+// ─── Right Rail ──────────────────────────────────────────────────────────────
+function renderRail(note) {
+  const rail = $('note-rail');
+  if (!rail) return;
+  rail.innerHTML = '';
 
-function renderOutlineRail(note) {
-  const content = note.content || '';
+  // Local graph
+  const graphCard = createRailCard('local graph', null, {
+    right: `<div style="display:flex;gap:2px"><button class="rail-icon-btn" id="rail-graph-expand" title="Open full graph">⤢</button></div>`
+  });
+  const graphBody = graphCard.querySelector('.rail-card-body');
+  graphBody.style.cssText = 'position:relative;height:240px;padding:0;overflow:hidden;';
+  renderLocalGraph(graphBody, note);
+  rail.appendChild(graphCard);
+
+  graphCard.querySelector('#rail-graph-expand')?.addEventListener('click', () => setView('graph'));
+
+  // Outline
   const headings = [];
-  content.split('\n').forEach(line => {
+  (note.content || '').split('\n').forEach(line => {
     const m = line.match(/^(#{1,3})\s+(.+)/);
     if (m) headings.push({ level: m[1].length, text: m[2].trim() });
   });
+  if (headings.length > 1) {
+    const outCard = createRailCard(`outline <span class="dim tab-nums" style="margin-left:6px">${headings.length}</span>`, null, { collapsible: true });
+    const outBody = outCard.querySelector('.rail-card-body');
+    outBody.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
+    headings.forEach(h => {
+      const el = document.createElement('div');
+      el.className = 'outline-item' + (h.level === 1 ? ' lv1' : '');
+      el.style.paddingLeft = (4 + (h.level - 1) * 12) + 'px';
+      el.textContent = h.text;
+      el.addEventListener('click', () => {
+        const target = Array.from(document.querySelectorAll('.md-body h1,.md-body h2,.md-body h3')).find(
+          el => el.textContent.trim() === h.text
+        );
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+      outBody.appendChild(el);
+    });
+    rail.appendChild(outCard);
+  }
 
-  if (headings.length < 2) return '';
-
-  let html = '<section class="rail-section">';
-  html += '<header>';
-  html += `<button class="rail-section-label" onclick="this.closest(\'.rail-section\').querySelector(\'.rail-section-body\').style.display=this.closest(\'.rail-section\').querySelector(\'.rail-section-body\').style.display===\'none\'?\'\':\'none\';this.querySelector(\'.rs-caret\').classList.toggle(\'collapsed\')">`;
-  html += `<span class="rs-caret">&#9662;</span> outline <span class="dim tab-nums" style="margin-left:6px">${headings.length}</span>`;
-  html += '</button></header>';
-  html += '<div class="rail-section-body">';
-  html += '<div style="display:flex;flex-direction:column;gap:2px">';
-  headings.forEach(h => {
-    const cls = h.level === 1 ? 'h1' : h.level === 3 ? 'h3' : '';
-    html += `<a class="outline-item ${cls}" style="${h.level === 1 ? 'font-weight:500;color:var(--fg)' : ''}">${escapeHtml(h.text)}</a>`;
-  });
-  html += '</div></div></section>';
-  return html;
-}
-
-function renderBacklinksRail(note) {
+  // Backlinks
   const backlinks = note.backlinks || [];
-  if (backlinks.length === 0) return '';
-
-  let html = '<section class="rail-section">';
-  html += '<header>';
-  html += `<button class="rail-section-label" onclick="this.closest(\'.rail-section\').querySelector(\'.rail-section-body\').style.display=this.closest(\'.rail-section\').querySelector(\'.rail-section-body\').style.display===\'none\'?\'\':\'none\';this.querySelector(\'.rs-caret\').classList.toggle(\'collapsed\')">`;
-  html += `<span class="rs-caret">&#9662;</span> backlinks <span class="dim tab-nums" style="margin-left:6px">${backlinks.length}</span>`;
-  html += '</button></header>';
-  html += '<div class="rail-section-body">';
-  backlinks.forEach(bl => {
-    html += `<a class="backlink-item" data-path="${escapeHtml(bl.path || bl)}">
-      <span class="bl-arrow">&larr;</span>
-      <span>${escapeHtml(bl.title || bl.path || bl)}</span>
-    </a>`;
-  });
-  html += '</div></section>';
-  return html;
+  if (backlinks.length > 0) {
+    const blCard = createRailCard(`backlinks <span class="dim tab-nums" style="margin-left:6px">${backlinks.length}</span>`, null, { collapsible: true });
+    const blBody = blCard.querySelector('.rail-card-body');
+    backlinks.forEach(bl => {
+      const item = document.createElement('div');
+      item.className = 'bl-item';
+      item.innerHTML = `<span class="dim">←</span><span>${bl.title || bl.path}</span>`;
+      item.addEventListener('click', () => loadNote(bl.path));
+      blBody.appendChild(item);
+    });
+    rail.appendChild(blCard);
+  }
 }
 
-// ── Local Graph (D3 force in rail SVG) ──────────────────────────
-function initLocalGraph(note) {
-  const svg = document.getElementById('local-graph-svg');
-  if (!svg) return;
+function createRailCard(title, content, opts = {}) {
+  const card = document.createElement('div');
+  card.className = 'rail-card';
+  let collapseHtml = '';
+  if (opts.collapsible) collapseHtml = '<span class="side-collapse-arrow" style="margin-right:4px">▾</span>';
+  card.innerHTML = `
+    <div class="rail-card-header">
+      <button class="rail-card-title">${collapseHtml}<span>${title}</span></button>
+      ${opts.right || ''}
+    </div>
+    <div class="rail-card-body">${content || ''}</div>
+  `;
+  if (opts.collapsible) {
+    const titleBtn = card.querySelector('.rail-card-title');
+    const body = card.querySelector('.rail-card-body');
+    const arrow = card.querySelector('.side-collapse-arrow');
+    titleBtn.addEventListener('click', () => {
+      const open = body.style.display !== 'none';
+      body.style.display = open ? 'none' : '';
+      arrow.classList.toggle('collapsed', open);
+    });
+  }
+  return card;
+}
 
+// ─── Local Graph ─────────────────────────────────────────────────────────────
+function renderLocalGraph(container, note) {
   const nodes = new Map();
-  const edges = [];
+  const links = [];
 
-  nodes.set(note.path, { id: note.path, label: note.title, kind: 'note', center: true });
-
-  const projectPrefix = note.path.includes('/') ? note.path.split('/')[0] + '/' : '';
-  const inSameProject = (p) => !projectPrefix ? !p.includes('/') : p.startsWith(projectPrefix);
+  nodes.set(note.path, { id: note.path, title: note.title, kind: 'note', center: true });
 
   (note.links || []).forEach(link => {
     const path = findNotePath(link);
-    if (path && inSameProject(path)) {
-      if (!nodes.has(path)) {
-        const n = allNotes[path];
-        const isSession = path.includes('/Sessions/');
-        nodes.set(path, { id: path, label: n ? n.title : link, kind: isSession ? 'session' : 'note', center: false });
-      }
-      edges.push([note.path, path]);
+    if (path && !nodes.has(path)) {
+      nodes.set(path, { id: path, title: allNotes[path]?.title || link, kind: 'note', center: false });
+      links.push({ source: note.path, target: path });
+    } else if (path) {
+      links.push({ source: note.path, target: path });
     }
   });
 
   (note.backlinks || []).forEach(bl => {
-    const blPath = typeof bl === 'string' ? bl : (bl && bl.path);
-    if (!blPath) return;
-    if (inSameProject(blPath)) {
-      if (!nodes.has(blPath)) {
-        const n = allNotes[blPath];
-        const title = (bl && typeof bl === 'object' && bl.title) ? bl.title : (n ? n.title : blPath);
-        const isSession = blPath.includes('/Sessions/');
-        nodes.set(blPath, { id: blPath, label: title, kind: isSession ? 'session' : 'note', center: false });
-      }
-      edges.push([blPath, note.path]);
+    const p = bl.path;
+    if (p && !nodes.has(p)) {
+      nodes.set(p, { id: p, title: bl.title || p, kind: isSessionPath(p) ? 'session' : 'note', center: false });
     }
+    if (p) links.push({ source: p, target: note.path });
   });
 
-  (note.related || []).forEach(r => {
-    if (r.path && inSameProject(r.path)) {
-      if (!nodes.has(r.path)) {
-        const n = allNotes[r.path];
-        const isSession = r.path.includes('/Sessions/');
-        nodes.set(r.path, { id: r.path, label: r.title, kind: isSession ? 'session' : 'note', center: false });
-      }
-      edges.push([note.path, r.path]);
+  (note.related || []).slice(0, 5).forEach(r => {
+    if (r.path && !nodes.has(r.path)) {
+      nodes.set(r.path, { id: r.path, title: r.title, kind: isSessionPath(r.path) ? 'session' : 'note', center: false });
     }
+    if (r.path) links.push({ source: note.path, target: r.path, session: isSessionPath(r.path) });
   });
 
   const nodeArray = Array.from(nodes.values());
   if (nodeArray.length < 2) {
-    svg.innerHTML = '<text x="50" y="50" text-anchor="middle" fill="var(--dim)" font-size="3" font-family="JetBrains Mono, monospace">No connections</text>';
+    container.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--dim);font-size:var(--fz-xs)">No connections</div>';
     return;
   }
 
-  // Simple force layout using D3 but rendering to SVG viewBox 0-100
-  const w = 100, h = 100;
-  const sim = d3.forceSimulation(nodeArray)
-    .force('link', d3.forceLink(edges.map(([s, t]) => ({ source: s, target: t }))).id(d => d.id).distance(25))
+  const width = 100, height = 100;
+  const svg = d3.select(container).append('svg')
+    .attr('viewBox', '0 0 100 100')
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .style('width', '100%').style('height', '100%');
+
+  const simulation = d3.forceSimulation(nodeArray)
+    .force('link', d3.forceLink(links).id(d => d.id).distance(25))
     .force('charge', d3.forceManyBody().strength(-80))
-    .force('center', d3.forceCenter(w / 2, h / 2))
-    .force('collision', d3.forceCollide().radius(6));
+    .force('center', d3.forceCenter(50, 50))
+    .force('collision', d3.forceCollide(8));
 
-  sim.stop();
-  for (let i = 0; i < 120; i++) sim.tick();
-
-  // Normalize positions to 10-90 range
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  nodeArray.forEach(n => {
-    minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
-    minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
-  });
-  const rangeX = maxX - minX || 1;
-  const rangeY = maxY - minY || 1;
-  nodeArray.forEach(n => {
-    n.x = 10 + ((n.x - minX) / rangeX) * 80;
-    n.y = 10 + ((n.y - minY) / rangeY) * 80;
-  });
-
-  const nodeById = (id) => nodeArray.find(n => n.id === id);
-  let svgHtml = '';
-
-  // Edges
-  edges.forEach(([a, b]) => {
-    const na = nodeById(a), nb = nodeById(b);
-    if (!na || !nb) return;
-    const isSessionEdge = na.kind === 'session' || nb.kind === 'session';
-    svgHtml += `<line x1="${na.x}" y1="${na.y}" x2="${nb.x}" y2="${nb.y}"
-      stroke="var(--line-2)" stroke-width="0.22" stroke-linecap="round"
-      ${isSessionEdge ? 'stroke-dasharray="0.9 0.9" stroke-opacity="0.5"' : 'stroke-opacity="0.85"'}/>`;
-  });
-
-  // Nodes
-  nodeArray.forEach(n => {
-    const r = n.center ? 3.5 : 2;
-    const fill = n.center ? 'var(--accent)' : n.kind === 'session' ? 'var(--bg)' : 'var(--panel-2)';
-    const stroke = n.kind === 'session' ? 'var(--muted)' : 'var(--accent)';
-
-    if (n.center) {
-      svgHtml += `<circle cx="${n.x}" cy="${n.y}" r="${r * 1.9}" fill="var(--accent)" fill-opacity="0.18"/>`;
-    }
-    svgHtml += `<circle cx="${n.x}" cy="${n.y}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="${n.center ? 0 : n.kind === 'session' ? 0.35 : 0.5}"/>`;
-
-    if (n.center) {
-      svgHtml += `<text x="${n.x}" y="${n.y + r + 6.5}" text-anchor="middle" font-size="2.8" font-weight="500" fill="var(--accent)" style="font-family:JetBrains Mono,monospace;letter-spacing:-0.02em">${escapeHtml(n.label)}</text>`;
-    }
-  });
-
-  svg.innerHTML = svgHtml;
-
-  // Bind rail expand button
-  const expandBtn = document.getElementById('rail-expand');
-  if (expandBtn) {
-    expandBtn.addEventListener('click', () => {
-      currentView = 'graph';
-      updateViewSwitch();
-      showCurrentView();
-      updateBreadcrumb();
+  simulation.on('tick', () => {
+    nodeArray.forEach(d => {
+      d.x = Math.max(10, Math.min(90, d.x));
+      d.y = Math.max(10, Math.min(90, d.y));
     });
-  }
+  });
+
+  // Run simulation
+  for (let i = 0; i < 120; i++) simulation.tick();
+  simulation.stop();
+
+  // Draw edges
+  links.forEach(l => {
+    const s = typeof l.source === 'object' ? l.source : nodeArray.find(n => n.id === l.source);
+    const t = typeof l.target === 'object' ? l.target : nodeArray.find(n => n.id === l.target);
+    if (!s || !t) return;
+    const isSession = l.session || s.kind === 'session' || t.kind === 'session';
+    svg.append('line')
+      .attr('x1', s.x).attr('y1', s.y).attr('x2', t.x).attr('y2', t.y)
+      .attr('stroke', 'var(--line-2)')
+      .attr('stroke-width', 0.22)
+      .attr('stroke-opacity', isSession ? 0.5 : 0.85)
+      .attr('stroke-dasharray', isSession ? '0.9 0.9' : '')
+      .attr('stroke-linecap', 'round');
+  });
+
+  // Draw nodes
+  nodeArray.forEach(n => {
+    const r = n.center ? 5 : (n.kind === 'session' ? 2.2 : 3.2);
+    const g = svg.append('g').style('cursor', 'pointer');
+
+    if (n.center) {
+      g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r * 1.9)
+        .attr('fill', 'var(--accent)').attr('fill-opacity', 0.18);
+      g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
+        .attr('fill', 'var(--accent)');
+      g.append('text').attr('x', n.x).attr('y', n.y + r + 6)
+        .attr('text-anchor', 'middle').attr('font-size', 2.5).attr('font-weight', 500)
+        .attr('fill', 'var(--accent)')
+        .style('font-family', 'JetBrains Mono, monospace')
+        .text(n.title.length > 24 ? n.title.substring(0, 22) + '…' : n.title);
+    } else if (n.kind === 'session') {
+      g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
+        .attr('fill', 'var(--bg)').attr('stroke', 'var(--muted)').attr('stroke-width', 0.35);
+    } else {
+      g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
+        .attr('fill', 'var(--panel-2)').attr('stroke', 'var(--accent)').attr('stroke-width', 0.5);
+    }
+
+    g.on('click', () => { if (!n.center) loadNote(n.id); });
+  });
 }
 
-// ══════════════════════════════════════════════════════════════════
-// SESSION VIEW
-// ══════════════════════════════════════════════════════════════════
+// ─── Session View ────────────────────────────────────────────────────────────
 function renderSessionView(note) {
-  const container = $('session-view-container');
-  const path = note.path || currentPath;
-
-  // Parse session sections from content
+  const area = $('content-area');
   const content = note.content || '';
   const lines = content.split('\n');
 
   // Extract summary
   let summary = '';
-  let inSummary = false;
-  for (const line of lines) {
-    if (line.trim() === '## Summary') { inSummary = true; continue; }
-    if (inSummary && line.startsWith('#')) break;
-    if (inSummary && line.trim()) { summary = line.trim(); break; }
-  }
-
-  // Extract session id from path
-  const filename = path.split('/').pop().replace('.md', '');
-  const projectName = path.includes('/Sessions/') ? path.split('/Sessions/')[0] : '';
-  const isLive = (note.tags || []).includes('live');
-
-  // Build timeline from content sections
-  const timeline = [];
-  let currentSection = '';
-  let sectionItems = [];
-  for (const line of lines) {
-    const hMatch = line.match(/^##\s+(.+)/);
-    if (hMatch) {
-      if (currentSection && sectionItems.length) {
-        sectionItems.forEach(item => {
-          timeline.push({ section: currentSection, text: item });
-        });
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].trim() === '## Summary') {
+      for (let j = i + 1; j < lines.length; j++) {
+        if (lines[j].trim() && !lines[j].startsWith('#')) { summary = lines[j].trim(); break; }
       }
-      currentSection = hMatch[1].trim();
-      sectionItems = [];
-      continue;
-    }
-    if (currentSection && line.trim() && !line.startsWith('#')) {
-      const cleaned = line.replace(/^[-*]\s*/, '').trim();
-      if (cleaned) sectionItems.push(cleaned);
+      break;
     }
   }
-  if (currentSection && sectionItems.length) {
-    sectionItems.forEach(item => {
-      timeline.push({ section: currentSection, text: item });
+
+  // Extract session ID
+  const pathParts = note.path.split('/');
+  const sessionFile = pathParts[pathParts.length - 1].replace('.md', '');
+  const projectName = pathParts[0] || '';
+
+  // Count words for token estimate
+  const wordCount = content.split(/\s+/).filter(Boolean).length;
+
+  // Count sections
+  const sections = ['INVESTIGATED', 'LEARNED', 'COMPLETED', 'NEXT STEPS', 'PROMPTS'];
+  let itemCount = 0;
+  sections.forEach(sec => {
+    const idx = content.indexOf(`## ${sec}`);
+    if (idx !== -1) {
+      const nextSec = content.indexOf('\n## ', idx + 5);
+      const block = nextSec !== -1 ? content.substring(idx, nextSec) : content.substring(idx);
+      itemCount += (block.match(/^- /gm) || []).length;
+    }
+  });
+
+  // Build timeline from sections
+  const timeline = [];
+  const timeStr = sessionFile.match(/_(\d{2})(\d{2})/);
+  const baseTime = timeStr ? `${parseInt(timeStr[1]) % 12 || 12}:${timeStr[2]}` : '—';
+
+  sections.forEach(sec => {
+    const idx = content.indexOf(`## ${sec}`);
+    if (idx === -1) return;
+    const nextSec = content.indexOf('\n## ', idx + 5);
+    const block = nextSec !== -1 ? content.substring(idx, nextSec) : content.substring(idx);
+    const items = block.split('\n').filter(l => l.startsWith('- ')).map(l => l.substring(2).trim());
+    const kind = sec === 'PROMPTS' ? 'msg' : sec === 'LEARNED' ? 'mem' : sec === 'COMPLETED' ? 'tool' : 'msg';
+    items.forEach(item => {
+      timeline.push({ time: baseTime, kind, text: item.substring(0, 120) });
     });
-  }
-
-  const words = wordCount(content);
-
-  let html = '<div class="session-view" style="animation:fadeIn 0.15s ease">';
-
-  // Status + tags row
-  html += '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0 14px;flex-wrap:wrap;gap:8px">';
-  html += '<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">';
-  html += `<span class="session-status-pill ${isLive ? 'live' : ''}"><span class="sp-dot" style="background:${isLive ? 'var(--accent)' : 'var(--muted)'}"></span>${isLive ? 'live' : 'done'}</span>`;
-  html += '<button class="tag-chip"><span class="tc-hash">#</span>session</button>';
-  html += '<button class="tag-chip"><span class="tc-hash">#</span>auto-captured</button>';
-  html += `<span class="dim" style="font-size:var(--fz-xs);margin-left:8px">${note.created || ''}</span>`;
-  html += '</div>';
-  html += `<button class="ghost-btn" onclick="openEditor('${escapeHtml(path)}')">⌥ edit</button>`;
-  html += '</div>';
-
-  // Title
-  html += `<h1 style="margin:12px 0 4px;font-size:calc(var(--fz-xl) + 6px);font-weight:500;letter-spacing:-0.01em">`;
-  html += `Session ${escapeHtml(filename)} ${summary ? '· ' + escapeHtml(summary) : ''}</h1>`;
-
-  // Meta
-  html += `<div class="dim" style="font-size:var(--fz-xs);margin-bottom:22px;display:flex;gap:14px">
-    <span>words <span class="mut tab-nums">${words.toLocaleString()}</span></span>
-    <span>·</span>
-    <span>captured <span class="acc tab-nums">+${timeline.filter(t => t.section === 'LEARNED' || t.section === 'COMPLETED').length}</span> mems</span>
-  </div>`;
-
-  // Stat grid
-  const statData = [
-    ['project', projectName || '(root)'],
-    ['sections', String(new Set(timeline.map(t => t.section)).size)],
-    ['entries', String(timeline.length), 'var(--accent)'],
-    ['words', words.toLocaleString()],
-  ];
-  html += '<div class="stat-grid">';
-  statData.forEach(([k, v, c]) => {
-    html += `<div class="stat-card">
-      <span class="sc-label">${k}</span>
-      <span class="sc-value" style="color:${c || 'var(--fg)'}">${v}</span>
-    </div>`;
-  });
-  html += '</div>';
-
-  // Timeline
-  html += '<h2 style="margin:12px 0 12px;font-size:calc(var(--fz-lg) + 2px);font-weight:500;display:flex;align-items:center;gap:10px">';
-  html += '<span class="dim" style="font-size:var(--fz-sm);font-weight:400">##</span> Timeline</h2>';
-
-  const sectionColors = {
-    'Summary': 'var(--muted)',
-    'INVESTIGATED': 'var(--link)',
-    'LEARNED': 'var(--accent)',
-    'COMPLETED': 'var(--warn)',
-    'NEXT STEPS': 'var(--pin)',
-  };
-  const sectionLabels = {
-    'Summary': 'SUM',
-    'INVESTIGATED': 'INV',
-    'LEARNED': 'MEM',
-    'COMPLETED': 'DONE',
-    'NEXT STEPS': 'NEXT',
-  };
-
-  timeline.forEach((entry, i) => {
-    const color = sectionColors[entry.section] || 'var(--muted)';
-    const label = sectionLabels[entry.section] || entry.section.substring(0, 4).toUpperCase();
-    const isLast = i === timeline.length - 1;
-
-    html += `<div class="tl-row">
-      <span class="tl-time">${escapeHtml(entry.section === timeline[i > 0 ? i - 1 : 0].section && i > 0 ? '' : (i + 1).toString())}</span>
-      <span class="tl-badge" style="color:${color}">${label}</span>
-      <span class="tl-text">${escapeHtml(entry.text)}</span>
-      ${!isLast ? '<span class="tl-guide"></span>' : ''}
-    </div>`;
   });
 
-  // Fallback: render markdown if no timeline
+  const statusClass = 'done';
+  const tagsHtml = `<button class="tag-chip"><span class="tc-hash">#</span>session</button><button class="tag-chip"><span class="tc-hash">#</span>auto-captured</button>`;
+
+  area.innerHTML = `
+    <article class="session-view">
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0 14px">
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+          <span class="session-status ${statusClass}"><i style="width:6px;height:6px;border-radius:999px;background:var(--muted);display:inline-block"></i> done</span>
+          ${tagsHtml}
+          <span class="dim" style="font-size:var(--fz-xs);margin-left:8px">${note.created || sessionFile}</span>
+        </div>
+        <button class="ghost-btn" onclick="openEditor('${note.path}')">⌥ edit</button>
+      </div>
+      <h1 style="margin:12px 0 4px;font-size:calc(var(--fz-xl) + 6px);font-weight:500;letter-spacing:-0.01em">
+        Session ${sessionFile} · ${summary || 'Session'}
+      </h1>
+      <div class="dim" style="font-size:var(--fz-xs);margin-bottom:22px;display:flex;gap:14px">
+        <span>words <span class="mut tab-nums">${wordCount.toLocaleString()}</span></span>
+        <span>·</span>
+        <span>captured <span class="acc tab-nums">+${itemCount}</span> items</span>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-card"><span class="sc-label">words</span><span class="sc-value">${wordCount.toLocaleString()}</span></div>
+        <div class="stat-card"><span class="sc-label">sections</span><span class="sc-value">${sections.filter(s => content.includes('## ' + s)).length}</span></div>
+        <div class="stat-card"><span class="sc-label">captured</span><span class="sc-value" style="color:var(--accent)">+${itemCount}</span></div>
+        <div class="stat-card"><span class="sc-label">project</span><span class="sc-value" style="font-size:var(--fz-sm)">${projectName}</span></div>
+      </div>
+      <h2 style="margin:12px 0 12px;font-size:calc(var(--fz-lg) + 2px);font-weight:500;display:flex;align-items:center;gap:10px">
+        <span class="dim" style="font-size:var(--fz-sm);font-weight:400">##</span> Timeline
+      </h2>
+      <div id="session-timeline"></div>
+      <div style="margin-top:24px">
+        <h2 style="margin:12px 0 12px;font-size:calc(var(--fz-lg) + 2px);font-weight:500;display:flex;align-items:center;gap:10px">
+          <span class="dim" style="font-size:var(--fz-sm);font-weight:400">##</span> Full Content
+        </h2>
+        <div class="md-body">${marked.parse(content)}</div>
+      </div>
+      <div style="height:60px"></div>
+    </article>
+  `;
+
+  // Render timeline
+  const tlContainer = $('session-timeline');
   if (timeline.length === 0) {
-    let md = content;
-    md = md.replace(/\[\[([^\]]+)\]\]/g, (_, link) => {
-      const display = link.includes('#') ? link.split('#').pop() : link;
-      return `<span class="wikilink" data-link="${escapeHtml(link)}">${escapeHtml(display)}</span>`;
+    tlContainer.innerHTML = '<div class="dim" style="font-size:var(--fz-xs);padding:8px 0">No timeline entries extracted</div>';
+  } else {
+    timeline.forEach((row, i) => {
+      const kinds = { msg: { c: 'var(--muted)', lbl: 'MSG' }, mem: { c: 'var(--accent)', lbl: 'MEM' }, decision: { c: 'var(--warn)', lbl: 'DEC' }, tool: { c: 'var(--link)', lbl: 'TOOL' } };
+      const kk = kinds[row.kind] || kinds.msg;
+      const div = document.createElement('div');
+      div.className = 'tl-row';
+      div.innerHTML = `
+        <span class="tl-time">${row.time}</span>
+        <span class="tl-badge" style="color:${kk.c};border:1px solid ${kk.c}">${kk.lbl}</span>
+        <span class="tl-text">${row.text}</span>
+        ${i < timeline.length - 1 ? '<span class="tl-guide"></span>' : ''}
+      `;
+      tlContainer.appendChild(div);
     });
-    html += `<div class="md-body">${marked.parse(md)}</div>`;
   }
-
-  html += '</div>';
-  container.innerHTML = html;
-
-  // Bind wikilinks in session view
-  container.querySelectorAll('.wikilink').forEach(el => {
-    el.addEventListener('click', () => {
-      const target = findNotePath(el.dataset.link.split('#')[0]);
-      if (target) loadNote(target);
-    });
-  });
 }
 
-// ══════════════════════════════════════════════════════════════════
-// GRAPH VIEW
-// ══════════════════════════════════════════════════════════════════
+// ─── Graph View ──────────────────────────────────────────────────────────────
 function renderGraphView() {
-  const container = $('graph-view-container');
+  const area = $('content-area');
+  area.innerHTML = `
+    <div class="graph-view">
+      <section class="graph-canvas">
+        <div class="graph-header">
+          <div class="graph-header-left">
+            <span class="acc">▦</span>
+            <span style="font-weight:500">vault graph</span>
+            <span class="dim tab-nums" id="graph-stats"></span>
+          </div>
+          <div class="graph-header-right">
+            <button class="tool-chip active">force</button>
+            <button class="tool-chip">radial</button>
+            <button class="tool-chip">time</button>
+            <button class="ghost-btn" id="graph-close">✕</button>
+          </div>
+        </div>
+        <div class="graph-svg-wrap" id="graph-svg-wrap"></div>
+        <div class="graph-legend">
+          <div class="graph-legend-title">legend</div>
+          <div class="graph-legend-item"><i style="width:8px;height:8px;border-radius:999px;background:var(--accent)"></i>notes</div>
+          <div class="graph-legend-item"><i style="width:8px;height:8px;border-radius:999px;background:var(--panel-2);border:1px solid var(--muted)"></i>sessions</div>
+          <div class="graph-legend-item"><i style="width:12px;height:1px;background:var(--line-2)"></i>link</div>
+          <div class="graph-legend-item"><i style="width:12px;height:0;border-top:1px dashed var(--line-2)"></i>session ref</div>
+        </div>
+      </section>
+      <aside class="graph-rail" id="graph-rail">
+        <div class="rail-card">
+          <div class="rail-card-header"><span class="rail-card-title"><span>focused</span></span></div>
+          <div class="rail-card-body" id="graph-focused">
+            <div class="dim" style="font-size:var(--fz-xs)">Hover or click a node</div>
+          </div>
+        </div>
+        <div class="rail-card">
+          <div class="rail-card-header"><span class="rail-card-title"><span>connections</span></span></div>
+          <div class="rail-card-body" id="graph-connections"></div>
+        </div>
+      </aside>
+    </div>
+  `;
 
-  // Gather all nodes and edges from allNotes
+  $('graph-close').addEventListener('click', () => setView('note'));
+  buildFullGraph();
+}
+
+function buildFullGraph() {
+  const wrap = $('graph-svg-wrap');
+  if (!wrap) return;
+
   const nodes = [];
-  const edges = [];
-  const nodeSet = new Set();
+  const links = [];
+  const nodeMap = new Map();
 
+  // Build nodes from allNotes
   for (const [path, note] of Object.entries(allNotes)) {
-    if (!nodeSet.has(path)) {
-      nodeSet.add(path);
-      const isSession = path.includes('/Sessions/');
-      nodes.push({ id: path, label: note.title, kind: isSession ? 'session' : 'note' });
-    }
+    const kind = isSessionPath(path) ? 'session' : 'note';
+    const n = { id: path, title: note.title, kind };
+    nodes.push(n);
+    nodeMap.set(path, n);
   }
 
-  // We'll fetch links asynchronously; for now build from known data
-  // Use current note links if available
+  // We need link data — fetch from current knowledge
+  // For the full graph we use the tree structure to infer connections
+  // In practice we'd need to fetch all notes, but we'll use what we have
   if (currentNote) {
     (currentNote.links || []).forEach(link => {
-      const p = findNotePath(link);
-      if (p) edges.push([currentNote.path, p]);
+      const target = findNotePath(link);
+      if (target && nodeMap.has(target)) links.push({ source: currentNote.path, target });
     });
     (currentNote.backlinks || []).forEach(bl => {
-      const blPath = typeof bl === 'string' ? bl : (bl && bl.path);
-      if (blPath) edges.push([blPath, currentNote.path]);
+      if (bl.path && nodeMap.has(bl.path)) links.push({ source: bl.path, target: currentNote.path });
     });
   }
 
-  let html = `<div class="graph-view ${showRail ? 'with-rail' : ''}" style="animation:fadeIn 0.15s ease">`;
+  $('graph-stats').textContent = `${nodes.length}n · ${links.length}e`;
 
-  // Canvas
-  html += '<section class="graph-canvas-wrap">';
-  html += '<header class="graph-header">';
-  html += `<div class="graph-header-left">
-    <span class="acc">&#9638;</span>
-    <span style="font-weight:500">vault graph</span>
-    <span class="dim tab-nums">${nodes.length}n · ${edges.length}e</span>
-  </div>`;
-  html += '<div class="graph-header-right">';
-  html += '<button class="tool-chip active">force</button>';
-  html += '<button class="tool-chip">radial</button>';
-  html += '<button class="tool-chip">time</button>';
-  html += `<button class="ghost-btn" id="graph-close">✕</button>`;
-  html += '</div></header>';
+  if (nodes.length === 0) return;
 
-  html += '<div class="graph-svg-area">';
-  html += '<svg id="full-graph-svg" width="100%" height="100%"></svg>';
+  const svg = d3.select(wrap).append('svg')
+    .attr('viewBox', '0 0 100 100')
+    .attr('preserveAspectRatio', 'xMidYMid meet');
 
-  // Legend
-  html += '<div class="graph-legend">';
-  html += '<div class="dim" style="letter-spacing:0.08em;text-transform:uppercase">legend</div>';
-  html += '<div class="graph-legend-item"><span class="graph-legend-dot" style="background:var(--accent)"></span><span class="mut">notes</span></div>';
-  html += '<div class="graph-legend-item"><span class="graph-legend-dot" style="background:var(--panel-2);border:1px solid var(--muted)"></span><span class="mut">sessions</span></div>';
-  html += '<div class="graph-legend-item"><span class="graph-legend-line" style="background:var(--line-2)"></span><span class="mut">link</span></div>';
-  html += '<div class="graph-legend-item"><span class="graph-legend-line" style="background:var(--line-2);border-top:1px dashed var(--line-2)"></span><span class="mut">session ref</span></div>';
-  html += '</div>';
-  html += '</div></section>';
-
-  // Rail
-  if (showRail) {
-    html += '<aside class="right-rail" id="graph-rail">';
-    html += '<section class="rail-section"><header><span class="rail-section-label">focused</span></header>';
-    html += '<div class="rail-section-body" id="graph-focused"><span class="dim">hover a node</span></div></section>';
-    html += '<section class="rail-section"><header><span class="rail-section-label">connections</span></header>';
-    html += '<div class="rail-section-body" id="graph-connections"><span class="dim">&mdash;</span></div></section>';
-    html += '</aside>';
-  }
-
-  html += '</div>';
-  container.innerHTML = html;
-
-  // Close button
-  const closeBtn = document.getElementById('graph-close');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', () => {
-      currentView = 'note';
-      updateViewSwitch();
-      showCurrentView();
-      updateBreadcrumb();
-    });
-  }
-
-  // Initialize D3 graph
-  initFullGraph(nodes, edges);
-}
-
-function initFullGraph(nodes, edges) {
-  const svgEl = document.getElementById('full-graph-svg');
-  if (!svgEl) return;
-
-  const rect = svgEl.getBoundingClientRect();
-  const width = rect.width || 600;
-  const height = rect.height || 400;
-
-  const svg = d3.select(svgEl)
-    .attr('viewBox', `0 0 ${width} ${height}`);
-
-  svg.selectAll('*').remove();
-
-  // Dot pattern background
+  // Dot pattern
   const defs = svg.append('defs');
-  const pat = defs.append('pattern')
-    .attr('id', 'dotgrid')
-    .attr('width', 20).attr('height', 20)
-    .attr('patternUnits', 'userSpaceOnUse');
-  pat.append('circle').attr('cx', 10).attr('cy', 10).attr('r', 0.5).attr('fill', 'var(--line)');
-  svg.append('rect').attr('width', width).attr('height', height).attr('fill', 'url(#dotgrid)');
-
-  const g = svg.append('g');
-
-  svg.call(d3.zoom()
-    .scaleExtent([0.2, 4])
-    .on('zoom', (event) => g.attr('transform', event.transform))
-  );
-
-  const links = edges.map(([s, t]) => ({ source: s, target: t }));
+  const pattern = defs.append('pattern').attr('id', 'dotgrid').attr('width', 3).attr('height', 3).attr('patternUnits', 'userSpaceOnUse');
+  pattern.append('circle').attr('cx', 1.5).attr('cy', 1.5).attr('r', 0.12).attr('fill', 'var(--line)');
+  svg.append('rect').attr('width', 100).attr('height', 100).attr('fill', 'url(#dotgrid)');
 
   const simulation = d3.forceSimulation(nodes)
-    .force('link', d3.forceLink(links).id(d => d.id).distance(80))
-    .force('charge', d3.forceManyBody().strength(-200))
-    .force('center', d3.forceCenter(width / 2, height / 2))
-    .force('collision', d3.forceCollide().radius(20));
+    .force('link', d3.forceLink(links).id(d => d.id).distance(12))
+    .force('charge', d3.forceManyBody().strength(-30))
+    .force('center', d3.forceCenter(50, 50))
+    .force('collision', d3.forceCollide(4));
 
-  const linkEl = g.selectAll('.g-link')
-    .data(links).enter().append('line')
-    .attr('stroke', 'var(--line-2)')
-    .attr('stroke-width', 1)
-    .attr('stroke-opacity', 0.6)
-    .attr('stroke-linecap', 'round');
+  for (let i = 0; i < 200; i++) simulation.tick();
+  simulation.stop();
 
-  const nodeG = g.selectAll('.g-node')
-    .data(nodes).enter().append('g')
-    .style('cursor', 'pointer')
-    .call(d3.drag()
-      .on('start', (e, d) => { if (!e.active) simulation.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-      .on('drag', (e, d) => { d.fx = e.x; d.fy = e.y; })
-      .on('end', (e, d) => { if (!e.active) simulation.alphaTarget(0); d.fx = null; d.fy = null; })
-    );
+  nodes.forEach(d => { d.x = Math.max(5, Math.min(95, d.x)); d.y = Math.max(5, Math.min(95, d.y)); });
 
-  nodeG.append('circle')
-    .attr('r', d => d.id === (currentPath) ? 7 : 4)
-    .attr('fill', d => {
-      if (d.id === currentPath) return 'var(--accent)';
-      return d.kind === 'session' ? 'var(--bg)' : 'var(--panel-2)';
-    })
-    .attr('stroke', d => d.kind === 'session' ? 'var(--muted)' : 'var(--accent)')
-    .attr('stroke-width', d => d.id === currentPath ? 0 : d.kind === 'session' ? 1 : 1.5);
-
-  nodeG.append('text')
-    .text(d => d.label)
-    .attr('dx', d => (d.id === currentPath ? 10 : 7))
-    .attr('dy', 3)
-    .attr('fill', d => d.id === currentPath ? 'var(--fg)' : 'var(--muted)')
-    .attr('font-size', d => d.id === currentPath ? 12 : 10)
-    .attr('font-weight', d => d.id === currentPath ? 500 : 400)
-    .style('font-family', 'JetBrains Mono, monospace')
-    .style('pointer-events', 'none');
-
-  // Hover / click behavior
-  const focusedEl = document.getElementById('graph-focused');
-  const connectionsEl = document.getElementById('graph-connections');
-
-  nodeG.on('click', (e, d) => {
-    e.stopPropagation();
-    loadNote(d.id);
+  // Draw edges
+  const edgeGroup = svg.append('g');
+  links.forEach(l => {
+    const s = typeof l.source === 'object' ? l.source : nodes.find(n => n.id === l.source);
+    const t = typeof l.target === 'object' ? l.target : nodes.find(n => n.id === l.target);
+    if (!s || !t) return;
+    const isSession = s.kind === 'session' || t.kind === 'session';
+    edgeGroup.append('line')
+      .attr('x1', s.x).attr('y1', s.y).attr('x2', t.x).attr('y2', t.y)
+      .attr('stroke', 'var(--line-2)').attr('stroke-width', 0.2)
+      .attr('stroke-opacity', isSession ? 0.45 : 0.75)
+      .attr('stroke-dasharray', isSession ? '0.9 0.9' : '')
+      .attr('stroke-linecap', 'round');
   });
 
-  nodeG.on('mouseenter', (e, d) => {
-    // Find neighbors
-    const neighbors = new Set();
-    links.forEach(l => {
-      const sId = typeof l.source === 'object' ? l.source.id : l.source;
-      const tId = typeof l.target === 'object' ? l.target.id : l.target;
-      if (sId === d.id) neighbors.add(tId);
-      if (tId === d.id) neighbors.add(sId);
+  // Draw nodes
+  let selected = null;
+  const nodeGroup = svg.append('g');
+  nodes.forEach(n => {
+    const r = n.kind === 'session' ? 1.5 : 2.5;
+    const g = nodeGroup.append('g').style('cursor', 'pointer');
+
+    g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
+      .attr('fill', n.kind === 'session' ? 'var(--bg)' : 'var(--panel-2)')
+      .attr('stroke', n.kind === 'session' ? 'var(--muted)' : 'var(--accent)')
+      .attr('stroke-width', n.kind === 'session' ? 0.35 : 0.5);
+
+    g.append('text').attr('x', n.x).attr('y', n.y + r + 2.6)
+      .attr('text-anchor', 'middle').attr('font-size', 1.7)
+      .attr('fill', 'var(--muted)').attr('opacity', 0.7)
+      .style('font-family', 'JetBrains Mono, monospace')
+      .text(n.title.length > 16 ? n.title.substring(0, 14) + '…' : n.title);
+
+    g.on('click', () => {
+      selected = n;
+      updateGraphRail(n, links, nodes);
+      if (!isSessionPath(n.id)) { view = 'note'; setView('note'); loadNote(n.id); }
     });
 
-    // Dim non-connected
-    nodeG.select('circle').attr('opacity', n => (n.id === d.id || neighbors.has(n.id)) ? 1 : 0.2);
-    nodeG.select('text').attr('opacity', n => (n.id === d.id || neighbors.has(n.id)) ? 1 : 0.2);
-    linkEl.attr('stroke-opacity', l => {
-      const sId = typeof l.source === 'object' ? l.source.id : l.source;
-      const tId = typeof l.target === 'object' ? l.target.id : l.target;
-      return (sId === d.id || tId === d.id) ? 0.95 : 0.1;
-    });
-    linkEl.attr('stroke', l => {
-      const sId = typeof l.source === 'object' ? l.source.id : l.source;
-      const tId = typeof l.target === 'object' ? l.target.id : l.target;
-      return (sId === d.id || tId === d.id) ? 'var(--accent)' : 'var(--line-2)';
-    });
-
-    // Update rail
-    if (focusedEl) {
-      focusedEl.innerHTML = `<div style="display:flex;align-items:center;gap:8px">
-        <span style="width:9px;height:9px;border-radius:999px;background:${d.kind === 'session' ? 'var(--muted)' : 'var(--accent)'}"></span>
-        <span style="font-weight:500">${escapeHtml(d.label)}</span>
-      </div>
-      <div class="dim" style="font-size:var(--fz-xs);margin-top:6px">degree ${neighbors.size} · kind ${d.kind}</div>`;
-    }
-    if (connectionsEl) {
-      if (neighbors.size === 0) {
-        connectionsEl.innerHTML = '<span class="dim">&mdash;</span>';
-      } else {
-        connectionsEl.innerHTML = [...neighbors].map(nId => {
-          const nd = nodes.find(n => n.id === nId);
-          return `<button style="display:flex;align-items:center;gap:8px;width:100%;padding:4px 6px;border-radius:var(--r-sm);font-size:var(--fz-sm);color:var(--muted);text-align:left" onmouseover="this.style.background='var(--panel-2)'" onmouseout="this.style.background='transparent'" onclick="loadNote('${escapeHtml(nId)}')">
-            <span class="dim" style="font-size:var(--fz-xs)">└─</span>
-            <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(nd ? nd.label : nId)}</span>
-            <span class="dim" style="font-size:var(--fz-xs);flex-shrink:0">${nd ? nd.kind : ''}</span>
-          </button>`;
-        }).join('');
-      }
-    }
-  });
-
-  nodeG.on('mouseleave', () => {
-    nodeG.select('circle').attr('opacity', 1);
-    nodeG.select('text').attr('opacity', 1);
-    linkEl.attr('stroke-opacity', 0.6).attr('stroke', 'var(--line-2)');
-  });
-
-  simulation.on('tick', () => {
-    linkEl
-      .attr('x1', d => d.source.x).attr('y1', d => d.source.y)
-      .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
-    nodeG.attr('transform', d => {
-      d.x = Math.max(30, Math.min(width - 30, d.x));
-      d.y = Math.max(30, Math.min(height - 30, d.y));
-      return `translate(${d.x},${d.y})`;
-    });
+    g.on('mouseenter', () => updateGraphRail(n, links, nodes));
   });
 }
 
-// ══════════════════════════════════════════════════════════════════
-// SEARCH
-// ══════════════════════════════════════════════════════════════════
-let searchTimeout;
+function updateGraphRail(node, links, nodes) {
+  const focused = $('graph-focused');
+  const conns = $('graph-connections');
+  if (!focused || !conns) return;
+
+  const neighbors = new Set();
+  links.forEach(l => {
+    const sId = typeof l.source === 'object' ? l.source.id : l.source;
+    const tId = typeof l.target === 'object' ? l.target.id : l.target;
+    if (sId === node.id) neighbors.add(tId);
+    if (tId === node.id) neighbors.add(sId);
+  });
+
+  const dotColor = node.kind === 'session' ? 'var(--muted)' : 'var(--accent)';
+  focused.innerHTML = `
+    <div style="display:flex;align-items:center;gap:8px">
+      <i style="width:9px;height:9px;border-radius:999px;background:${dotColor}"></i>
+      <span style="font-weight:500">${node.title}</span>
+    </div>
+    <div class="dim" style="font-size:var(--fz-xs);margin-top:6px">degree ${neighbors.size} · kind ${node.kind}</div>
+  `;
+
+  conns.innerHTML = '';
+  [...neighbors].forEach(id => {
+    const n = nodes.find(x => x.id === id);
+    if (!n) return;
+    const btn = document.createElement('button');
+    btn.className = 'conn-item';
+    btn.innerHTML = `<span class="dim" style="font-size:var(--fz-xs)">└─</span><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n.title}</span><span class="dim" style="font-size:var(--fz-xs);flex-shrink:0">${n.kind}</span>`;
+    btn.addEventListener('click', () => { if (!isSessionPath(n.id)) loadNote(n.id); });
+    conns.appendChild(btn);
+  });
+}
+
+// ─── Editor ──────────────────────────────────────────────────────────────────
+async function openEditor(path) {
+  const note = await fetchJSON(`/api/note/${path}`);
+  if (note.error) return;
+  editingPath = path;
+  editingNote = note;
+  $('edit-path').textContent = path;
+  $('edit-textarea').value = note.content || '';
+  $('edit-overlay').classList.add('active');
+  $('edit-textarea').focus();
+}
+
+function closeEditor() { $('edit-overlay').classList.remove('active'); editingPath = null; }
+
+$('edit-cancel').addEventListener('click', closeEditor);
+$('edit-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditor(); });
+$('edit-save').addEventListener('click', async () => {
+  if (!editingPath) return;
+  await fetch(`/api/note/${editingPath}`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ content: $('edit-textarea').value, tags: editingNote.tags || [], properties: editingNote.properties || {} }),
+  });
+  closeEditor();
+  await loadNote(editingPath);
+});
+
+// ─── Session Create ──────────────────────────────────────────────────────────
+function openSessionCreate(defaultProject) {
+  const datalist = $('sc-project-list');
+  datalist.innerHTML = '';
+  const projects = new Set();
+  for (const path of Object.keys(allNotes)) {
+    const parts = path.split('/');
+    if (parts.length > 1) projects.add(parts[0]);
+  }
+  for (const p of [...projects].sort()) {
+    const opt = document.createElement('option'); opt.value = p; datalist.appendChild(opt);
+  }
+  $('sc-project').value = defaultProject || '';
+  $('sc-summary').value = '';
+  $('session-create-overlay').classList.add('active');
+  (defaultProject ? $('sc-summary') : $('sc-project')).focus();
+}
+
+function closeSessionCreate() { $('session-create-overlay').classList.remove('active'); }
+$('sc-cancel').addEventListener('click', closeSessionCreate);
+$('session-create-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeSessionCreate(); });
+$('sc-create').addEventListener('click', async () => {
+  const project = $('sc-project').value.trim();
+  const summary = $('sc-summary').value.trim();
+  if (!project) { $('sc-project').focus(); return; }
+  const resp = await fetch('/api/sessions/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project, summary }) });
+  const result = await resp.json();
+  if (result.ok) { closeSessionCreate(); await refreshTree(); loadNote(result.path); }
+});
+
+// ─── Project Create ──────────────────────────────────────────────────────────
+function openProjectCreate() {
+  $('pc-name').value = ''; $('pc-overview').value = '';
+  $('project-create-overlay').classList.add('active');
+  $('pc-name').focus();
+}
+function closeProjectCreate() { $('project-create-overlay').classList.remove('active'); }
+$('pc-cancel').addEventListener('click', closeProjectCreate);
+$('project-create-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeProjectCreate(); });
+$('new-project-btn').addEventListener('click', openProjectCreate);
+$('pc-create').addEventListener('click', async () => {
+  const name = $('pc-name').value.trim();
+  const overview = $('pc-overview').value.trim();
+  if (!name) { $('pc-name').focus(); return; }
+  const resp = await fetch('/api/projects/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, overview }) });
+  const result = await resp.json();
+  if (result.ok) { closeProjectCreate(); await refreshTree(); loadNote(result.path); }
+});
+
+// ─── Quick Switcher ──────────────────────────────────────────────────────────
+function openQuickSwitcher() {
+  $('qs-overlay').classList.add('active');
+  $('qs-input').value = '';
+  $('qs-input').focus();
+  qsSelectedIndex = 0;
+  renderQsResults('');
+}
+function closeQuickSwitcher() { $('qs-overlay').classList.remove('active'); }
+$('qs-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeQuickSwitcher(); });
+
+$('qs-input').addEventListener('input', e => { qsSelectedIndex = 0; renderQsResults(e.target.value.trim().toLowerCase()); });
+$('qs-input').addEventListener('keydown', e => {
+  const items = document.querySelectorAll('.qs-item');
+  if (e.key === 'ArrowDown') { e.preventDefault(); qsSelectedIndex = Math.min(qsSelectedIndex + 1, items.length - 1); updateQsSelection(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); qsSelectedIndex = Math.max(qsSelectedIndex - 1, 0); updateQsSelection(); }
+  else if (e.key === 'Enter') { e.preventDefault(); const sel = items[qsSelectedIndex]; if (sel) { loadNote(sel.dataset.path); closeQuickSwitcher(); } }
+});
+
+function renderQsResults(query) {
+  const container = $('qs-results');
+  let entries = Object.entries(allNotes);
+  if (query) entries = entries.filter(([path, note]) => note.title.toLowerCase().includes(query) || path.toLowerCase().includes(query));
+  entries.sort((a, b) => a[1].title.localeCompare(b[1].title));
+  entries = entries.slice(0, 15);
+  if (entries.length === 0) { container.innerHTML = '<div class="qs-empty">No notes found</div>'; return; }
+  container.innerHTML = entries.map(([path, note], i) => {
+    const folder = path.includes('/') ? path.split('/').slice(0, -1).join('/') : '';
+    return `<div class="qs-item${i === qsSelectedIndex ? ' selected' : ''}" data-path="${path}"><span class="qs-icon">◇</span><span class="qs-name">${note.title}</span>${folder ? `<span class="qs-path">${folder}</span>` : ''}</div>`;
+  }).join('');
+  container.querySelectorAll('.qs-item').forEach((el, i) => {
+    el.addEventListener('click', () => { loadNote(el.dataset.path); closeQuickSwitcher(); });
+    el.addEventListener('mouseenter', () => { qsSelectedIndex = i; updateQsSelection(); });
+  });
+}
+function updateQsSelection() {
+  document.querySelectorAll('.qs-item').forEach((el, i) => el.classList.toggle('selected', i === qsSelectedIndex));
+}
+
+// ─── Search ──────────────────────────────────────────────────────────────────
 const searchInput = $('search-input');
 const searchDropdown = $('search-dropdown');
 
@@ -2256,19 +1744,13 @@ searchInput.addEventListener('input', () => {
     const results = await fetchJSON(`/api/search?q=${encodeURIComponent(q)}`);
     searchDropdown.innerHTML = '';
     if (results.length === 0) {
-      searchDropdown.innerHTML = '<div class="sr-item"><div class="sr-title" style="color:var(--dim)">No results</div></div>';
+      searchDropdown.innerHTML = '<div class="search-result"><div class="sr-title" style="color:var(--dim)">No results</div></div>';
     } else {
       results.forEach(r => {
         const div = document.createElement('div');
-        div.className = 'sr-item';
-        div.innerHTML = `<div class="sr-title">${escapeHtml(r.title)}</div>
-          <div class="sr-path">${escapeHtml(r.path)}</div>
-          ${r.snippet ? `<div class="sr-snippet">${escapeHtml(r.snippet)}</div>` : ''}`;
-        div.addEventListener('click', () => {
-          loadNote(r.path);
-          searchDropdown.classList.remove('active');
-          searchInput.value = '';
-        });
+        div.className = 'search-result';
+        div.innerHTML = `<div class="sr-title">${r.title}</div><div class="sr-path">${r.path}</div>${r.snippet ? `<div class="sr-snippet">${r.snippet.substring(0, 120)}</div>` : ''}`;
+        div.addEventListener('click', () => { loadNote(r.path); searchDropdown.classList.remove('active'); searchInput.value = ''; });
         searchDropdown.appendChild(div);
       });
     }
@@ -2276,320 +1758,36 @@ searchInput.addEventListener('input', () => {
   }, 200);
 });
 
-searchInput.addEventListener('focus', () => {
-  document.querySelector('.s-hint').style.display = 'none';
-  document.querySelector('.s-caret').style.display = 'none';
-});
-searchInput.addEventListener('blur', () => {
-  if (!searchInput.value) {
-    document.querySelector('.s-hint').style.display = '';
-    document.querySelector('.s-caret').style.display = '';
-  }
-});
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.search-box')) searchDropdown.classList.remove('active');
+searchInput.addEventListener('focus', () => { $('search-bar').querySelector('.s-caret').style.display = 'none'; $('search-bar').querySelector('.s-hint').style.display = 'none'; });
+searchInput.addEventListener('blur', () => { if (!searchInput.value) { $('search-bar').querySelector('.s-caret').style.display = ''; $('search-bar').querySelector('.s-hint').style.display = ''; } });
+document.addEventListener('click', e => { if (!e.target.closest('.search-bar')) searchDropdown.classList.remove('active'); });
+
+// ─── Keyboard Shortcuts ──────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') { e.preventDefault(); searchInput.focus(); }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'o') { e.preventDefault(); openQuickSwitcher(); }
+  if (e.key === 'Escape') { closeQuickSwitcher(); closeEditor(); closeSessionCreate(); closeProjectCreate(); searchDropdown.classList.remove('active'); }
+  if ((e.metaKey || e.ctrlKey) && e.key === 's' && editingPath) { e.preventDefault(); $('edit-save').click(); }
 });
 
-// ── Session Semantic Search ─────────────────────────────────────
-let sessionSearchTimeout;
-const sessionSearchInput = $('session-search-input');
-const sessionSearchResults = $('session-search-results');
-
-sessionSearchInput.addEventListener('input', () => {
-  clearTimeout(sessionSearchTimeout);
-  const q = sessionSearchInput.value.trim();
-  if (!q) { sessionSearchResults.innerHTML = ''; return; }
-  sessionSearchTimeout = setTimeout(async () => {
-    const results = await fetchJSON(`/api/sessions/search?q=${encodeURIComponent(q)}`);
-    sessionSearchResults.innerHTML = '';
-    if (results.length === 0) {
-      sessionSearchResults.innerHTML = '<div class="ss-result-item"><span class="ssr-meta">No matching sessions</span></div>';
-      return;
-    }
-    results.forEach(r => {
-      const div = document.createElement('div');
-      div.className = 'ss-result-item';
-      const dist = r.distance !== undefined ? ` · dist: ${r.distance.toFixed(2)}` : '';
-      div.innerHTML = `<div class="ssr-title">${escapeHtml(r.title)}</div><div class="ssr-meta">${escapeHtml(r.path)}${dist}</div>`;
-      div.addEventListener('click', () => {
-        currentView = 'session';
-        updateViewSwitch();
-        loadNote(r.path);
-        sessionSearchInput.value = '';
-        sessionSearchResults.innerHTML = '';
-      });
-      sessionSearchResults.appendChild(div);
-    });
-  }, 250);
-});
-
-// ══════════════════════════════════════════════════════════════════
-// QUICK SWITCHER
-// ══════════════════════════════════════════════════════════════════
-function openQuickSwitcher() {
-  $('qs-overlay').classList.add('active');
-  $('qs-input').value = '';
-  $('qs-input').focus();
-  qsSelectedIndex = 0;
-  renderQsResults('');
-}
-function closeQuickSwitcher() {
-  $('qs-overlay').classList.remove('active');
-}
-
-$('qs-overlay').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) closeQuickSwitcher();
-});
-
-$('qs-input').addEventListener('input', (e) => {
-  qsSelectedIndex = 0;
-  renderQsResults(e.target.value.trim().toLowerCase());
-});
-
-$('qs-input').addEventListener('keydown', (e) => {
-  const items = document.querySelectorAll('.qs-item');
-  if (e.key === 'ArrowDown') {
-    e.preventDefault();
-    qsSelectedIndex = Math.min(qsSelectedIndex + 1, items.length - 1);
-    updateQsSelection();
-  } else if (e.key === 'ArrowUp') {
-    e.preventDefault();
-    qsSelectedIndex = Math.max(qsSelectedIndex - 1, 0);
-    updateQsSelection();
-  } else if (e.key === 'Enter') {
-    e.preventDefault();
-    const selected = items[qsSelectedIndex];
-    if (selected) { loadNote(selected.dataset.path); closeQuickSwitcher(); }
-  }
-});
-
-function renderQsResults(query) {
-  const container = $('qs-results');
-  const entries = Object.entries(allNotes);
-  let filtered = entries;
-  if (query) {
-    filtered = entries.filter(([path, note]) => {
-      return note.title.toLowerCase().includes(query) || path.toLowerCase().includes(query);
-    });
-  }
-  filtered.sort((a, b) => a[1].title.localeCompare(b[1].title));
-  filtered = filtered.slice(0, 15);
-
-  if (filtered.length === 0) {
-    container.innerHTML = '<div class="qs-empty">No notes found</div>';
-    return;
-  }
-
-  container.innerHTML = filtered.map(([path, note], i) => {
-    const folder = path.includes('/') ? path.split('/').slice(0, -1).join('/') : '';
-    return `<div class="qs-item${i === qsSelectedIndex ? ' selected' : ''}" data-path="${escapeHtml(path)}">
-      <span class="qi-icon">&#9671;</span>
-      <span class="qi-name">${escapeHtml(note.title)}</span>
-      ${folder ? `<span class="qi-path">${escapeHtml(folder)}</span>` : ''}
-    </div>`;
-  }).join('');
-
-  container.querySelectorAll('.qs-item').forEach((el, i) => {
-    el.addEventListener('click', () => { loadNote(el.dataset.path); closeQuickSwitcher(); });
-    el.addEventListener('mouseenter', () => { qsSelectedIndex = i; updateQsSelection(); });
-  });
-}
-
-function updateQsSelection() {
-  document.querySelectorAll('.qs-item').forEach((el, i) => {
-    el.classList.toggle('selected', i === qsSelectedIndex);
-  });
-}
-
-// ══════════════════════════════════════════════════════════════════
-// EDITOR
-// ══════════════════════════════════════════════════════════════════
-let editingPath = null;
-let editingNote = null;
-
-async function openEditor(path) {
-  const note = await fetchJSON(`/api/note/${path}`);
-  if (note.error) return;
-  editingPath = path;
-  editingNote = note;
-  $('edit-path').textContent = path;
-  $('edit-textarea').value = note.content || '';
-  $('edit-overlay').classList.add('active');
-  $('edit-textarea').focus();
-}
-// Make functions globally accessible for inline onclick handlers
-window.openEditor = openEditor;
-window.loadNote = loadNote;
-
-function closeEditor() {
-  $('edit-overlay').classList.remove('active');
-  editingPath = null;
-  editingNote = null;
-}
-
-$('edit-cancel').addEventListener('click', closeEditor);
-$('edit-overlay').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) closeEditor();
-});
-$('edit-save').addEventListener('click', async () => {
-  if (!editingPath) return;
-  const content = $('edit-textarea').value;
-  await fetch(`/api/note/${editingPath}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      content,
-      tags: editingNote.tags || [],
-      properties: editingNote.properties || {},
-    }),
-  });
-  closeEditor();
-  await loadNote(editingPath);
-});
-
-// ══════════════════════════════════════════════════════════════════
-// SESSION & PROJECT CREATE MODALS
-// ══════════════════════════════════════════════════════════════════
-function openSessionCreate(defaultProject) {
-  const datalist = $('project-datalist');
-  datalist.innerHTML = '';
-  getProjects().forEach(p => {
-    const opt = document.createElement('option');
-    opt.value = p;
-    datalist.appendChild(opt);
-  });
-  $('session-project-input').value = defaultProject || '';
-  $('session-summary-input').value = '';
-  $('session-create-overlay').classList.add('active');
-  if (defaultProject) $('session-summary-input').focus();
-  else $('session-project-input').focus();
-}
-function closeSessionCreate() {
-  $('session-create-overlay').classList.remove('active');
-}
-
-$('new-session-btn').addEventListener('click', () => openSessionCreate(''));
-$('session-cancel').addEventListener('click', closeSessionCreate);
-$('session-create-overlay').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) closeSessionCreate();
-});
-$('session-create-confirm').addEventListener('click', async () => {
-  const project = $('session-project-input').value.trim();
-  const summary = $('session-summary-input').value.trim();
-  if (!project) { $('session-project-input').focus(); return; }
-  const resp = await fetch('/api/sessions/create', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ project, summary }),
-  });
-  const result = await resp.json();
-  if (result.ok) {
-    closeSessionCreate();
-    await refreshTree();
-    currentView = 'session';
-    updateViewSwitch();
-    loadNote(result.path);
-  }
-});
-
-function openProjectCreate() {
-  $('project-name-input').value = '';
-  $('project-overview-input').value = '';
-  $('project-create-overlay').classList.add('active');
-  $('project-name-input').focus();
-}
-function closeProjectCreate() {
-  $('project-create-overlay').classList.remove('active');
-}
-
-$('new-project-btn').addEventListener('click', openProjectCreate);
-$('new-project-sidebar-btn').addEventListener('click', openProjectCreate);
-$('project-cancel').addEventListener('click', closeProjectCreate);
-$('project-create-overlay').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) closeProjectCreate();
-});
-$('project-create-confirm').addEventListener('click', async () => {
-  const name = $('project-name-input').value.trim();
-  const overview = $('project-overview-input').value.trim();
-  if (!name) { $('project-name-input').focus(); return; }
-  const resp = await fetch('/api/projects/create', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ name, overview }),
-  });
-  const result = await resp.json();
-  if (result.ok) {
-    closeProjectCreate();
-    await refreshTree();
-    loadNote(result.path);
-  }
-});
-
-// ══════════════════════════════════════════════════════════════════
-// KEYBOARD SHORTCUTS
-// ══════════════════════════════════════════════════════════════════
-document.addEventListener('keydown', (e) => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-    e.preventDefault();
-    searchInput.focus();
-  }
-  if ((e.metaKey || e.ctrlKey) && e.key === 'o') {
-    e.preventDefault();
-    openQuickSwitcher();
-  }
-  if (e.key === 'Escape') {
-    closeQuickSwitcher();
-    closeEditor();
-    closeSessionCreate();
-    closeProjectCreate();
-  }
-  if ((e.metaKey || e.ctrlKey) && e.key === 's' && editingPath) {
-    e.preventDefault();
-    $('edit-save').click();
-  }
-});
-
-// ══════════════════════════════════════════════════════════════════
-// DATA LOADING & REFRESH
-// ══════════════════════════════════════════════════════════════════
+// ─── Refresh & Polling ───────────────────────────────────────────────────────
 async function refreshTree() {
-  const [rawTreeData, sessionsData, stats] = await Promise.all([
-    fetchJSON('/api/tree'),
-    fetchJSON('/api/sessions'),
-    fetchJSON('/api/stats'),
+  const [rawTree, sessionsData, stats] = await Promise.all([
+    fetchJSON('/api/tree'), fetchJSON('/api/sessions'), fetchJSON('/api/stats'),
   ]);
-
-  treeData = rawTreeData;
+  treeData = rawTree;
   allNotes = {};
   function walk(node) {
-    if (node.type === 'note') {
-      allNotes[node.path] = { title: node.name.replace('.md', ''), tags: node.tags || [] };
-    }
+    if (node.type === 'note') allNotes[node.path] = { title: node.name.replace('.md', ''), tags: node.tags || [] };
     (node.children || []).forEach(walk);
   }
   walk(treeData);
-
-  $('file-tree').innerHTML = '';
-  renderTree(treeData, $('file-tree'));
-  renderSessionTree(sessionsData);
-  renderTagCloud(collectAllTags());
-
-  $('sb-notes').textContent = stats.notes;
-  $('sb-folders').textContent = stats.folders;
-
-  // Re-mark active items
-  if (currentPath) {
-    document.querySelectorAll('.sidebar-row[data-path]').forEach(el => {
-      const isActive = el.dataset.path === currentPath;
-      el.classList.toggle('active', isActive);
-      const label = el.querySelector('.sr-label');
-      if (label) label.style.color = isActive ? 'var(--accent)' : 'var(--muted)';
-    });
-  }
+  renderSidebar(sessionsData);
+  $('stat-notes').textContent = stats.notes;
+  $('stat-folders').textContent = stats.folders;
+  markActiveItems();
 }
 
-// ── Auto-refresh polling ────────────────────────────────────────
-let lastKnownStats = null;
 async function pollForChanges() {
   try {
     const stats = await fetchJSON('/api/stats');
@@ -2601,49 +1799,48 @@ async function pollForChanges() {
     lastKnownStats = key;
   } catch {}
 }
-setInterval(pollForChanges, 3000);
 
-// ── Init ────────────────────────────────────────────────────────
+// ─── Init ────────────────────────────────────────────────────────────────────
 async function init() {
-  updateLayout();
-  updateViewSwitch();
+  const density = localStorage.getItem('kyp-density') || 'regular';
+  document.documentElement.setAttribute('data-density', density);
 
-  const [rawTreeData, sessionsData, stats] = await Promise.all([
-    fetchJSON('/api/tree'),
-    fetchJSON('/api/sessions'),
-    fetchJSON('/api/stats'),
+  const [rawTree, sessionsData, stats] = await Promise.all([
+    fetchJSON('/api/tree'), fetchJSON('/api/sessions'), fetchJSON('/api/stats'),
   ]);
+  treeData = rawTree;
 
-  treeData = rawTreeData;
   function walk(node) {
-    if (node.type === 'note') {
-      allNotes[node.path] = { title: node.name.replace('.md', ''), tags: node.tags || [] };
-    }
+    if (node.type === 'note') allNotes[node.path] = { title: node.name.replace('.md', ''), tags: node.tags || [] };
     (node.children || []).forEach(walk);
   }
   walk(treeData);
 
-  // Fetch full note data for tags
+  // Enrich notes with tags
   const promises = Object.keys(allNotes).map(async path => {
     try {
       const note = await fetchJSON(`/api/note/${path}`);
-      if (!note.error) allNotes[path] = { title: note.title, tags: note.tags };
+      if (!note.error) allNotes[path] = { title: note.title, tags: note.tags || [] };
     } catch {}
   });
   await Promise.all(promises);
 
-  renderTree(treeData, $('file-tree'));
-  renderSessionTree(sessionsData);
-  renderTagCloud(collectAllTags());
+  renderSidebar(sessionsData);
+  $('stat-notes').textContent = stats.notes;
+  $('stat-folders').textContent = stats.folders;
 
-  $('sb-notes').textContent = stats.notes;
-  $('sb-folders').textContent = stats.folders;
-
-  // Show empty state or current view
-  showCurrentView();
+  // Show empty state
+  $('content-area').innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px">
+      <span class="logo" style="font-size:28px;opacity:0.6"><span class="logo-mark" style="width:12px;height:12px"></span>KYP·MEM</span>
+      <span class="dim" style="font-size:var(--fz-sm);letter-spacing:3px;text-transform:uppercase">know your project memory</span>
+      <span class="dim" style="font-size:var(--fz-sm);margin-top:24px">Select a note or press <span style="border:1px solid var(--line);border-radius:3px;padding:0 5px;color:var(--muted)">⌘O</span> to quick-switch</span>
+    </div>
+  `;
 }
 
 init();
+setInterval(pollForChanges, 3000);
 </script>
 </body>
 </html>
