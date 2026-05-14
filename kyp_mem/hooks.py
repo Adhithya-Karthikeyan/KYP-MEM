@@ -12,6 +12,66 @@ CURRENT_SESSION = SESSION_DIR / "current.jsonl"
 MIN_ACTIONS = 3
 CHARS_PER_TOKEN = 4
 
+COMMAND_OUTPUT_ESTIMATES = {
+    "search": 2000,
+    "explore": 1000,
+    "read_cmd": 3000,
+    "git_inspect": 3000,
+    "test": 2000,
+    "build": 500,
+    "run": 200,
+    "git_write": 200,
+    "api_test": 1000,
+    "other": 300,
+}
+
+
+def _load_token_stats():
+    from .config import STATS_FILE
+    if STATS_FILE.exists():
+        try:
+            return json.loads(STATS_FILE.read_text())
+        except (json.JSONDecodeError, OSError):
+            pass
+    return {"sessions": [], "injections": []}
+
+
+def _save_token_stats(stats):
+    from .config import STATS_FILE
+    STATS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    STATS_FILE.write_text(json.dumps(stats, indent=2) + "\n")
+
+
+def _record_session_tokens(session_id, project, exploration_tokens,
+                           files_read_count, files_read_chars,
+                           commands_run, commands_chars,
+                           files_edited, files_created):
+    stats = _load_token_stats()
+    stats["sessions"].append({
+        "id": session_id,
+        "project": project,
+        "ts": datetime.now().isoformat(),
+        "exploration_tokens": exploration_tokens,
+        "files_read": files_read_count,
+        "files_read_chars": files_read_chars,
+        "commands_run": commands_run,
+        "commands_chars": commands_chars,
+        "files_edited": files_edited,
+        "files_created": files_created,
+    })
+    _save_token_stats(stats)
+
+
+def _record_injection(project, chars):
+    stats = _load_token_stats()
+    stats["injections"].append({
+        "ts": datetime.now().isoformat(),
+        "project": project,
+        "chars": chars,
+        "tokens": chars // CHARS_PER_TOKEN,
+    })
+    _save_token_stats(stats)
+
 
 def handle_session_start():
     """Inject project context into the conversation at session start."""
