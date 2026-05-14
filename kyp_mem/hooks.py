@@ -105,8 +105,7 @@ def handle_session_start():
             return
 
         parts = [f"# [kyp-mem] {project_name} — Recent Sessions"]
-        parts.append(f"Use `kyp_search` or `kyp_project_context` for architecture/project knowledge on demand.")
-        parts.append("")
+        parts.append(f"Use `kyp_search` or `kyp_project_context` for architecture/project knowledge on demand.\n")
 
         parts.append(f"## Last {len(sessions)} Sessions")
         for sp in sessions:
@@ -115,12 +114,8 @@ def handle_session_start():
                 continue
             parts.append(f"### {note.title}")
             content = note.content
-            timeline_idx = content.find("## TIMELINE")
-            if timeline_idx < 0:
-                timeline_idx = content.find("## Timeline")
-            if timeline_idx > 0:
-                content = content[:timeline_idx].strip()
-            parts.append(content)
+            summary = _extract_session_summary(content)
+            parts.append(summary)
             parts.append("")
 
         output = "\n".join(parts)
