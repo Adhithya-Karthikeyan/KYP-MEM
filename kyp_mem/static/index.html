@@ -840,7 +840,46 @@ let railOpen = true;
 })();
 
 // ─── Sidebar Rendering ───────────────────────────────────────────────────────
-function renderChronoSessions(container, sessionsData) {
+function renderSidebar(sessionsData) {
+  const container = $('sidebar-scroll');
+  container.innerHTML = '';
+
+  // Sessions section
+  const sessSection = document.createElement('section');
+  sessSection.innerHTML = `
+    <div class="side-section-header">
+      <span class="side-section-title"><span class="side-dot" style="background:var(--accent)"></span>sessions</span>
+      <button class="side-add-btn" id="sidebar-new-session">+ new</button>
+    </div>
+  `;
+  const sessSearch = document.createElement('input');
+  sessSearch.className = 'side-search';
+  sessSearch.placeholder = '⌕ semantic search session…';
+  sessSection.appendChild(sessSearch);
+
+  const ssResults = document.createElement('div');
+  ssResults.className = 'ss-results';
+  sessSection.appendChild(ssResults);
+
+  // Session search
+  sessSearch.addEventListener('input', () => {
+    clearTimeout(sessionSearchTimeout);
+    const q = sessSearch.value.trim();
+    if (!q) { ssResults.innerHTML = ''; return; }
+    sessionSearchTimeout = setTimeout(async () => {
+      const results = await fetchJSON(`/api/sessions/search?q=${encodeURIComponent(q)}`);
+      ssResults.innerHTML = '';
+      results.forEach(r => {
+        const div = document.createElement('div');
+        div.className = 'ss-result';
+        div.innerHTML = `<div class="ssr-title">${r.title}</div><div class="ssr-snippet">${(r.snippet || '').substring(0, 100)}</div>`;
+        div.addEventListener('click', () => { openSession(r.path); sessSearch.value = ''; ssResults.innerHTML = ''; });
+        ssResults.appendChild(div);
+      });
+    }, 250);
+  });
+
+  // Session groups
   const sortedProjects = Object.keys(sessionsData).sort();
   sortedProjects.forEach(project => {
     const sessions = sessionsData[project];
@@ -873,159 +912,8 @@ function renderChronoSessions(container, sessionsData) {
 
     group.appendChild(folder);
     group.appendChild(list);
-    container.appendChild(group);
+    sessSection.appendChild(group);
   });
-}
-
-function renderGroupedSessions(container, sessionsData) {
-  const sortedProjects = Object.keys(sessionsData).sort();
-  sortedProjects.forEach(project => {
-    const sessions = sessionsData[project];
-
-    // Group by topic
-    const topicMap = {};
-    sessions.forEach(s => {
-      const topic = s.topic || 'Uncategorized';
-      if (!topicMap[topic]) topicMap[topic] = [];
-      topicMap[topic].push(s);
-    });
-
-    // Sort topics: most recent session first, Uncategorized last
-    const topics = Object.keys(topicMap).sort((a, b) => {
-      if (a === 'Uncategorized') return 1;
-      if (b === 'Uncategorized') return -1;
-      const latestA = topicMap[a].reduce((m, s) => s.path > m ? s.path : m, '');
-      const latestB = topicMap[b].reduce((m, s) => s.path > m ? s.path : m, '');
-      return latestB.localeCompare(latestA);
-    });
-
-    // Project header
-    const projHeader = document.createElement('div');
-    projHeader.className = 'tree-folder';
-    projHeader.style.marginBottom = '2px';
-    projHeader.innerHTML = `<span class="tf-arrow">▾</span><span class="tf-icon">≡</span><span class="tf-label">${project}</span><span class="tf-count">${sessions.length}</span>`;
-    const projBody = document.createElement('div');
-    projBody.style.cssText = 'padding-left:4px;';
-
-    projHeader.addEventListener('click', () => {
-      const arrow = projHeader.querySelector('.tf-arrow');
-      const isOpen = arrow.textContent === '▾';
-      arrow.textContent = isOpen ? '▸' : '▾';
-      arrow.classList.toggle('closed', isOpen);
-      projBody.style.display = isOpen ? 'none' : 'block';
-    });
-
-    topics.forEach(topic => {
-      const topicSessions = topicMap[topic];
-      topicSessions.sort((a, b) => b.path.localeCompare(a.path));
-
-      const topicGroup = document.createElement('div');
-      const topicFolder = document.createElement('div');
-      topicFolder.className = 'tree-folder';
-      topicFolder.style.paddingLeft = '8px';
-      topicFolder.innerHTML = `<span class="tf-arrow">▾</span><span class="tf-icon" style="color:var(--accent);font-size:10px">◆</span><span class="tf-label" style="color:var(--fg);font-size:12px">${topic}</span><span class="tf-count">${topicSessions.length}</span>`;
-
-      const topicList = document.createElement('div');
-      topicList.style.cssText = 'display:flex;flex-direction:column;gap:1px;padding-left:24px;margin-top:2px;';
-
-      topicSessions.forEach(s => {
-        const row = document.createElement('button');
-        row.className = 'sidebar-row';
-        row.dataset.path = s.path;
-        const displayTime = formatSessionTime(s.path.split('/').pop());
-        row.innerHTML = `<span class="sr-dot" style="color:var(--dim)">●</span><span class="sr-label">${displayTime}</span>`;
-        row.addEventListener('click', () => openSession(s.path));
-        topicList.appendChild(row);
-      });
-
-      topicFolder.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const arrow = topicFolder.querySelector('.tf-arrow');
-        const isOpen = arrow.textContent === '▾';
-        arrow.textContent = isOpen ? '▸' : '▾';
-        arrow.classList.toggle('closed', isOpen);
-        topicList.style.display = isOpen ? 'none' : 'flex';
-      });
-
-      topicGroup.appendChild(topicFolder);
-      topicGroup.appendChild(topicList);
-      projBody.appendChild(topicGroup);
-    });
-
-    const wrapper = document.createElement('div');
-    wrapper.appendChild(projHeader);
-    wrapper.appendChild(projBody);
-    container.appendChild(wrapper);
-  });
-}
-
-function renderSidebar(sessionsData) {
-  const container = $('sidebar-scroll');
-  container.innerHTML = '';
-
-  // Sessions section
-  const sessSection = document.createElement('section');
-  const sessGrouped = localStorage.getItem('kyp-sess-grouped') === 'true';
-  sessSection.innerHTML = `
-    <div class="side-section-header">
-      <span class="side-section-title"><span class="side-dot" style="background:var(--accent)"></span>sessions</span>
-      <div style="display:flex;gap:4px;align-items:center;">
-        <button class="side-add-btn sess-view-toggle" id="sess-toggle-grouped" title="Toggle grouped by topic" style="font-size:10px;opacity:${sessGrouped ? 1 : 0.45}">▤</button>
-        <button class="side-add-btn" id="sidebar-new-session">+ new</button>
-      </div>
-    </div>
-  `;
-  const sessSearch = document.createElement('input');
-  sessSearch.className = 'side-search';
-  sessSearch.placeholder = '⌕ semantic search session…';
-  sessSection.appendChild(sessSearch);
-
-  const ssResults = document.createElement('div');
-  ssResults.className = 'ss-results';
-  sessSection.appendChild(ssResults);
-
-  // Session search
-  sessSearch.addEventListener('input', () => {
-    clearTimeout(sessionSearchTimeout);
-    const q = sessSearch.value.trim();
-    if (!q) { ssResults.innerHTML = ''; return; }
-    sessionSearchTimeout = setTimeout(async () => {
-      const results = await fetchJSON(`/api/sessions/search?q=${encodeURIComponent(q)}`);
-      ssResults.innerHTML = '';
-      results.forEach(r => {
-        const div = document.createElement('div');
-        div.className = 'ss-result';
-        div.innerHTML = `<div class="ssr-title">${r.title}</div><div class="ssr-snippet">${(r.snippet || '').substring(0, 100)}</div>`;
-        div.addEventListener('click', () => { openSession(r.path); sessSearch.value = ''; ssResults.innerHTML = ''; });
-        ssResults.appendChild(div);
-      });
-    }, 250);
-  });
-
-  const sessListContainer = document.createElement('div');
-  sessSection.appendChild(sessListContainer);
-
-  function renderSessionList(grouped) {
-    sessListContainer.innerHTML = '';
-    if (grouped) {
-      renderGroupedSessions(sessListContainer, sessionsData);
-    } else {
-      renderChronoSessions(sessListContainer, sessionsData);
-    }
-  }
-
-  renderSessionList(sessGrouped);
-
-  // Toggle handler
-  sessSection.querySelector('#sess-toggle-grouped')?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const btn = sessSection.querySelector('#sess-toggle-grouped');
-    const nowGrouped = localStorage.getItem('kyp-sess-grouped') !== 'true';
-    localStorage.setItem('kyp-sess-grouped', nowGrouped);
-    btn.style.opacity = nowGrouped ? 1 : 0.45;
-    renderSessionList(nowGrouped);
-  });
-
   container.appendChild(sessSection);
 
   // Projects section
@@ -1482,7 +1370,10 @@ function renderSessionView(note) {
           ${tagsHtml}
           <span class="dim" style="font-size:var(--fz-xs);margin-left:8px">${note.created || sessionFile}</span>
         </div>
-        <button class="ghost-btn" onclick="openEditor('${note.path}')">⌥ edit</button>
+        <div style="display:flex;gap:6px">
+          <button class="ghost-btn" onclick="openEditor('${note.path}')">⌥ edit</button>
+          <button class="ghost-btn" style="color:var(--muted)" onclick="deleteSession('${note.path}')">✕ delete</button>
+        </div>
       </div>
       <h1 style="margin:12px 0 4px;font-size:calc(var(--fz-xl) + 6px);font-weight:500;letter-spacing:-0.01em">
         Session ${sessionFile}
