@@ -43,6 +43,10 @@ def main():
 
     subparsers.add_parser("doctor", help="Check installation and config health")
 
+    cfg_parser = subparsers.add_parser("config", help="Get or set configuration values")
+    cfg_parser.add_argument("key", nargs="?", help="Config key (e.g. session_model)")
+    cfg_parser.add_argument("value", nargs="?", help="Value to set")
+
     hook_parser = subparsers.add_parser("hook", help="Handle Claude Code hook events (internal)")
     hook_sub = hook_parser.add_subparsers(dest="hook_command")
     hook_sub.add_parser("session-start", help="Inject project context at session start")
