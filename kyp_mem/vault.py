@@ -211,6 +211,14 @@ class Vault:
         self._load_all()
         self._sync_vector_db()
 
+    def _disk_note_paths(self) -> set[str]:
+        return {str(f.relative_to(self.root)) for f in self.root.rglob("*.md")}
+
+    def refresh_if_stale(self):
+        if self._disk_note_paths() != set(self.index.notes.keys()):
+            self._load_all()
+            self._sync_vector_db()
+
     def _sync_vector_db(self):
         mem = get_session_memory()
         for path, note in self.index.notes.items():
