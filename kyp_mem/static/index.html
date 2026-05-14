@@ -1429,6 +1429,8 @@ function renderSessionView(note) {
 }
 
 // ─── Graph View ──────────────────────────────────────────────────────────────
+let _graphMode = 'projects';
+
 function renderGraphView() {
   const area = $('content-area');
   area.innerHTML = `
@@ -1437,24 +1439,19 @@ function renderGraphView() {
         <div class="graph-header">
           <div class="graph-header-left">
             <span class="acc">▦</span>
-            <span style="font-weight:500">vault graph</span>
+            <button class="tool-chip graph-mode active" data-mode="projects">projects</button>
+            <button class="tool-chip graph-mode" data-mode="sessions">sessions</button>
             <span class="dim tab-nums" id="graph-stats"></span>
           </div>
           <div class="graph-header-right">
-            <button class="tool-chip active">force</button>
-            <button class="tool-chip">radial</button>
-            <button class="tool-chip">time</button>
+            <button class="tool-chip graph-layout active" data-layout="force">force</button>
+            <button class="tool-chip graph-layout" data-layout="radial">radial</button>
+            <button class="tool-chip graph-layout" data-layout="time">time</button>
             <button class="ghost-btn" id="graph-close">✕</button>
           </div>
         </div>
         <div class="graph-svg-wrap" id="graph-svg-wrap"></div>
-        <div class="graph-legend">
-          <div class="graph-legend-title">legend</div>
-          <div class="graph-legend-item"><i style="width:8px;height:8px;border-radius:999px;background:var(--accent)"></i>notes</div>
-          <div class="graph-legend-item"><i style="width:8px;height:8px;border-radius:999px;background:var(--panel-2);border:1px solid var(--muted)"></i>sessions</div>
-          <div class="graph-legend-item"><i style="width:12px;height:1px;background:var(--line-2)"></i>link</div>
-          <div class="graph-legend-item"><i style="width:12px;height:0;border-top:1px dashed var(--line-2)"></i>session ref</div>
-        </div>
+        <div class="graph-legend" id="graph-legend"></div>
       </section>
       <aside class="graph-rail" id="graph-rail">
         <div class="rail-card">
@@ -1471,6 +1468,8 @@ function renderGraphView() {
     </div>
   `;
 
+  updateGraphLegend();
+
   const closeBtn = $('graph-close');
   if (closeBtn) {
     closeBtn.addEventListener('click', (e) => {
@@ -1481,17 +1480,47 @@ function renderGraphView() {
     });
   }
 
-  // Layout toggle buttons
-  const chips = document.querySelectorAll('.graph-header-right .tool-chip');
-  chips.forEach(chip => {
+  // Mode toggle (projects / sessions)
+  document.querySelectorAll('.graph-mode').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.graph-mode').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      _graphMode = btn.dataset.mode;
+      _graphData = null;
+      updateGraphLegend();
+      const activeLayout = document.querySelector('.graph-layout.active');
+      buildFullGraph(activeLayout ? activeLayout.dataset.layout : 'force');
+    });
+  });
+
+  // Layout toggle (force / radial / time)
+  document.querySelectorAll('.graph-layout').forEach(chip => {
     chip.addEventListener('click', () => {
-      chips.forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.graph-layout').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
-      buildFullGraph(chip.textContent.trim());
+      buildFullGraph(chip.dataset.layout);
     });
   });
 
   buildFullGraph('force');
+}
+
+function updateGraphLegend() {
+  const legend = $('graph-legend');
+  if (!legend) return;
+  if (_graphMode === 'sessions') {
+    legend.innerHTML = `
+      <div class="graph-legend-title">sessions</div>
+      <div class="graph-legend-item"><i style="width:8px;height:8px;border-radius:999px;background:var(--panel-2);border:1px solid var(--muted)"></i>session</div>
+      <div class="graph-legend-item"><i style="width:12px;height:0;border-top:1px dashed var(--line-2)"></i>temporal link</div>
+    `;
+  } else {
+    legend.innerHTML = `
+      <div class="graph-legend-title">projects</div>
+      <div class="graph-legend-item"><i style="width:8px;height:8px;border-radius:999px;background:var(--accent)"></i>notes</div>
+      <div class="graph-legend-item"><i style="width:12px;height:1px;background:var(--line-2)"></i>wikilink</div>
+    `;
+  }
 }
 
 async function buildFullGraph(layout) {
