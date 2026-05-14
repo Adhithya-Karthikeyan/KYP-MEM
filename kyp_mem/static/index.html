@@ -1311,117 +1311,108 @@ function renderLocalGraph(container, note) {
 }
 
 // ─── Session View ────────────────────────────────────────────────────────────
+function extractSection(content, sectionName) {
+  const idx = content.indexOf(`## ${sectionName}`);
+  if (idx === -1) return '';
+  const nextSec = content.indexOf('\n## ', idx + 5);
+  const block = nextSec !== -1 ? content.substring(idx, nextSec) : content.substring(idx);
+  return block.replace(`## ${sectionName}`, '').trim();
+}
+
 function renderSessionView(note) {
   const area = $('content-area');
   const content = note.content || '';
-  const lines = content.split('\n');
 
   // Extract summary
-  let summary = '';
-  for (let i = 0; i < lines.length; i++) {
-    if (lines[i].trim() === '## Summary') {
-      for (let j = i + 1; j < lines.length; j++) {
-        if (lines[j].trim() && !lines[j].startsWith('#')) { summary = lines[j].trim(); break; }
-      }
-      break;
-    }
-  }
+  let summary = extractSection(content, 'Summary');
 
   // Extract session ID
   const pathParts = note.path.split('/');
   const sessionFile = pathParts[pathParts.length - 1].replace('.md', '');
   const projectName = pathParts[0] || '';
 
-  // Count words for token estimate
   const wordCount = content.split(/\s+/).filter(Boolean).length;
 
-  // Count sections
-  const sections = ['INVESTIGATED', 'LEARNED', 'COMPLETED', 'NEXT STEPS', 'PROMPTS'];
-  let itemCount = 0;
-  sections.forEach(sec => {
-    const idx = content.indexOf(`## ${sec}`);
-    if (idx !== -1) {
-      const nextSec = content.indexOf('\n## ', idx + 5);
-      const block = nextSec !== -1 ? content.substring(idx, nextSec) : content.substring(idx);
-      itemCount += (block.match(/^- /gm) || []).length;
-    }
-  });
+  // Extract each section
+  const promptsRaw = extractSection(content, 'PROMPTS');
+  const investigated = extractSection(content, 'INVESTIGATED');
+  const learned = extractSection(content, 'LEARNED');
+  const completed = extractSection(content, 'COMPLETED');
+  const nextSteps = extractSection(content, 'NEXT STEPS');
 
-  // Build timeline from sections
-  const timeline = [];
-  const timeStr = sessionFile.match(/_(\d{2})(\d{2})/);
-  const baseTime = timeStr ? `${parseInt(timeStr[1]) % 12 || 12}:${timeStr[2]}` : '—';
+  const sectionNames = ['Summary', 'PROMPTS', 'INVESTIGATED', 'LEARNED', 'COMPLETED', 'NEXT STEPS'];
+  const presentSections = sectionNames.filter(s => content.includes(`## ${s}`));
 
-  sections.forEach(sec => {
-    const idx = content.indexOf(`## ${sec}`);
-    if (idx === -1) return;
-    const nextSec = content.indexOf('\n## ', idx + 5);
-    const block = nextSec !== -1 ? content.substring(idx, nextSec) : content.substring(idx);
-    const items = block.split('\n').filter(l => l.startsWith('- ')).map(l => l.substring(2).trim());
-    const kind = sec === 'PROMPTS' ? 'msg' : sec === 'LEARNED' ? 'mem' : sec === 'COMPLETED' ? 'tool' : 'msg';
-    items.forEach(item => {
-      timeline.push({ time: baseTime, kind, text: item.substring(0, 120) });
-    });
-  });
+  // Count prompt entries
+  const promptEntries = promptsRaw.split(/^###\s+/m).filter(p => p.trim());
+  const hasMultiplePrompts = promptEntries.length > 1;
 
-  const statusClass = 'done';
-  const tagsHtml = `<button class="tag-chip"><span class="tc-hash">#</span>session</button><button class="tag-chip"><span class="tc-hash">#</span>auto-captured</button>`;
+  const tagsHtml = (note.tags || ['session', 'auto-captured']).map(t =>
+    `<button class="tag-chip"><span class="tc-hash">#</span>${t}</button>`
+  ).join('');
 
   area.innerHTML = `
     <article class="session-view">
       <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0 14px">
         <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <span class="session-status ${statusClass}"><i style="width:6px;height:6px;border-radius:999px;background:var(--muted);display:inline-block"></i> done</span>
+          <span class="session-status done"><i style="width:6px;height:6px;border-radius:999px;background:var(--muted);display:inline-block"></i> done</span>
           ${tagsHtml}
           <span class="dim" style="font-size:var(--fz-xs);margin-left:8px">${note.created || sessionFile}</span>
         </div>
         <button class="ghost-btn" onclick="openEditor('${note.path}')">⌥ edit</button>
       </div>
       <h1 style="margin:12px 0 4px;font-size:calc(var(--fz-xl) + 6px);font-weight:500;letter-spacing:-0.01em">
-        Session ${sessionFile} · ${summary || 'Session'}
+        Session ${sessionFile}
       </h1>
       <div class="dim" style="font-size:var(--fz-xs);margin-bottom:22px;display:flex;gap:14px">
         <span>words <span class="mut tab-nums">${wordCount.toLocaleString()}</span></span>
         <span>·</span>
-        <span>captured <span class="acc tab-nums">+${itemCount}</span> items</span>
+        <span>project <span class="acc">${projectName}</span></span>
+        <span>·</span>
+        <span>sections <span class="mut tab-nums">${presentSections.length}</span></span>
       </div>
-      <div class="stat-grid">
-        <div class="stat-card"><span class="sc-label">words</span><span class="sc-value">${wordCount.toLocaleString()}</span></div>
-        <div class="stat-card"><span class="sc-label">sections</span><span class="sc-value">${sections.filter(s => content.includes('## ' + s)).length}</span></div>
-        <div class="stat-card"><span class="sc-label">captured</span><span class="sc-value" style="color:var(--accent)">+${itemCount}</span></div>
-        <div class="stat-card"><span class="sc-label">project</span><span class="sc-value" style="font-size:var(--fz-sm)">${projectName}</span></div>
-      </div>
-      <h2 style="margin:12px 0 12px;font-size:calc(var(--fz-lg) + 2px);font-weight:500;display:flex;align-items:center;gap:10px">
-        <span class="dim" style="font-size:var(--fz-sm);font-weight:400">##</span> Timeline
-      </h2>
-      <div id="session-timeline"></div>
-      <div style="margin-top:24px">
-        <h2 style="margin:12px 0 12px;font-size:calc(var(--fz-lg) + 2px);font-weight:500;display:flex;align-items:center;gap:10px">
-          <span class="dim" style="font-size:var(--fz-sm);font-weight:400">##</span> Full Content
-        </h2>
-        <div class="md-body">${marked.parse(content)}</div>
-      </div>
+      ${summary ? `
+      <div class="session-section">
+        <div class="ss-header"><span class="dim" style="font-size:var(--fz-sm)">##</span> Summary</div>
+        <div class="ss-body md-body">${marked.parse(summary)}</div>
+      </div>` : ''}
+      ${promptsRaw ? `
+      <div class="session-section">
+        <div class="ss-header"><span class="dim" style="font-size:var(--fz-sm)">##</span> Prompts <span class="dim tab-nums" style="font-size:var(--fz-xs);margin-left:6px">${promptEntries.length}</span></div>
+        <div class="ss-body prompts-list${hasMultiplePrompts ? ' scrollable' : ''}" id="session-prompts"></div>
+      </div>` : ''}
+      ${investigated ? `
+      <div class="session-section">
+        <div class="ss-header"><span class="dim" style="font-size:var(--fz-sm)">##</span> Investigated</div>
+        <div class="ss-body md-body">${marked.parse(investigated)}</div>
+      </div>` : ''}
+      ${learned ? `
+      <div class="session-section">
+        <div class="ss-header"><span class="dim" style="font-size:var(--fz-sm)">##</span> Learned</div>
+        <div class="ss-body md-body">${marked.parse(learned)}</div>
+      </div>` : ''}
+      ${completed ? `
+      <div class="session-section">
+        <div class="ss-header"><span class="dim" style="font-size:var(--fz-sm)">##</span> Completed</div>
+        <div class="ss-body md-body">${marked.parse(completed)}</div>
+      </div>` : ''}
+      ${nextSteps ? `
+      <div class="session-section">
+        <div class="ss-header"><span class="dim" style="font-size:var(--fz-sm)">##</span> Next Steps</div>
+        <div class="ss-body md-body">${marked.parse(nextSteps)}</div>
+      </div>` : ''}
       <div style="height:60px"></div>
     </article>
   `;
 
-  // Render timeline
-  const tlContainer = $('session-timeline');
-  if (timeline.length === 0) {
-    tlContainer.innerHTML = '<div class="dim" style="font-size:var(--fz-xs);padding:8px 0">No timeline entries extracted</div>';
-  } else {
-    timeline.forEach((row, i) => {
-      const kinds = { msg: { c: 'var(--muted)', lbl: 'MSG' }, mem: { c: 'var(--accent)', lbl: 'MEM' }, decision: { c: 'var(--warn)', lbl: 'DEC' }, tool: { c: 'var(--link)', lbl: 'TOOL' } };
-      const kk = kinds[row.kind] || kinds.msg;
+  // Render prompts with scrollable container
+  const promptsContainer = $('session-prompts');
+  if (promptsContainer && promptEntries.length > 0) {
+    promptEntries.forEach(entry => {
       const div = document.createElement('div');
-      div.className = 'tl-row';
-      div.innerHTML = `
-        <span class="tl-time">${row.time}</span>
-        <span class="tl-badge" style="color:${kk.c};border:1px solid ${kk.c}">${kk.lbl}</span>
-        <span class="tl-text">${row.text}</span>
-        ${i < timeline.length - 1 ? '<span class="tl-guide"></span>' : ''}
-      `;
-      tlContainer.appendChild(div);
+      div.className = 'prompt-entry';
+      div.innerHTML = marked.parse('### ' + entry.trim());
+      promptsContainer.appendChild(div);
     });
   }
 }
