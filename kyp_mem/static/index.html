@@ -990,7 +990,7 @@ function renderProjectTree(container) {
       row.dataset.path = node.path;
       const name = node.name.replace('.md', '');
       row.innerHTML = `<span style="color:var(--muted);font-size:10px">◇</span><span class="sr-label">${name}</span>`;
-      row.addEventListener('click', () => { view = 'note'; setView('note'); loadNote(node.path); });
+      row.addEventListener('click', () => { setView('note'); loadNote(node.path); });
       parent.appendChild(row);
     } else if (node.children) {
       node.children.forEach(c => walk(c, parent));
