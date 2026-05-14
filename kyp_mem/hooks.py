@@ -195,13 +195,20 @@ def handle_post_tool_use():
     cwd = os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd())
     entry["cwd"] = cwd
 
-    # Measure response size for token economics
     tool_response = data.get("tool_response", "")
-    response_chars = len(str(tool_response)) if tool_response else 0
+    resp_str = str(tool_response) if tool_response else ""
+    response_chars = len(resp_str)
+    resp_truncated = resp_str[:2000]
 
     if tool_name == "Edit":
         entry["action"] = "edit"
         entry["file"] = tool_input.get("file_path", "")
+        old_s = tool_input.get("old_string", "")
+        new_s = tool_input.get("new_string", "")
+        if old_s:
+            entry["old_string"] = old_s[:500]
+        if new_s:
+            entry["new_string"] = new_s[:500]
     elif tool_name == "Write":
         entry["action"] = "create"
         entry["file"] = tool_input.get("file_path", "")
@@ -214,10 +221,12 @@ def handle_post_tool_use():
             except OSError:
                 pass
         entry["response_chars"] = response_chars
+        entry["content"] = resp_truncated
     elif tool_name == "Bash":
         entry["action"] = "command"
         entry["command"] = tool_input.get("command", "")
         entry["response_chars"] = response_chars
+        entry["output"] = resp_truncated
     else:
         return
 
