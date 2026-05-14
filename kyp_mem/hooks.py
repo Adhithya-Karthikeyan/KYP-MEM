@@ -152,7 +152,8 @@ def handle_session_start():
             parts.append(summary)
             parts.append("")
 
-        stats_line = _build_stats_line(project_name, len("\n".join(parts)))
+        session_ids = {Path(sp).stem for sp in sessions}
+        stats_line = _build_stats_line(project_name, len("\n".join(parts)), session_ids)
         if stats_line:
             parts.append(stats_line)
         output = "\n".join(parts)
