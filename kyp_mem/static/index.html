@@ -475,8 +475,9 @@ body.resizing #resize-handle { pointer-events: auto !important; }
 .graph-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 10px 14px; border-bottom: 1px solid var(--line);
-  background: var(--bg-2); gap: 12px;
+  background: var(--bg-2); gap: 12px; position: relative; z-index: 10;
 }
+.graph-header .ghost-btn { cursor: pointer; }
 .graph-header-left { display: flex; align-items: center; gap: 10px; font-size: var(--fz-sm); white-space: nowrap; }
 .graph-header-right { display: flex; gap: 6px; flex-shrink: 0; }
 .tool-chip {
