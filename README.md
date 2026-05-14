@@ -1,288 +1,122 @@
-# KYP-MEM — Know Your Project Memory
+# KYP-MEM
 
-**Persistent memory for AI coding agents.** Your AI agent forgets everything between sessions. KYP-MEM fixes that.
 
-KYP-MEM is an MCP server that gives your AI agent a knowledge base and session memory. It remembers your architecture, past bugs, decisions, and what happened last session — so you never repeat yourself.
+> Claude that remembers your conversations AND understands your project.
 
----
+KYP-MEM gives AI coding agents two-layer memory:
 
-## How It Works
+- **Session Memory(Episodic)** → remembers what happened across coding sessions
 
-KYP-MEM gives your agent two types of memory:
+- **Project Intelligence** → understands architecture, decisions, docs, and relationships
 
-### Knowledge Base — long-term project memory
+Your AI agent stops starting from zero every day.
 
-Structured markdown notes organized by project. Architecture docs, API references, known bugs, key decisions, setup guides. The agent reads these before doing any work and updates them as it learns.
+## Example
 
-```
-MyProject/
-├── Knowledge.md      # Architecture, bugs, decisions, notes
-├── API.md            # Endpoints and contracts
-├── Setup.md          # Environment setup guide
-└── Sessions/
-```
+User:
 
-### Session Memory — what happened each session
+> "Why did we move from REST to Kafka?"
 
-Every coding session is automatically captured — files changed, commands run, prompts used. These notes are embedded into a vector database for semantic search, so the agent can find past work by meaning, not just keywords.
+Claude:
 
-```
-MyProject/Sessions/
-├── 2026-05-12_143022.md  # "Fixed auth bug, found rate limiter issue"
-├── 2026-05-12_091544.md  # "Investigated flaky tests — race condition"
-└── 2026-05-11_162301.md  # "Set up CI, decided on GitHub Actions"
-```
+> "In the May 12 session, we found the REST pipeline couldn't handle peak trading volume.
+> We decided to migrate to Kafka for async processing.
+> See [[Architecture Decisions]] and [[Event Pipeline]]."
 
-### The Loop
+By intercepting the prompt, KYP-MEM automatically provided the agent with:
+- The vectorized semantic search results of past session logs.
+- The relevant markdown files from the project knowledge base.
 
-```
-Session Start
-  → Agent loads project knowledge + recent sessions
-  → Agent is grounded: knows architecture, past bugs, last session's next steps
 
-During Work
-  → Agent hits a bug → searches session memory → finds it was already investigated
-  → Agent makes a decision → updates Knowledge.md so future sessions know
 
-Session End
-  → Hooks auto-capture everything into a structured session note
-  → Note is embedded into the vector store for future semantic search
-```
 
----
+## How it works
 
-## Install
+KYP-MEM operates as a Model Context Protocol (MCP) server that runs silently in the background, integrating directly with Claude Code.
+
+## Two-Layer Memory System
+
+### 1. Episodic Memory
+
+Every coding session is automatically captured:
+
+- prompts
+- commands
+- files changed
+- bugs investigated
+- decisions made
+
+Sessions are semantically searchable.
+
+### 2. Project Intelligence
+
+KYP-MEM maintains structured project knowledge:
+
+- architecture
+- APIs
+- setup docs
+- known issues
+- linked concepts
+- decision history
+
+The agent continuously updates this knowledge as it learns.
+
+1. **Vault Storage:** Your knowledge base and session logs are stored locally as Markdown files in your `~/.kyp-mem/vault` directory.
+2. **Vector Database:** Session logs are embedded into a local ChromaDB vector database, enabling semantic search ("Find me the session where we debugged the database connection").
+3. **Auto-Learning Hooks:** KYP-MEM hooks into Claude Code's execution lifecycle. It silently listens to prompts, file reads, edits, and terminal commands. When a session ends, it automatically generates a comprehensive summary and timeline using an LLM and saves it to your Vault.
+4. **Agent Tooling:** Claude is equipped with 14 custom MCP tools to read, write, search, and navigate your project's knowledge graph using `[[wikilinks]]`.
+
+## Installation
 
 ```bash
-pip install kyp-mem
+npm i kyp-mem
+
+pip install kyp-mem (coming soon)
 ```
 
 ## Setup
 
+Run the initialization commands to get started:
+
 ```bash
 kyp-mem init              # Choose where to store your vault
-kyp-mem setup-claude      # Register MCP server with Claude Code
-kyp-mem install-hooks     # Enable automatic session capture
+kyp-mem setup-claude      # Register the MCP server with Claude Code
+kyp-mem install-hooks     # Enable automatic session capture (Episodic Memory)
 ```
 
-Restart Claude Code. KYP-MEM runs automatically with 14 tools available to the agent.
+Restart Claude Code. The agent will automatically have access to the memory tools.
 
-### Quick Setup (one command)
+*(To enable globally for all projects run: `kyp-mem setup-claude --global` and `kyp-mem install-hooks --global`)*
 
-```bash
-claude mcp add -s user -e KYP_VAULT="$HOME/.kyp-mem/vault" kyp-mem -- kyp-mem serve
-```
+## The Agent's Workflow
 
-### Enable for All Projects
+KYP-MEM embeds behavioral instructions directly into its tools. Without any prompting required from you, the agent will automatically:
 
-```bash
-kyp-mem setup-claude --global
-kyp-mem install-hooks --global
-```
-
----
-
-## What the Agent Does Automatically
-
-KYP-MEM embeds behavioral instructions directly into tool descriptions. The agent follows these rules without any user action:
-
-1. **Session start** — loads project knowledge + recent session history
-2. **Before investigating bugs** — searches session memory first to avoid duplicate work
-3. **Before making decisions** — checks if a prior session already decided this
-4. **After fixing or learning something** — updates Knowledge.md for future sessions
-5. **Never hallucinates** — if it's not in the knowledge base, it says so
-
-No prompting needed. The agent reads the tool descriptions and follows the protocol.
-
----
-
-## Automatic Session Capture
-
-```bash
-kyp-mem install-hooks
-```
-
-Installs three Claude Code hooks:
-
-- **UserPromptSubmit** — captures every prompt you send to the agent
-- **PostToolUse** — captures file edits, writes, and shell commands in real-time
-- **Stop** — when the session ends, compiles all activity into a structured note
-
-Each session note looks like this:
-
-```markdown
-# Session 2026-05-12_143022
-
-**Project:** MyProject
-**Actions:** 15 total, 12 substantive
-
-## Summary
-Fixed auth bug, refactored token refresh logic.
-
-## PROMPTS
-### 1. [14:25:01]
-> fix the token refresh bug in auth.py
-
-### 2. [14:30:22]
-> also add retry logic for expired tokens
-
-## INVESTIGATED
-- grep for "token expired" across auth module
-- read OAuth provider docs
-
-## LEARNED
-- Refresh tokens expire after 30 days, not 90
-
-## COMPLETED
-- Fixed token refresh in auth.py
-- Added retry logic for expired tokens
-
-## NEXT STEPS
-- Add integration test for token refresh flow
-```
-
-Sessions with fewer than 3 substantive actions are automatically skipped.
-
----
-
-## Semantic Search
-
-Session notes are embedded into a vector database (ChromaDB). This enables search by meaning:
-
-- Searching **"authentication failing"** finds sessions about "login bug" and "OAuth token expiry"
-- Searching **"deploy process"** finds sessions about "CI pipeline setup" and "release workflow"
-
-The agent doesn't need exact keywords — it finds semantically related past work.
-
----
+1. **Load Context:** On session start, it loads the project's ground truth (`Knowledge.md`) and recent session summaries.
+2. **Search Before Acting:** Before investigating bugs or making architectural decisions, it searches past episodic memory to avoid repeating work.
+3. **Persist Knowledge:** After fixing a bug or making a decision, it uses its tools to update the project's knowledge base for future sessions.
 
 ## Web UI
+
+Browse your knowledge graph, view session timelines, and see semantic relationships visually.
 
 ```bash
 kyp-mem ui
 ```
-
-Opens at `localhost:3333` with two panels:
-
-**Session Memory** — semantic search across all sessions, grouped by project with timestamps
-
-**Knowledge Base** — file tree with folders, notes, tags. Full-text search, tag filtering, quick switcher (`Cmd+O`)
-
-**Editor** — rendered markdown with `[[wikilink]]` navigation, inline editing
-
-**Graph** — knowledge graph showing connections between notes, backlinks, and related content
-
----
-
-## MCP Tools (14 total)
-
-### Agent Behavior
-
-| Tool | Purpose |
-|------|---------|
-| `____kyp_instructions` | Embeds behavioral rules the agent follows automatically |
-| `kyp_project_context` | Loads project knowledge + recent sessions at session start |
-
-### Knowledge Base
-
-| Tool | Purpose |
-|------|---------|
-| `kyp_list` | Browse folders and notes |
-| `kyp_read` | Read a note (summary by default, `full=True` for complete) |
-| `kyp_write` | Create or update a note with tags and `[[wikilinks]]` |
-| `kyp_delete` | Delete a note |
-| `kyp_search` | Full-text search with optional tag filter |
-| `kyp_tags` | List all tags or filter notes by tag |
-| `kyp_related` | Find related notes by links, tags, proximity |
-| `kyp_recent` | Recently modified notes |
-| `kyp_stats` | Vault statistics |
-
-### Session Memory
-
-| Tool | Purpose |
-|------|---------|
-| `kyp_session_search` | Semantic search across all session logs |
-| `kyp_session_create` | Manually create a session note |
-| `kyp_sessions` | List sessions by project |
-
----
-
-## Adding to Your Project
-
-Add a `CLAUDE.md` to any project root:
-
-```markdown
-# Project Memory
-
-## Session Start (MANDATORY)
-Call `kyp_project_context("PROJECT_NAME")` at the start of every session to load:
-- Project knowledge base (architecture, bugs, decisions)
-- Recent session history (what was done, what's next)
-
-## During Work
-- Before investigating bugs: `kyp_session_search("error or symptom")`
-- Before making decisions: `kyp_session_search("topic")`
-- After fixing bugs: update Knowledge.md via `kyp_write`
-- After decisions: add to Key Decisions in Knowledge.md
-
-## Rules
-- Never hallucinate project details — check the knowledge base first.
-- Use [[wikilinks]] to connect related notes.
-- Sessions are captured automatically — no manual logging needed.
-```
-
-A template is available at `templates/CLAUDE.md.template`.
-
----
-
-## Vault Structure
-
-```
-~/.kyp-mem/
-├── config.json           # Vault path configuration
-├── chroma/               # Vector database for semantic search
-└── vault/
-    ├── ProjectA/
-    │   ├── Knowledge.md  # Ground truth: architecture, bugs, decisions
-    │   ├── API.md
-    │   └── Sessions/
-    │       ├── 2026-05-12_143022.md
-    │       └── 2026-05-11_091544.md
-    ├── ProjectB/
-    │   ├── Knowledge.md
-    │   └── Sessions/
-    └── ...
-```
-
-Notes use YAML frontmatter for tags and `[[wikilinks]]` for cross-references:
-
-```markdown
----
-tags: [trading, config]
-created: 2026-05-12
----
-# Configuration
-Settings are in `HedgeConfig`. See [[Risk Management]] for limits.
-```
-
----
+*Opens at `localhost:3333`.*
 
 ## CLI Commands
 
-| Command | What it does |
+| Command | Description |
 |---------|-------------|
 | `kyp-mem init` | First-time setup — choose vault location |
 | `kyp-mem setup-claude` | Register MCP server with Claude Code |
-| `kyp-mem setup-claude --global` | Register globally (all projects) |
 | `kyp-mem install-hooks` | Enable automatic session capture |
-| `kyp-mem install-hooks --remove` | Remove session capture hooks |
 | `kyp-mem serve` | Start MCP server (stdio, used by the agent) |
-| `kyp-mem ui` | Open web UI at localhost:3333 |
+| `kyp-mem ui` | Open the local web UI |
 | `kyp-mem stats` | Print vault statistics |
-| `kyp-mem tree` | Print vault tree |
-| `kyp-mem doctor` | Check installation health |
-
----
+| `kyp-mem tree` | Print vault file tree |
+| `kyp-mem doctor` | Check installation and configuration health |
 
 ## License
 
