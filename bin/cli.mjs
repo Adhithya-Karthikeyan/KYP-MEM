@@ -84,22 +84,28 @@ if (args[0] === "hook") {
       if (tool.includes("kyp-mem") || tool.includes("kyp_mem")) process.exit(0);
 
       const input = data.tool_input || {};
+      const resp = String(data.tool_response || "").slice(0, 2000);
       const entry = { ts: new Date().toISOString(), tool, cwd: process.cwd() };
 
       if (tool === "Edit" || tool === "Write") {
         entry.file = input.file_path || "";
         entry.action = tool === "Edit" ? "edit" : "create";
+        if (input.old_string) entry.old_string = input.old_string.slice(0, 500);
+        if (input.new_string) entry.new_string = input.new_string.slice(0, 500);
       } else if (tool === "Read") {
         entry.file = input.file_path || "";
         entry.action = "read";
+        entry.content = resp;
       } else if (tool === "Bash") {
         entry.command = (input.command || "").slice(0, 300);
         entry.action = "command";
+        entry.output = resp;
       } else {
         entry.action = "other";
         entry.detail = tool;
       }
 
+      entry.response_chars = String(data.tool_response || "").length;
       mkdirSync(sessionDir, { recursive: true });
       appendFileSync(sessionFile, JSON.stringify(entry) + "\n");
     } catch (_) {
