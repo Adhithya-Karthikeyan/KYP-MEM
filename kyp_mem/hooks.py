@@ -9,7 +9,7 @@ from pathlib import Path
 SESSION_DIR = Path.home() / ".kyp-mem" / "sessions"
 CURRENT_SESSION = SESSION_DIR / "current.jsonl"
 
-MIN_ACTIONS = 3
+MIN_ACTIONS = 5
 CHARS_PER_TOKEN = 4
 
 COMMAND_OUTPUT_ESTIMATES = {
