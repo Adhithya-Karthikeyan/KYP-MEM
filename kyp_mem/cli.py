@@ -271,7 +271,46 @@ def _write_legacy_claude_settings(
     return settings_path
 
 
-def _run_install_hooks(global_config: bool = False, remove: bool = False):
+def _run_uninstall(purge: bool = False):
+    from .config import CONFIG_DIR
+
+    print()
+    print(f"  {C}KYP-MEM{R} — Uninstall")
+    print()
+
+    # Remove hooks from global settings
+    _run_install_hooks(global_config=True, remove=True)
+
+    # Remove MCP server from Claude Code
+    claude_bin = shutil.which("claude")
+    if claude_bin:
+        subprocess.run(
+            [claude_bin, "mcp", "remove", "-s", "user", "kyp-mem"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, text=True,
+        )
+        print(f"  {G}✓{R} MCP server removed from Claude Code")
+    else:
+        print(f"  {Y}!{R} 'claude' CLI not found — remove kyp-mem MCP server manually")
+
+    if purge:
+        import shutil as sh
+        if CONFIG_DIR.exists():
+            sh.rmtree(CONFIG_DIR)
+            print(f"  {G}✓{R} Deleted {CONFIG_DIR} (vault, config, sessions)")
+        else:
+            print(f"  {D}  {CONFIG_DIR} does not exist{R}")
+
+    print()
+    print(f"  To finish, remove the npm package:")
+    print(f"    {Y}npm uninstall -g kyp-mem{R}")
+    print()
+    if not purge:
+        print(f"  {D}Your vault data at {CONFIG_DIR} was kept.{R}")
+        print(f"  {D}To delete it too: kyp-mem uninstall --purge{R}")
+        print()
+
+
+
     mcp_command, _ = _get_mcp_command()
 
     if global_config:
