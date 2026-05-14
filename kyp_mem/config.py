@@ -34,4 +34,4 @@ def get_vault_path() -> str:
 
 def get_session_model() -> str:
     config = load_config()
-    return config.get("session_model", "claude-haiku-4-5-20251001")
+    return config.get("session_model", "claude-sonnet-4-6")
