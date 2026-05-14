@@ -78,6 +78,32 @@ def _is_subprocess():
     return os.environ.get("KYP_MEM_SUMMARIZING") == "1"
 
 
+def _extract_session_summary(content, max_chars=1500):
+    import re
+    sections = {}
+    for heading in ("Summary", "PROMPTS", "LEARNED", "COMPLETED", "NEXT_STEPS", "NEXT STEPS"):
+        pattern = rf"(?:^|\n)##\s+{re.escape(heading)}\s*\n(.*?)(?=\n##\s|\Z)"
+        m = re.search(pattern, content, re.DOTALL)
+        if m:
+            sections[heading.upper().replace(" ", "_")] = m.group(1).strip()
+    parts = []
+    if "SUMMARY" in sections:
+        parts.append(sections["SUMMARY"])
+    if "PROMPTS" in sections:
+        lines = sections["PROMPTS"].strip().splitlines()
+        prompts = [l.strip().lstrip("> ").strip() for l in lines if l.strip().startswith(">")]
+        if prompts:
+            parts.append("**Prompts:** " + " | ".join(prompts[:5]))
+    if "LEARNED" in sections:
+        parts.append("**Learned:**\n" + sections["LEARNED"][:400])
+    if "COMPLETED" in sections:
+        parts.append("**Completed:**\n" + sections["COMPLETED"][:300])
+    if "NEXT_STEPS" in sections:
+        parts.append("**Next:**\n" + sections["NEXT_STEPS"][:200])
+    result = "\n\n".join(parts) if parts else content[:max_chars]
+    return result[:max_chars]
+
+
 def handle_session_start():
     """Inject recent session memory into the conversation at session start."""
     sys.stdin.read()
