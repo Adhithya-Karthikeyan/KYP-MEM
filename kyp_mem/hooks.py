@@ -159,7 +159,7 @@ def handle_session_start():
             parts.append(stats_line)
 
         parts.append("")
-        parts.append("**INSTRUCTION:** Display the session summaries and token savings above to the user as your first message at session start. Format it cleanly.")
+        parts.append("**CRITICAL: Your FIRST response to the user MUST be displaying the session summaries below. Do NOT skip this. Do NOT wait for user input. Display them immediately, formatted cleanly, before doing anything else.**")
 
         output = "\n".join(parts)
 
