@@ -738,12 +738,15 @@ def handle_stop():
 
     content = "\n".join(parts)
     tags = ["session", "auto-captured", project_name]
+    metadata = {}
+    if topic:
+        metadata["topic"] = topic
 
     from .config import get_vault_path
     from .vault import Vault
 
     vault = Vault(get_vault_path())
-    vault.write_note(f"{project_name}/Sessions/{session_id}.md", content, tags, {})
+    vault.write_note(f"{project_name}/Sessions/{session_id}.md", content, tags, metadata)
 
     CURRENT_SESSION.unlink(missing_ok=True)
 
