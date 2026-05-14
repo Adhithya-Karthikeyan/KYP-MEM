@@ -237,16 +237,36 @@ def kyp_recent(limit: int = 10) -> str:
 
 @mcp.tool()
 def kyp_stats() -> str:
-    """Get vault statistics — note count, folders, tags, links."""
+    """Get vault statistics — note count, folders, tags, links, and token economics (exploration cost vs memory injection cost)."""
     s = vault.get_stats()
-    return (
-        f"Vault stats:\n"
-        f"  Notes: {s['notes']}\n"
-        f"  Folders: {s['folders']}\n"
-        f"  Tags: {s['tags']}\n"
-        f"  Links: {s['links']}\n"
-        f"  Backlinks: {s['backlinks']}"
-    )
+    lines = [
+        "Vault stats:",
+        f"  Notes: {s['notes']}",
+        f"  Folders: {s['folders']}",
+        f"  Tags: {s['tags']}",
+        f"  Links: {s['links']}",
+        f"  Backlinks: {s['backlinks']}",
+    ]
+
+    try:
+        from .config import STATS_FILE
+        raw = json.loads(STATS_FILE.read_text()) if STATS_FILE.exists() else {}
+        sessions = raw.get("sessions", [])
+        injections = raw.get("injections", [])
+        if sessions:
+            total_exploration = sum(s.get("exploration_tokens", 0) for s in sessions)
+            latest_inj = injections[-1].get("tokens", 0) if injections else 0
+            savings = round((1 - latest_inj / total_exploration) * 100, 1) if total_exploration > 0 and latest_inj > 0 else 0
+            lines.append("")
+            lines.append("Token economics:")
+            lines.append(f"  Exploration: ~{total_exploration:,} tokens across {len(sessions)} sessions")
+            lines.append(f"  Injection: ~{latest_inj:,} tokens (latest session start)")
+            if savings > 0:
+                lines.append(f"  Savings: {savings}% — memory replaces {total_exploration:,}t of re-exploration with {latest_inj:,}t injection")
+    except Exception:
+        pass
+
+    return "\n".join(lines)
 
 
 @mcp.tool()
