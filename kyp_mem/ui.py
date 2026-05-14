@@ -27,6 +27,7 @@ def create_app(vault_path: str = None) -> FastAPI:
 
     @app.get("/api/stats")
     def stats():
+        vault.refresh_if_stale()
         return JSONResponse(vault.get_stats())
 
     @app.get("/api/graph")
