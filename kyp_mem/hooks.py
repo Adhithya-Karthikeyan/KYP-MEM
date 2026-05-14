@@ -426,35 +426,41 @@ def _summarize_with_claude(raw_note, project_name):
         model = get_session_model()
         client = anthropic.Anthropic()
 
-        prompt = f"""Summarize this coding session for "{project_name}" in plain English. A future AI agent will read this to understand what happened — write for that audience.
+        prompt = f"""Rewrite this raw coding session into a structured summary. A future AI agent reads this to pick up where you left off — be precise and technical.
 
-You have: user prompts (what was asked), a timeline of file edits/reads/commands (what happened), and raw section data. Synthesize these into a coherent narrative.
+You have: user prompts (the objectives), a timeline of file edits/reads/commands, and raw section data. Synthesize into a dense, specific narrative.
 
-Rules:
-- Summary: 2-3 sentences. State the objective (from prompts), what was done, and the outcome. Be specific: "Fixed navigation bug where clicking sessions broke the back button" not "Modified files and ran commands."
-- INVESTIGATED: What was explored and WHY. "Examined the session hook pipeline to understand why summaries were empty" not "Searched for `session-view`". Max 4 bullets.
-- LEARNED: Insights or discoveries. "The config CLI command was defined but never wired to the dispatcher" not "Investigated and modified: `cli.py`". Max 4 bullets.
-- COMPLETED: Concrete deliverables. "Added AI-powered session summarization using Claude Haiku" not "Modified `hooks.py`". Max 5 bullets.
-- NEXT STEPS: What should happen next session. Infer from context — unfinished work, unfixed bugs, natural follow-ups. Max 3 bullets.
+## Format rules
 
-NEVER include raw grep patterns, CSS class names, file paths, or command output. Write like you're telling a teammate what you did today.
+- **Summary**: 1-2 sentences. State what was done and the outcome. Include error messages, feature names, or bug descriptions verbatim. Example: 'Debugged and fixed "Unknown hook type: session-start" error in kyp-mem; cleaned repository of session-specific files and prepared for release'
+- **INVESTIGATED**: One dense paragraph (not bullets). List specific files, paths, and systems examined with semicolons. Include full relative paths and module names. Example: 'Global and project-level Claude Code settings.json; kyp-mem Python CLI source (cli.py, hooks.py); installed Node.js wrapper at /opt/homebrew/lib/node_modules/kyp-mem/bin/cli.mjs; hook dispatcher implementation; git commit history'
+- **LEARNED**: One dense paragraph (not bullets). State technical insights with specifics — what was discovered, why it matters, root causes. Include version numbers, commit hashes, config values, error messages. Example: 'kyp-mem uses a Node.js wrapper with a "hook fast path" dispatcher that only handled 3 hook types (user-prompt, post-tool-use, stop); session-start was missing despite being implemented in Python backend'
+- **COMPLETED**: One dense paragraph (not bullets). List concrete deliverables with specifics — file names modified, features added, tests passed, counts, commit hashes. Use semicolons to separate items. Example: 'Fixed .gitignore to exclude session-specific files (CLAUDE.md, PLAN-ui-rewrite.md, templates/); removed 3 tracked files from git history; committed cleanup to main (commit f0b114e: 4 files changed, 626 deletions)'
+- **NEXT STEPS**: One dense paragraph (not bullets). Concrete actionable items for the next session. Example: 'Push commit f0b114e to GitHub; publish 0.5.1 release to npm with session-start hook support'
+
+## Critical rules
+- ALWAYS include specific file names, paths, commit hashes, error messages, and counts
+- Write dense paragraphs with semicolons, NOT bullet lists
+- Never be vague: "Fixed 3 files" is bad, "Fixed .gitignore, cli.mjs, and hooks.py" is good
+- If a commit hash appears in the timeline, include it
+- Keep each section to one paragraph max
 
 Return ONLY this format (no preamble):
 
 ## Summary
-<text>
+<1-2 sentences>
 
 ## INVESTIGATED
-- <item>
+<one paragraph>
 
 ## LEARNED
-- <item>
+<one paragraph>
 
 ## COMPLETED
-- <item>
+<one paragraph>
 
 ## NEXT STEPS
-- <item>
+<one paragraph>
 
 Raw session data:
 {raw_note}"""
