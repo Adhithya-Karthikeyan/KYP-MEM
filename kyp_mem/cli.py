@@ -133,8 +133,24 @@ def _run_init():
     print(f"  {G}✓{R} Vault:  {vault_path}")
     print(f"  {G}✓{R} Config: {CONFIG_FILE}")
     print()
-    print(f"  {Y}Next step:{R} Connect to Claude Code:")
-    print(f"    {Y}kyp-mem setup-claude{R}")
+
+    claude_settings = Path.home() / ".claude" / "settings.json"
+    already_setup = False
+    if claude_settings.exists():
+        try:
+            cs = json.loads(claude_settings.read_text())
+            has_mcp = "kyp-mem" in cs.get("mcpServers", {})
+            has_hooks = any("kyp-mem" in str(h) for h in cs.get("hooks", {}).get("Stop", []))
+            already_setup = has_mcp and has_hooks
+        except (json.JSONDecodeError, KeyError):
+            pass
+
+    if already_setup:
+        print(f"  {G}✓{R} Claude Code already configured (MCP server + hooks)")
+        print(f"  {D}  Restart Claude Code if you changed the vault path.{R}")
+    else:
+        print(f"  {Y}Next step:{R} Connect to Claude Code:")
+        print(f"    {Y}kyp-mem setup-claude --global && kyp-mem install-hooks --global{R}")
     print()
 
 
