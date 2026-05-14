@@ -1,5 +1,6 @@
 """KYP-MEM web UI — interactive interface for browsing the vault."""
 
+import json
 import webbrowser
 from datetime import datetime
 from pathlib import Path
