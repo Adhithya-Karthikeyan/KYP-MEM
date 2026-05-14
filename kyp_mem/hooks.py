@@ -475,7 +475,7 @@ Raw session data:
 
 
 def handle_stop():
-    if not CURRENT_SESSION.exists():
+    if _is_subprocess() or not CURRENT_SESSION.exists():
         return
 
     text = CURRENT_SESSION.read_text().strip()
