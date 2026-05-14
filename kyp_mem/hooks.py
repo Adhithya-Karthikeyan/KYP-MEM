@@ -140,20 +140,13 @@ def handle_session_start():
         parts = [f"# [kyp-mem] {project_name} — Recent Sessions"]
         parts.append(f"Use `kyp_search` or `kyp_project_context` for architecture/project knowledge on demand.\n")
 
-        full_chars = 0
         parts.append(f"## Last {len(sessions)} Sessions")
         for sp in sessions:
             note = vault.read(sp)
             if not note:
                 continue
             parts.append(f"### {note.title}")
-            content = note.content
-            timeline_idx = content.find("## TIMELINE")
-            if timeline_idx < 0:
-                timeline_idx = content.find("## Timeline")
-            raw = content[:timeline_idx].strip() if timeline_idx > 0 else content
-            full_chars += len(raw)
-            summary = _extract_session_summary(content)
+            summary = _extract_session_summary(note.content)
             parts.append(summary)
             parts.append("")
 
