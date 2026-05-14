@@ -518,7 +518,7 @@ def handle_stop():
     files_created = set()
     commands = []
     prompts = []
-    timeline = []
+    events = []
 
     for e in entries:
         ts_raw = e.get("ts", "")
@@ -527,69 +527,96 @@ def handle_stop():
 
         if action == "prompt":
             prompts.append({"ts": ts, "text": e.get("prompt", "")})
-            timeline.append(f"  {ts} — Prompt: {e.get('prompt', '')[:60]}...")
+            events.append({"ts": ts, "type": "prompt", "text": e.get("prompt", "")[:500]})
         elif action == "read":
             fp = e.get("file", "")
             files_read.add(fp)
-            timeline.append(f"  {ts} — Read `{Path(fp).name}`")
+            content = e.get("content", "")
+            events.append({"ts": ts, "type": "read", "file": fp, "content": content[:1000] if content else ""})
         elif action == "edit":
             fp = e.get("file", "")
             files_edited.add(fp)
-            timeline.append(f"  {ts} — Edit `{Path(fp).name}`")
+            events.append({
+                "ts": ts, "type": "edit", "file": fp,
+                "old": e.get("old_string", "")[:300],
+                "new": e.get("new_string", "")[:300],
+            })
         elif action == "create":
             fp = e.get("file", "")
             files_created.add(fp)
-            timeline.append(f"  {ts} — Write `{Path(fp).name}`")
+            events.append({"ts": ts, "type": "create", "file": fp})
         elif action == "command":
             cmd = e.get("command", "")
+            output = e.get("output", "")
             commands.append(cmd)
-            short = cmd[:80] + "..." if len(cmd) > 80 else cmd
-            timeline.append(f"  {ts} — `{short}`")
+            events.append({"ts": ts, "type": "command", "cmd": cmd[:300], "output": output[:1000] if output else ""})
 
     commands_classified = [_classify_command(cmd) for cmd in commands]
 
-    summary_items = []
-    if files_edited:
-        summary_items.append(f"Modified {len(files_edited)} file{'s' if len(files_edited) != 1 else ''}")
-    if files_created:
-        summary_items.append(f"Created {len(files_created)} file{'s' if len(files_created) != 1 else ''}")
-    if commands:
-        summary_items.append(f"Ran {len(commands)} command{'s' if len(commands) != 1 else ''}")
+    # Build rich context for Sonnet — actual content, not just filenames
+    raw_parts = []
+
+    if prompts:
+        raw_parts.append("## USER PROMPTS (the objectives)")
+        for p in prompts:
+            raw_parts.append(f"[{p['ts']}] {p['text'][:500]}")
+        raw_parts.append("")
+
+    raw_parts.append("## SESSION EVENTS (chronological, with content)")
+    for ev in events:
+        if ev["type"] == "prompt":
+            raw_parts.append(f"\n### [{ev['ts']}] User asked:")
+            raw_parts.append(ev["text"])
+        elif ev["type"] == "read":
+            raw_parts.append(f"\n### [{ev['ts']}] Read `{ev['file']}`")
+            if ev.get("content"):
+                raw_parts.append(f"```\n{ev['content']}\n```")
+        elif ev["type"] == "edit":
+            raw_parts.append(f"\n### [{ev['ts']}] Edited `{ev['file']}`")
+            if ev.get("old"):
+                raw_parts.append(f"Replaced:\n```\n{ev['old']}\n```")
+            if ev.get("new"):
+                raw_parts.append(f"With:\n```\n{ev['new']}\n```")
+        elif ev["type"] == "create":
+            raw_parts.append(f"\n### [{ev['ts']}] Created `{ev['file']}`")
+        elif ev["type"] == "command":
+            raw_parts.append(f"\n### [{ev['ts']}] Ran: `{ev['cmd']}`")
+            if ev.get("output"):
+                raw_parts.append(f"Output:\n```\n{ev['output']}\n```")
+
+    raw_parts.append("")
+    raw_parts.append("## FILES MODIFIED")
+    for fp in sorted(files_edited):
+        raw_parts.append(f"- {_relative_path(fp, project_dir)}")
+    raw_parts.append("")
+    raw_parts.append("## FILES CREATED")
+    for fp in sorted(files_created):
+        raw_parts.append(f"- {_relative_path(fp, project_dir)}")
+    raw_parts.append("")
+    raw_parts.append("## FILES READ")
+    for fp in sorted(files_read):
+        raw_parts.append(f"- {_relative_path(fp, project_dir)}")
+
+    # Keep timeline for backward compat in case summarization fails
+    timeline = []
+    for ev in events:
+        if ev["type"] == "prompt":
+            timeline.append(f"  {ev['ts']} — Prompt: {ev['text'][:60]}...")
+        elif ev["type"] == "read":
+            timeline.append(f"  {ev['ts']} — Read `{Path(ev['file']).name}`")
+        elif ev["type"] == "edit":
+            timeline.append(f"  {ev['ts']} — Edit `{Path(ev['file']).name}`")
+        elif ev["type"] == "create":
+            timeline.append(f"  {ev['ts']} — Write `{Path(ev['file']).name}`")
+        elif ev["type"] == "command":
+            short = ev["cmd"][:80] + "..." if len(ev["cmd"]) > 80 else ev["cmd"]
+            timeline.append(f"  {ev['ts']} — `{short}`")
 
     investigated = _build_investigated(files_read, commands_classified, project_dir)
     learned = _build_learned(files_read, files_edited, files_created, commands_classified, project_dir)
     completed = _build_completed(files_edited, files_created, commands_classified, project_dir)
     next_steps = _build_next_steps(files_edited, files_created, commands_classified)
 
-    # Build raw note for Claude summarization
-    raw_parts = []
-    raw_parts.append("## Summary")
-    raw_parts.append(", ".join(summary_items) + f" in `{project_name}`." if summary_items else "")
-    raw_parts.append("")
-    raw_parts.append("## INVESTIGATED")
-    if investigated:
-        raw_parts.extend(investigated)
-    raw_parts.append("")
-    raw_parts.append("## LEARNED")
-    if learned:
-        raw_parts.extend(learned)
-    raw_parts.append("")
-    raw_parts.append("## COMPLETED")
-    if completed:
-        raw_parts.extend(completed)
-    raw_parts.append("")
-    raw_parts.append("## NEXT STEPS")
-    if next_steps:
-        raw_parts.extend(next_steps)
-
-    # Prompts go FIRST — they define the session's objective
-    if prompts:
-        raw_parts.insert(0, "## USER PROMPTS (what was asked)")
-        for i, p in enumerate(prompts):
-            raw_parts.insert(i + 1, f"- [{p['ts']}] {p['text'][:300]}")
-        raw_parts.insert(len(prompts) + 1, "")
-
-    # Full timeline gives Claude the narrative arc
     if timeline:
         raw_parts.append("")
         raw_parts.append("## TIMELINE (what happened, chronological)")
