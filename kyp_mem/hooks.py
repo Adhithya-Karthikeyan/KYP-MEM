@@ -143,7 +143,12 @@ def handle_session_start():
 
         parts.append("Use `kyp_project_context` for full details. Use `kyp_session_search` to search past sessions.")
 
-        print("\n".join(parts))
+        output = "\n".join(parts)
+        try:
+            _record_injection(project_name, len(output))
+        except Exception:
+            pass
+        print(output)
     except Exception:
         pass
 
