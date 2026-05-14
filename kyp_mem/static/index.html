@@ -846,10 +846,14 @@ function renderSidebar(sessionsData) {
 
   // Sessions section
   const sessSection = document.createElement('section');
+  const sessGrouped = localStorage.getItem('kyp-sess-grouped') === 'true';
   sessSection.innerHTML = `
     <div class="side-section-header">
       <span class="side-section-title"><span class="side-dot" style="background:var(--accent)"></span>sessions</span>
-      <button class="side-add-btn" id="sidebar-new-session">+ new</button>
+      <div style="display:flex;gap:4px;align-items:center;">
+        <button class="side-add-btn sess-view-toggle" id="sess-toggle-grouped" title="Toggle grouped by topic" style="font-size:10px;opacity:${sessGrouped ? 1 : 0.45}">▤</button>
+        <button class="side-add-btn" id="sidebar-new-session">+ new</button>
+      </div>
     </div>
   `;
   const sessSearch = document.createElement('input');
@@ -879,41 +883,30 @@ function renderSidebar(sessionsData) {
     }, 250);
   });
 
-  // Session groups
-  const sortedProjects = Object.keys(sessionsData).sort();
-  sortedProjects.forEach(project => {
-    const sessions = sessionsData[project];
-    const group = document.createElement('div');
-    const folder = document.createElement('div');
-    folder.className = 'tree-folder';
-    folder.innerHTML = `<span class="tf-arrow">▾</span><span class="tf-icon">≡</span><span class="tf-label">${project}</span><span class="tf-count">${sessions.length}</span>`;
+  const sessListContainer = document.createElement('div');
+  sessSection.appendChild(sessListContainer);
 
-    const list = document.createElement('div');
-    list.style.cssText = 'display:flex;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px;';
+  function renderSessionList(grouped) {
+    sessListContainer.innerHTML = '';
+    if (grouped) {
+      renderGroupedSessions(sessListContainer, sessionsData);
+    } else {
+      renderChronoSessions(sessListContainer, sessionsData);
+    }
+  }
 
-    sessions.sort((a, b) => b.path.localeCompare(a.path));
-    sessions.forEach(s => {
-      const row = document.createElement('button');
-      row.className = 'sidebar-row';
-      row.dataset.path = s.path;
-      const displayTime = formatSessionTime(s.path.split('/').pop());
-      row.innerHTML = `<span class="sr-dot" style="color:var(--dim)">●</span><span class="sr-label">${displayTime}</span>`;
-      row.addEventListener('click', () => openSession(s.path));
-      list.appendChild(row);
-    });
+  renderSessionList(sessGrouped);
 
-    folder.addEventListener('click', () => {
-      const arrow = folder.querySelector('.tf-arrow');
-      const isOpen = arrow.textContent === '▾';
-      arrow.textContent = isOpen ? '▸' : '▾';
-      arrow.classList.toggle('closed', isOpen);
-      list.style.display = isOpen ? 'none' : 'flex';
-    });
-
-    group.appendChild(folder);
-    group.appendChild(list);
-    sessSection.appendChild(group);
+  // Toggle handler
+  sessSection.querySelector('#sess-toggle-grouped')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const btn = sessSection.querySelector('#sess-toggle-grouped');
+    const nowGrouped = localStorage.getItem('kyp-sess-grouped') !== 'true';
+    localStorage.setItem('kyp-sess-grouped', nowGrouped);
+    btn.style.opacity = nowGrouped ? 1 : 0.45;
+    renderSessionList(nowGrouped);
   });
+
   container.appendChild(sessSection);
 
   // Projects section
