@@ -138,13 +138,9 @@ def handle_session_start():
             parts.append(summary)
             parts.append("")
 
-        output = "\n".join(parts)
-        injected_chars = len(output)
-        saved_chars = full_chars - injected_chars
-        saved_tokens = saved_chars // CHARS_PER_TOKEN
-        injected_tokens = injected_chars // CHARS_PER_TOKEN
-        full_tokens = full_chars // CHARS_PER_TOKEN
-        parts.append(f"---\n*Token estimate: ~{injected_tokens} tokens injected (full would be ~{full_tokens}) — saved ~{saved_tokens} tokens ({100 * saved_chars // full_chars if full_chars else 0}%)*")
+        stats_line = _build_stats_line(project_name, len("\n".join(parts)))
+        if stats_line:
+            parts.append(stats_line)
         output = "\n".join(parts)
 
         try:
