@@ -789,13 +789,15 @@ function setView(v) {
   $('view-switch').querySelectorAll('button').forEach(b => {
     b.classList.toggle('active', b.dataset.view === v);
   });
-  if (v === 'graph') renderGraphView();
-  else if (v === 'session' && activeSession) loadNote(activeSession);
-  else if (v === 'note' && currentPath) loadNote(currentPath);
 }
 
 $('view-switch').addEventListener('click', e => {
-  if (e.target.dataset.view) setView(e.target.dataset.view);
+  if (e.target.dataset.view) {
+    setView(e.target.dataset.view);
+    if (view === 'graph') renderGraphView();
+    else if (view === 'session' && activeSession) loadNote(activeSession);
+    else if (view === 'note' && currentPath) loadNote(currentPath);
+  }
 });
 
 // ─── Sidebar Toggle ──────────────────────────────────────────────────────────
