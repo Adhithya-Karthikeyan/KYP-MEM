@@ -12,7 +12,6 @@ CURRENT_SESSION = SESSION_DIR / "current.jsonl"
 
 MIN_ACTIONS = 5
 CHARS_PER_TOKEN = 4
-IDLE_TIMEOUT_SECS = 1800  # 30 minutes — gap longer than this starts a new session
 
 COMMAND_OUTPUT_ESTIMATES = {
     "search": 2000,
@@ -423,12 +422,11 @@ You have: user prompts (the objectives), a timeline of file edits/reads/commands
 
 ## Format rules
 
-- **Topic**: A short (2-5 word) label for the primary work area of this session. Use title case. Examples: 'Graph View UI', 'Session Summarization', 'Hook Setup', 'API Authentication', 'Database Schema'. Pick the MOST SPECIFIC label that covers the majority of work done. If the session touches multiple areas, pick the dominant one.
 - **Summary**: 1-2 sentences. State what was done and the outcome. Include error messages, feature names, or bug descriptions verbatim. Example: 'Debugged and fixed "Unknown hook type: session-start" error in kyp-mem; cleaned repository of session-specific files and prepared for release'
-- **INVESTIGATED**: One dense paragraph (not bullets). List specific files, paths, and systems examined with semicolons. Include full relative paths and module names.
-- **LEARNED**: One dense paragraph (not bullets). State technical insights with specifics — what was discovered, why it matters, root causes. Include version numbers, commit hashes, config values, error messages.
-- **COMPLETED**: One dense paragraph (not bullets). List concrete deliverables with specifics — file names modified, features added, tests passed, counts, commit hashes. Use semicolons to separate items.
-- **NEXT STEPS**: One dense paragraph (not bullets). Concrete actionable items for the next session.
+- **INVESTIGATED**: One dense paragraph (not bullets). List specific files, paths, and systems examined with semicolons. Include full relative paths and module names. Example: 'Global and project-level Claude Code settings.json; kyp-mem Python CLI source (cli.py, hooks.py); installed Node.js wrapper at /opt/homebrew/lib/node_modules/kyp-mem/bin/cli.mjs; hook dispatcher implementation; git commit history'
+- **LEARNED**: One dense paragraph (not bullets). State technical insights with specifics — what was discovered, why it matters, root causes. Include version numbers, commit hashes, config values, error messages. Example: 'kyp-mem uses a Node.js wrapper with a "hook fast path" dispatcher that only handled 3 hook types (user-prompt, post-tool-use, stop); session-start was missing despite being implemented in Python backend'
+- **COMPLETED**: One dense paragraph (not bullets). List concrete deliverables with specifics — file names modified, features added, tests passed, counts, commit hashes. Use semicolons to separate items. Example: 'Fixed .gitignore to exclude session-specific files (CLAUDE.md, PLAN-ui-rewrite.md, templates/); removed 3 tracked files from git history; committed cleanup to main (commit f0b114e: 4 files changed, 626 deletions)'
+- **NEXT STEPS**: One dense paragraph (not bullets). Concrete actionable items for the next session. Example: 'Push commit f0b114e to GitHub; publish 0.5.1 release to npm with session-start hook support'
 
 ## Critical rules
 - ALWAYS include specific file names, paths, commit hashes, error messages, and counts
@@ -436,12 +434,8 @@ You have: user prompts (the objectives), a timeline of file edits/reads/commands
 - Never be vague: "Fixed 3 files" is bad, "Fixed .gitignore, cli.mjs, and hooks.py" is good
 - If a commit hash appears in the timeline, include it
 - Keep each section to one paragraph max
-- The Topic line MUST be first, before Summary
 
 Return ONLY this format (no preamble):
-
-## Topic
-<2-5 word label>
 
 ## Summary
 <1-2 sentences>
@@ -649,45 +643,21 @@ def handle_stop():
     except Exception:
         pass
 
+    # Delete session file BEFORE summarization so the spawned claude subprocess
+    # doesn't pollute it via hooks writing back into current.jsonl
+    CURRENT_SESSION.unlink(missing_ok=True)
+
     # Try Claude summarization, fall back to raw sections
     summarized = _summarize_with_claude(raw_note, project_name)
 
-    # Extract topic from summarized output
-    topic = ""
-    if summarized:
-        for line in summarized.split("\n"):
-            stripped = line.strip()
-            if stripped.startswith("## Topic"):
-                continue
-            if stripped and not stripped.startswith("#") and not topic:
-                topic = stripped
-                break
-
     parts = [f"# Session {session_id}", ""]
     parts.append(f"**Project:** `{project_dir}`")
-    if topic:
-        parts.append(f"**Topic:** {topic}")
     parts.append(f"**Actions:** {len(entries)} total, {len(write_actions)} substantive")
     parts.append(f"**Exploration:** ~{exploration_tokens:,} tokens ({files_read_count} reads, {commands_run_count} commands)")
     parts.append("")
 
     if summarized:
-        # Remove the Topic section from summarized output (already in header)
-        cleaned_lines = []
-        skip_topic = False
-        for line in summarized.split("\n"):
-            if line.strip() == "## Topic":
-                skip_topic = True
-                continue
-            if skip_topic:
-                if line.strip().startswith("## "):
-                    skip_topic = False
-                else:
-                    continue
-            if not skip_topic:
-                cleaned_lines.append(line)
-        summarized_clean = "\n".join(cleaned_lines).strip()
-
+        # Insert prompts section before the Claude-rewritten sections
         parts.append("## PROMPTS")
         if prompts:
             for i, p in enumerate(prompts, 1):
@@ -695,7 +665,7 @@ def handle_stop():
                 parts.append(f"> {p['text']}")
                 parts.append("")
         parts.append("")
-        parts.append(summarized_clean)
+        parts.append(summarized)
     else:
         summary_items = []
         if files_edited:
@@ -738,15 +708,12 @@ def handle_stop():
 
     content = "\n".join(parts)
     tags = ["session", "auto-captured", project_name]
-    metadata = {}
-    if topic:
-        metadata["topic"] = topic
 
     from .config import get_vault_path
     from .vault import Vault
 
     vault = Vault(get_vault_path())
-    vault.write_note(f"{project_name}/Sessions/{session_id}.md", content, tags, metadata)
+    vault.write_note(f"{project_name}/Sessions/{session_id}.md", content, tags, {})
 
     CURRENT_SESSION.unlink(missing_ok=True)
 
