@@ -135,7 +135,7 @@ def handle_session_start():
 
 def handle_user_prompt():
     raw = sys.stdin.read().strip()
-    if not raw:
+    if not raw or _is_subprocess():
         return
     try:
         data = json.loads(raw)
