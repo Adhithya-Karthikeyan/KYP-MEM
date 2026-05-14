@@ -1499,7 +1499,8 @@ async function buildFullGraph(layout) {
   const H = rect.height || 500;
 
   const svg = d3.select(wrap).append('svg')
-    .attr('width', W).attr('height', H);
+    .attr('viewBox', `0 0 ${W} ${H}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet');
 
   const defs = svg.append('defs');
   const pattern = defs.append('pattern').attr('id', 'dotgrid').attr('width', 20).attr('height', 20).attr('patternUnits', 'userSpaceOnUse');
