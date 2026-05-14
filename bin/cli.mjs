@@ -106,7 +106,7 @@ if (args[0] === "hook") {
         entry.detail = tool;
       }
 
-      entry.response_chars = String(data.tool_response || "").length;
+      entry.response_chars = (typeof rawResp === "string" ? rawResp : JSON.stringify(rawResp)).length;
       mkdirSync(sessionDir, { recursive: true });
       appendFileSync(sessionFile, JSON.stringify(entry) + "\n");
     } catch (_) {
