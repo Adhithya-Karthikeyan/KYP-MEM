@@ -121,6 +121,7 @@ def handle_session_start():
         parts = [f"# [kyp-mem] {project_name} — Recent Sessions"]
         parts.append(f"Use `kyp_search` or `kyp_project_context` for architecture/project knowledge on demand.\n")
 
+        full_chars = 0
         parts.append(f"## Last {len(sessions)} Sessions")
         for sp in sessions:
             note = vault.read(sp)
@@ -128,11 +129,24 @@ def handle_session_start():
                 continue
             parts.append(f"### {note.title}")
             content = note.content
+            timeline_idx = content.find("## TIMELINE")
+            if timeline_idx < 0:
+                timeline_idx = content.find("## Timeline")
+            raw = content[:timeline_idx].strip() if timeline_idx > 0 else content
+            full_chars += len(raw)
             summary = _extract_session_summary(content)
             parts.append(summary)
             parts.append("")
 
         output = "\n".join(parts)
+        injected_chars = len(output)
+        saved_chars = full_chars - injected_chars
+        saved_tokens = saved_chars // CHARS_PER_TOKEN
+        injected_tokens = injected_chars // CHARS_PER_TOKEN
+        full_tokens = full_chars // CHARS_PER_TOKEN
+        parts.append(f"---\n*Token estimate: ~{injected_tokens} tokens injected (full would be ~{full_tokens}) — saved ~{saved_tokens} tokens ({100 * saved_chars // full_chars if full_chars else 0}%)*")
+        output = "\n".join(parts)
+
         try:
             _record_injection(project_name, len(output))
         except Exception:
