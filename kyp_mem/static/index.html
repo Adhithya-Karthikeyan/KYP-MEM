@@ -1999,15 +1999,7 @@ async function init() {
     renderSidebar(sessionsData);
     $('stat-notes').textContent = stats.notes;
     $('stat-folders').textContent = stats.folders;
-
-    // Enrich notes with tags in background (don't block sidebar render)
-    const promises = Object.keys(allNotes).map(async path => {
-      try {
-        const note = await fetchJSON(`/api/note/${path}`);
-        if (!note.error) allNotes[path] = { title: note.title, tags: note.tags || [] };
-      } catch {}
-    });
-    Promise.all(promises).then(() => loadTokenEconomics());
+    loadTokenEconomics();
   } catch (e) {
     console.error('KYP-MEM init failed:', e);
     $('sidebar-scroll').innerHTML = `<div style="padding:12px;color:#f66;font-size:12px">Init error: ${e.message}<br>Check console for details</div>`;
