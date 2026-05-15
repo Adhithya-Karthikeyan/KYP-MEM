@@ -955,22 +955,41 @@ function renderSidebar(sessionsData) {
 
 function renderProjectTree(container) {
   if (!treeData) return;
-  function walk(node, parent) {
+  function walk(node, parent, depth) {
     if (node.type === 'folder' && node.name !== 'vault') {
       if (node.name === 'Sessions') return;
       const group = document.createElement('div');
       const folder = document.createElement('div');
       folder.className = 'tree-folder';
-      folder.innerHTML = `<span class="tf-arrow">▾</span><span class="tf-icon">≡</span><span class="tf-label">${node.name}</span>`;
+      const isTopLevel = depth === 0;
+      folder.innerHTML = `<span class="tf-arrow">▾</span><span class="tf-icon">≡</span><span class="tf-label">${node.name}</span>${isTopLevel ? `<button class="tf-graph-btn ghost-btn" title="Open graph for ${node.name}" data-project="${node.name}">▦</button>` : ''}`;
       const children = document.createElement('div');
       children.style.cssText = 'display:flex;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px;';
 
-      folder.addEventListener('click', () => {
+      folder.querySelector('.tf-label').addEventListener('click', (e) => {
+        e.stopPropagation();
         const arrow = folder.querySelector('.tf-arrow');
         const isOpen = arrow.textContent === '▾';
         arrow.textContent = isOpen ? '▸' : '▾';
         children.style.display = isOpen ? 'none' : 'flex';
       });
+      folder.querySelector('.tf-arrow').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const arrow = folder.querySelector('.tf-arrow');
+        const isOpen = arrow.textContent === '▾';
+        arrow.textContent = isOpen ? '▸' : '▾';
+        children.style.display = isOpen ? 'none' : 'flex';
+      });
+
+      if (isTopLevel) {
+        folder.querySelector('.tf-graph-btn').addEventListener('click', (e) => {
+          e.stopPropagation();
+          _graphProject = node.name;
+          _graphData = null;
+          setView('graph');
+          renderGraphView();
+        });
+      }
 
       group.appendChild(folder);
       group.appendChild(children);
