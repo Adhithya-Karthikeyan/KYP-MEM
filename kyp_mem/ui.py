@@ -44,11 +44,13 @@ def create_app(vault_path: str = None) -> FastAPI:
         return JSONResponse(vault.get_stats())
 
     @app.get("/api/graph")
-    def graph(kind: str = "all"):
+    def graph(kind: str = "all", project: str = None):
         nodes = []
         edges = []
         seen_edges = set()
         for path, note in vault.index.notes.items():
+            if project and not path.startswith(project + "/"):
+                continue
             node_kind = "session" if "/Sessions/" in path else "note"
             if kind == "projects" and node_kind == "session":
                 continue
@@ -64,6 +66,8 @@ def create_app(vault_path: str = None) -> FastAPI:
                         target = p
                         break
                 if target and target != path:
+                    if project and not target.startswith(project + "/"):
+                        continue
                     target_kind = "session" if "/Sessions/" in target else "note"
                     if kind == "projects" and target_kind == "session":
                         continue
