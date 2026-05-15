@@ -1571,7 +1571,9 @@ async function buildFullGraph(layout) {
   wrap.innerHTML = '';
 
   if (!_graphData) {
-    _graphData = await fetchJSON(`/api/graph?kind=${_graphMode}`);
+    let url = `/api/graph?kind=${_graphMode}`;
+    if (_graphProject) url += `&project=${encodeURIComponent(_graphProject)}`;
+    _graphData = await fetchJSON(url);
   }
 
   let nodes = _graphData.nodes.map(n => ({ ...n }));
