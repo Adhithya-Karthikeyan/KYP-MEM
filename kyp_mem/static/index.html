@@ -889,7 +889,7 @@ function renderSidebar(sessionsData) {
     const group = document.createElement('div');
     const folder = document.createElement('div');
     folder.className = 'tree-folder';
-    folder.innerHTML = `<span class="tf-arrow">▾</span><span class="tf-icon">≡</span><span class="tf-label">${project}</span><span class="tf-count">${sessions.length}</span>`;
+    folder.innerHTML = `<span class="tf-arrow">▾</span><span class="tf-icon">≡</span><span class="tf-label">${project}</span><span class="tf-count">${sessions.length}</span><button class="tf-graph-btn ghost-btn" title="Open graph for ${project}" data-project="${project}">▦</button>`;
 
     const list = document.createElement('div');
     list.style.cssText = 'display:flex;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px;';
@@ -905,7 +905,24 @@ function renderSidebar(sessionsData) {
       list.appendChild(row);
     });
 
-    folder.addEventListener('click', () => {
+    folder.querySelector('.tf-graph-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      _graphProject = project;
+      _graphData = null;
+      setView('graph');
+      renderGraphView();
+    });
+
+    folder.querySelector('.tf-label').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const arrow = folder.querySelector('.tf-arrow');
+      const isOpen = arrow.textContent === '▾';
+      arrow.textContent = isOpen ? '▸' : '▾';
+      arrow.classList.toggle('closed', isOpen);
+      list.style.display = isOpen ? 'none' : 'flex';
+    });
+    folder.querySelector('.tf-arrow').addEventListener('click', (e) => {
+      e.stopPropagation();
       const arrow = folder.querySelector('.tf-arrow');
       const isOpen = arrow.textContent === '▾';
       arrow.textContent = isOpen ? '▸' : '▾';
