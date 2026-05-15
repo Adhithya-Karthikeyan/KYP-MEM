@@ -994,7 +994,7 @@ function renderProjectTree(container) {
       group.appendChild(folder);
       group.appendChild(children);
       parent.appendChild(group);
-      (node.children || []).forEach(c => walk(c, children));
+      (node.children || []).forEach(c => walk(c, children, depth + 1));
     } else if (node.type === 'note') {
       const row = document.createElement('button');
       row.className = 'sidebar-row';
@@ -1004,10 +1004,10 @@ function renderProjectTree(container) {
       row.addEventListener('click', () => { setView('note'); loadNote(node.path); });
       parent.appendChild(row);
     } else if (node.children) {
-      node.children.forEach(c => walk(c, parent));
+      node.children.forEach(c => walk(c, parent, depth));
     }
   }
-  walk(treeData, container);
+  walk(treeData, container, 0);
 }
 
 function renderTagCloud(container) {
