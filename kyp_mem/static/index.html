@@ -1180,6 +1180,8 @@ function renderRail(note) {
   rail.appendChild(graphCard);
 
   graphCard.querySelector('#rail-graph-expand')?.addEventListener('click', () => {
+    const parts = (note.path || '').split('/');
+    _graphProject = parts.length > 1 ? parts[0] : null;
     _graphData = null;
     setView('graph');
     renderGraphView();
