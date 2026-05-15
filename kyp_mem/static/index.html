@@ -1458,6 +1458,10 @@ function renderGraphView() {
             <button class="tool-chip graph-mode active" data-mode="projects">projects</button>
             <button class="tool-chip graph-mode" data-mode="sessions">sessions</button>
             <span class="dim tab-nums" id="graph-stats"></span>
+            <span id="graph-project-filter" style="display:none;font-size:var(--fz-sm);color:var(--accent);margin-left:4px">
+              <span id="graph-project-name"></span>
+              <button class="ghost-btn" id="graph-clear-project" style="color:var(--muted);margin-left:4px;font-size:var(--fz-xs)" title="Show all projects">✕</button>
+            </span>
           </div>
           <div class="graph-header-right">
             <button class="tool-chip graph-layout active" data-layout="force">force</button>
