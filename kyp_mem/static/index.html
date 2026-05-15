@@ -913,16 +913,7 @@ function renderSidebar(sessionsData) {
       renderGraphView();
     });
 
-    folder.querySelector('.tf-label').addEventListener('click', (e) => {
-      e.stopPropagation();
-      const arrow = folder.querySelector('.tf-arrow');
-      const isOpen = arrow.textContent === '▾';
-      arrow.textContent = isOpen ? '▸' : '▾';
-      arrow.classList.toggle('closed', isOpen);
-      list.style.display = isOpen ? 'none' : 'flex';
-    });
-    folder.querySelector('.tf-arrow').addEventListener('click', (e) => {
-      e.stopPropagation();
+    folder.addEventListener('click', () => {
       const arrow = folder.querySelector('.tf-arrow');
       const isOpen = arrow.textContent === '▾';
       arrow.textContent = isOpen ? '▸' : '▾';
