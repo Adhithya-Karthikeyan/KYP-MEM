@@ -1489,16 +1489,27 @@ function renderGraphView() {
   `;
 
   updateGraphLegend();
+  updateGraphProjectFilter();
 
   const closeBtn = $('graph-close');
   if (closeBtn) {
     closeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      _graphProject = null;
       setView('note');
       if (currentPath) loadNote(currentPath);
       else $('content-area').innerHTML = '<div style="padding:40px;color:var(--muted)">Select a note from the sidebar</div>';
     });
   }
+
+  // Clear project filter
+  $('graph-clear-project')?.addEventListener('click', () => {
+    _graphProject = null;
+    _graphData = null;
+    updateGraphProjectFilter();
+    const activeLayout = document.querySelector('.graph-layout.active');
+    buildFullGraph(activeLayout ? activeLayout.dataset.layout : 'force');
+  });
 
   // Mode toggle (projects / sessions)
   document.querySelectorAll('.graph-mode').forEach(btn => {
@@ -1523,6 +1534,17 @@ function renderGraphView() {
   });
 
   buildFullGraph('force');
+}
+
+function updateGraphProjectFilter() {
+  const el = $('graph-project-filter');
+  if (!el) return;
+  if (_graphProject) {
+    $('graph-project-name').textContent = `› ${_graphProject}`;
+    el.style.display = 'inline';
+  } else {
+    el.style.display = 'none';
+  }
 }
 
 function updateGraphLegend() {
