@@ -98,6 +98,7 @@ class Index:
     def __init__(self):
         self.notes: dict[str, Note] = {}
         self.backlinks: dict[str, set] = defaultdict(set)
+        self.forward_links: dict[str, set] = defaultdict(set)
         self.tag_index: dict[str, set] = defaultdict(set)
         self._word_index: dict[str, set] = defaultdict(set)
         self._name_to_path: dict[str, str] = {}
@@ -105,6 +106,7 @@ class Index:
     def rebuild(self, notes: dict[str, Note]):
         self.notes = notes
         self.backlinks = defaultdict(set)
+        self.forward_links = defaultdict(set)
         self.tag_index = defaultdict(set)
         self._word_index = defaultdict(set)
         self._name_to_path = {}
@@ -116,8 +118,9 @@ class Index:
         for path, note in notes.items():
             for link in note.links:
                 target = self._name_to_path.get(link.lower())
-                if target:
+                if target and target != path:
                     self.backlinks[target].add(path)
+                    self.forward_links[path].add(target)
 
             for tag in note.tags:
                 self.tag_index[tag.lower()].add(path)
