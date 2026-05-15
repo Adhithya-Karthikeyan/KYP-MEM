@@ -268,6 +268,9 @@ body.resizing #resize-handle { pointer-events: auto !important; }
 .tree-folder .tf-icon { color: var(--muted); font-size: 11px; }
 .tree-folder .tf-label { flex: 1; color: var(--fg); }
 .tree-folder .tf-count { font-size: var(--fz-xs); color: var(--dim); font-variant-numeric: tabular-nums; }
+.tree-folder .tf-graph-btn { font-size: 11px; color: var(--dim); opacity: 0; transition: opacity 0.15s; padding: 0 2px; }
+.tree-folder:hover .tf-graph-btn { opacity: 1; }
+.tree-folder .tf-graph-btn:hover { color: var(--accent); }
 
 /* Sidebar rows */
 .sidebar-row {
