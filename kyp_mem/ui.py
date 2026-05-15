@@ -45,38 +45,37 @@ def create_app(vault_path: str = None) -> FastAPI:
 
     @app.get("/api/graph")
     def graph(kind: str = "all", project: str = None):
-        nodes = []
-        edges = []
-        seen_edges = set()
-        for path, note in vault.index.notes.items():
+        vault.refresh_if_stale()
+
+        def include(path: str) -> bool:
             if project and not path.startswith(project + "/"):
-                continue
+                return False
             node_kind = "session" if "/Sessions/" in path else "note"
             if kind == "projects" and node_kind == "session":
-                continue
+                return False
             if kind == "sessions" and node_kind == "note":
+                return False
+            return True
+
+        nodes = []
+        for path, note in vault.index.notes.items():
+            if not include(path):
                 continue
+            node_kind = "session" if "/Sessions/" in path else "note"
             nodes.append({"id": path, "title": note.title, "kind": node_kind, "tags": note.tags})
-            for link in (note.links or []):
-                target = None
-                link_lower = link.lower()
-                for p in vault.index.notes:
-                    stem = p.split("/")[-1].replace(".md", "").lower()
-                    if stem == link_lower:
-                        target = p
-                        break
-                if target and target != path:
-                    if project and not target.startswith(project + "/"):
-                        continue
-                    target_kind = "session" if "/Sessions/" in target else "note"
-                    if kind == "projects" and target_kind == "session":
-                        continue
-                    if kind == "sessions" and target_kind == "note":
-                        continue
-                    key = tuple(sorted([path, target]))
-                    if key not in seen_edges:
-                        seen_edges.add(key)
-                        edges.append({"source": path, "target": target})
+
+        node_ids = {n["id"] for n in nodes}
+        edges = []
+        seen_edges = set()
+        for path in node_ids:
+            for target in vault.index.forward_links.get(path, set()):
+                if target not in node_ids:
+                    continue
+                key = tuple(sorted([path, target]))
+                if key not in seen_edges:
+                    seen_edges.add(key)
+                    edges.append({"source": path, "target": target})
+
         return JSONResponse({"nodes": nodes, "edges": edges})
 
     @app.get("/api/note/{path:path}")
