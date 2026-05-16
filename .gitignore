@@ -14,3 +14,5 @@ PLAN-ui-rewrite.md
 templates/
 design_handoff_kyp_mem_ui/
 AGENTS.override.md
+publish_npm.sh
+publish_pypi.sh
