@@ -959,14 +959,14 @@ function renderSidebar(sessionsData) {
 
   // Tags section
   const tagSection = document.createElement('section');
-  let tagsOpen = true;
+  let tagsOpen = false;
   tagSection.innerHTML = `
     <div class="side-section-header">
-      <button class="side-section-title" id="tags-toggle"><span class="side-dot" style="background:var(--muted);opacity:0.4"></span>tags<span class="side-collapse-arrow">▾</span></button>
+      <button class="side-section-title" id="tags-toggle"><span class="side-dot" style="background:var(--muted);opacity:0.4"></span>tags<span class="side-collapse-arrow collapsed">▸</span></button>
     </div>
   `;
   const tagBody = document.createElement('div');
-  tagBody.style.cssText = 'display:flex;flex-wrap:wrap;gap:5px;';
+  tagBody.style.cssText = 'display:none;flex-wrap:wrap;gap:5px;';
   renderTagCloud(tagBody);
   tagSection.appendChild(tagBody);
   container.appendChild(tagSection);
