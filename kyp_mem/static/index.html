@@ -992,9 +992,9 @@ function renderProjectTree(container) {
       const folder = document.createElement('div');
       folder.className = 'tree-folder';
       const isTopLevel = depth === 0;
-      folder.innerHTML = `<span class="tf-arrow">▾</span><span class="tf-icon">≡</span><span class="tf-label">${node.name}</span>${isTopLevel ? `<button class="tf-graph-btn ghost-btn" title="Open graph for ${node.name}" data-project="${node.name}">▦</button>` : ''}`;
+      folder.innerHTML = `<span class="tf-arrow closed">▸</span><span class="tf-icon">≡</span><span class="tf-label">${node.name}</span>${isTopLevel ? `<button class="tf-graph-btn ghost-btn" title="Open graph for ${node.name}" data-project="${node.name}">▦</button>` : ''}`;
       const children = document.createElement('div');
-      children.style.cssText = 'display:flex;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px;';
+      children.style.cssText = 'display:none;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px;';
 
       folder.addEventListener('click', () => {
         const arrow = folder.querySelector('.tf-arrow');
