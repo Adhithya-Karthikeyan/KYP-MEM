@@ -889,10 +889,10 @@ function renderSidebar(sessionsData) {
     const group = document.createElement('div');
     const folder = document.createElement('div');
     folder.className = 'tree-folder';
-    folder.innerHTML = `<span class="tf-arrow">▾</span><span class="tf-icon">≡</span><span class="tf-label">${project}</span><span class="tf-count">${sessions.length}</span><button class="tf-graph-btn ghost-btn" title="Open graph for ${project}" data-project="${project}">▦</button>`;
+    folder.innerHTML = `<span class="tf-arrow closed">▸</span><span class="tf-icon">≡</span><span class="tf-label">${project}</span><span class="tf-count">${sessions.length}</span><button class="tf-graph-btn ghost-btn" title="Open graph for ${project}" data-project="${project}">▦</button>`;
 
     const list = document.createElement('div');
-    list.style.cssText = 'display:flex;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px;';
+    list.style.cssText = 'display:none;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px;';
 
     sessions.sort((a, b) => b.path.localeCompare(a.path));
     const MAX_VISIBLE = 5;
