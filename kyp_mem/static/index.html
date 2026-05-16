@@ -895,15 +895,34 @@ function renderSidebar(sessionsData) {
     list.style.cssText = 'display:flex;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px;';
 
     sessions.sort((a, b) => b.path.localeCompare(a.path));
-    sessions.forEach(s => {
+    const MAX_VISIBLE = 5;
+    sessions.forEach((s, idx) => {
       const row = document.createElement('button');
       row.className = 'sidebar-row';
       row.dataset.path = s.path;
+      if (idx >= MAX_VISIBLE) row.style.display = 'none';
+      if (idx >= MAX_VISIBLE) row.dataset.overflow = 'true';
       const displayTime = formatSessionTime(s.path.split('/').pop());
       row.innerHTML = `<span class="sr-dot" style="color:var(--dim)">●</span><span class="sr-label">${displayTime}</span>`;
       row.addEventListener('click', () => openSession(s.path));
       list.appendChild(row);
     });
+    if (sessions.length > MAX_VISIBLE) {
+      const expandBtn = document.createElement('button');
+      expandBtn.className = 'sidebar-row expand-sessions-btn';
+      expandBtn.innerHTML = `<span class="sr-dot" style="color:var(--dim)">⋯</span><span class="sr-label" style="color:var(--dim);font-style:italic">show ${sessions.length - MAX_VISIBLE} more</span>`;
+      expandBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const hidden = list.querySelectorAll('[data-overflow]');
+        const isExpanded = expandBtn.dataset.expanded === 'true';
+        hidden.forEach(r => r.style.display = isExpanded ? 'none' : 'flex');
+        expandBtn.dataset.expanded = isExpanded ? '' : 'true';
+        expandBtn.innerHTML = isExpanded
+          ? `<span class="sr-dot" style="color:var(--dim)">⋯</span><span class="sr-label" style="color:var(--dim);font-style:italic">show ${sessions.length - MAX_VISIBLE} more</span>`
+          : `<span class="sr-dot" style="color:var(--dim)">⋯</span><span class="sr-label" style="color:var(--dim);font-style:italic">show less</span>`;
+      });
+      list.appendChild(expandBtn);
+    }
 
     folder.querySelector('.tf-graph-btn').addEventListener('click', (e) => {
       e.stopPropagation();
