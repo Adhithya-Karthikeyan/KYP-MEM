@@ -214,10 +214,6 @@ def _get_mcp_command() -> tuple[str, list[str]]:
                 print(f"  {D}Using npx for a stable path instead.{R}")
                 return npx_bin, ["-y", "kyp-mem", "serve"]
             print(f"  {D}Install globally: npm install -g kyp-mem{R}")
-        else:
-            resolved = bin_path.resolve()
-            if resolved.exists():
-                kyp_mem_bin = str(resolved)
         return kyp_mem_bin, ["serve"]
     if npx_bin:
         return npx_bin, ["-y", "kyp-mem", "serve"]
