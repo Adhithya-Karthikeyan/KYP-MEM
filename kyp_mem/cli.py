@@ -196,6 +196,9 @@ def _get_mcp_command() -> tuple[str, list[str]]:
     npx_bin = shutil.which("npx")
 
     if kyp_mem_bin and "_npx" not in Path(kyp_mem_bin).parts:
+        resolved = Path(kyp_mem_bin).resolve()
+        if resolved.exists():
+            kyp_mem_bin = str(resolved)
         return kyp_mem_bin, ["serve"]
     if npx_bin:
         return npx_bin, ["-y", "kyp-mem", "serve"]
