@@ -191,14 +191,33 @@ def _run_setup_claude(global_config: bool = False):
     print()
 
 
+def _is_in_venv(bin_path: Path) -> bool:
+    import sys
+    if sys.prefix == sys.base_prefix:
+        return False
+    try:
+        bin_path.resolve().relative_to(Path(sys.prefix).resolve())
+        return True
+    except ValueError:
+        return False
+
+
 def _get_mcp_command() -> tuple[str, list[str]]:
     kyp_mem_bin = shutil.which("kyp-mem")
     npx_bin = shutil.which("npx")
 
     if kyp_mem_bin and "_npx" not in Path(kyp_mem_bin).parts:
-        resolved = Path(kyp_mem_bin).resolve()
-        if resolved.exists():
-            kyp_mem_bin = str(resolved)
+        bin_path = Path(kyp_mem_bin)
+        if _is_in_venv(bin_path):
+            print(f"  {Y}Warning:{R} kyp-mem found inside a virtual env — this path won't work outside it.")
+            if npx_bin:
+                print(f"  {D}Using npx for a stable path instead.{R}")
+                return npx_bin, ["-y", "kyp-mem", "serve"]
+            print(f"  {D}Install globally: npm install -g kyp-mem{R}")
+        else:
+            resolved = bin_path.resolve()
+            if resolved.exists():
+                kyp_mem_bin = str(resolved)
         return kyp_mem_bin, ["serve"]
     if npx_bin:
         return npx_bin, ["-y", "kyp-mem", "serve"]
