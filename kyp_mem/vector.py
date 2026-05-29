@@ -1,8 +1,13 @@
 import sys
 import shutil
+import hashlib
 import chromadb
 from pathlib import Path
 from contextlib import contextmanager
+
+
+def _content_hash(content: str) -> str:
+    return hashlib.sha256(content.encode("utf-8")).hexdigest()
 
 try:
     import fcntl  # POSIX (macOS/Linux)
