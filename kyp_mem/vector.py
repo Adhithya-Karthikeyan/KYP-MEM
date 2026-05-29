@@ -123,23 +123,62 @@ class SessionMemory:
 
     # --- operations ------------------------------------------------------------
 
-    def upsert_session(self, path: str, project: str, content: str):
+    def _write_with_recovery(self, op):
+        """Run a write op under the lock. If it fails (e.g. a corrupt segment
+        slipped past the init health check), rebuild the store once and retry.
+
+        ``op`` must be self-contained — after a rebuild the collection is empty,
+        so an op that derives its work from the current collection state
+        naturally repopulates everything on the retry."""
         for attempt in (1, 2):
             try:
                 with self._locked(write=True):
-                    self.collection.upsert(
-                        documents=[content],
-                        metadatas=[{"project": project}],
-                        ids=[path],
-                    )
+                    op()
                 return
             except Exception as e:
                 if attempt == 1:
-                    _log(f"upsert failed ({e!r}); rebuilding and retrying")
+                    _log(f"write failed ({e!r}); rebuilding and retrying")
                     with self._locked(write=True):
                         self._rebuild()
                 else:
-                    _log(f"upsert failed after rebuild: {e!r}")
+                    _log(f"write failed after rebuild: {e!r}")
+
+    def upsert_session(self, path: str, project: str, content: str):
+        meta = {"project": project, "hash": _content_hash(content)}
+
+        def op():
+            self.collection.upsert(documents=[content], metadatas=[meta], ids=[path])
+
+        self._write_with_recovery(op)
+
+    def sync_sessions(self, items: dict):
+        """Reconcile the store with the current set of session notes.
+
+        ``items`` maps note path -> (project, content). New and changed notes
+        (by content hash) are (re)embedded, deleted notes are pruned, and
+        unchanged notes are skipped so we don't re-embed the whole corpus on
+        every Vault init/refresh."""
+        desired = {p: (proj, c, _content_hash(c)) for p, (proj, c) in items.items()}
+
+        def op():
+            existing = self.collection.get(include=["metadatas"])
+            existing_hash = {
+                i: (m or {}).get("hash")
+                for i, m in zip(existing["ids"], existing["metadatas"])
+            }
+            up_ids, up_docs, up_meta = [], [], []
+            for p, (proj, c, h) in desired.items():
+                if existing_hash.get(p) != h:
+                    up_ids.append(p)
+                    up_docs.append(c)
+                    up_meta.append({"project": proj, "hash": h})
+            stale = [i for i in existing_hash if i not in desired]
+            if up_ids:
+                self.collection.upsert(documents=up_docs, metadatas=up_meta, ids=up_ids)
+            if stale:
+                self.collection.delete(ids=stale)
+
+        self._write_with_recovery(op)
 
     def delete_session(self, path: str):
         try:
