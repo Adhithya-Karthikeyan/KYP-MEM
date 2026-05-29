@@ -14,6 +14,17 @@ def _log(msg: str):
     print(f"[kyp-mem vector] {msg}", file=sys.stderr)
 
 
+def _clear_chroma_cache():
+    """Drop Chroma's process-wide PersistentClient cache so the next
+    PersistentClient(path=...) re-reads from disk instead of returning a stale
+    cached instance."""
+    try:
+        from chromadb.api.shared_system_client import SharedSystemClient
+        SharedSystemClient.clear_system_cache()
+    except Exception:
+        pass
+
+
 class SessionMemory:
     """Semantic session store backed by ChromaDB.
 
