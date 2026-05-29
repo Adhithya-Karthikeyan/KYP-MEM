@@ -90,7 +90,11 @@ class SessionMemory:
         sentinel = "__kyp_healthcheck__"
         try:
             with self._locked(write=True):
+                # upsert+delete exercises the write/compaction path; the query
+                # forces the HNSW segment to load (the read path). Between them
+                # they surface both ways a corrupt segment manifests.
                 self.collection.upsert(documents=["ok"], ids=[sentinel])
+                self.collection.query(query_texts=["ok"], n_results=1)
                 self.collection.delete(ids=[sentinel])
         except Exception as e:
             _log(f"health check failed: {e!r}")
