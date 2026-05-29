@@ -43,16 +43,28 @@ class SessionMemory:
         self.collection = self.client.get_or_create_collection(name="sessions")
 
     def _rebuild(self):
-        """Wipe the corrupted on-disk index and start fresh.
+        """Drop the corrupted index and start fresh.
 
         Safe because every session is re-embedded from its markdown note on the
-        next sync (see Vault._sync_vector_db)."""
+        next sync (see Vault._sync_vector_db).
+
+        We first try dropping the collection through Chroma's API (which orphans
+        the bad segment and creates a clean one). If that fails, we wipe the
+        directory on disk. Either way we must clear Chroma's process-wide client
+        cache: PersistentClient instances are cached by path, so without this a
+        re-created client would keep pointing at the deleted files (surfacing as
+        "attempt to write a readonly database")."""
         _log("index appears corrupt — rebuilding chroma store from the vault")
         try:
-            self.client = None
-            self.collection = None
-        except Exception:
-            pass
+            self.client.delete_collection(name="sessions")
+            self.collection = self.client.get_or_create_collection(name="sessions")
+            return
+        except Exception as e:
+            _log(f"in-place collection reset failed ({e!r}); wiping store on disk")
+
+        self.client = None
+        self.collection = None
+        _clear_chroma_cache()
         shutil.rmtree(self.db_path, ignore_errors=True)
         self.db_path.mkdir(parents=True, exist_ok=True)
         self._open()
