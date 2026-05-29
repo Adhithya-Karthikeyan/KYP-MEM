@@ -233,10 +233,14 @@ class Vault:
 
     def _sync_vector_db(self):
         mem = get_session_memory()
-        for path, note in self.index.notes.items():
-            if "/Sessions/" in path or path.startswith("Sessions/"):
-                folder = note.folder
-                mem.upsert_session(path, folder, note.content)
+        if mem is None:
+            return
+        items = {
+            path: (note.folder, note.content)
+            for path, note in self.index.notes.items()
+            if "/Sessions/" in path or path.startswith("Sessions/")
+        }
+        mem.sync_sessions(items)
 
     def _load_all(self):
         notes = {}
