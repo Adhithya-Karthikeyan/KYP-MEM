@@ -129,14 +129,18 @@ def handle_session_start():
 
         vault = Vault(get_vault_path())
 
-        project_notes = [p for p in vault.index.notes if p.startswith(f"{project_name}/")]
+        # Match case-insensitively: the project dir may be stored in the vault
+        # with different casing than the cwd basename (e.g. on case-insensitive
+        # filesystems "KYP-MEM" and "kyp-mem" are the same directory).
+        prefix = f"{project_name}/".lower()
+        project_notes = [p for p in vault.index.notes if p.lower().startswith(prefix)]
         if not project_notes:
             return
 
         sessions = sorted(
-            (p for p in project_notes if "/Sessions/" in p),
+            (p for p in project_notes if "/sessions/" in p.lower()),
             reverse=True,
-        )[:3]
+        )[:10]
         if not sessions:
             return
 
