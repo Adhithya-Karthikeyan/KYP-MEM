@@ -16,3 +16,17 @@ design_handoff_kyp_mem_ui/
 AGENTS.override.md
 publish_npm.sh
 publish_pypi.sh
+
+# Secrets / credentials — never commit
+.env
+.env.*
+*.env
+*.pem
+*.key
+*_rsa
+*_rsa.pub
+secrets.*
+*.secret
+credentials.json
+.npmrc
+.pypirc

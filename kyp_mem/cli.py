@@ -344,7 +344,7 @@ def _run_uninstall(purge: bool = False):
         print()
 
 
-
+def _run_install_hooks(global_config: bool = False, remove: bool = False):
     mcp_command, _ = _get_mcp_command()
 
     if global_config:

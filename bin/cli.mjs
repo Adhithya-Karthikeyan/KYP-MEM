@@ -3,8 +3,9 @@
 import { spawnSync } from "child_process";
 import { appendFileSync, mkdirSync } from "fs";
 import { homedir } from "os";
-import { delimiter, dirname, join, resolve } from "path";
+import { delimiter, dirname, resolve, join } from "path";
 import { fileURLToPath } from "url";
+import { ensureVenv, resolvePython, venvDir } from "./python-env.mjs";
 
 const args = process.argv.slice(2);
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -19,34 +20,6 @@ const env = {
 
 function run(command, cmdArgs, stdio = "ignore") {
   return spawnSync(command, cmdArgs, { stdio, env });
-}
-
-function pythonCandidates() {
-  if (process.env.KYP_MEM_PYTHON) {
-    return [[process.env.KYP_MEM_PYTHON, []]];
-  }
-
-  const candidates = [
-    ["python3", []],
-    ["python", []],
-  ];
-
-  if (process.platform === "win32") {
-    candidates.unshift(["py", ["-3"]]);
-  }
-
-  return candidates;
-}
-
-function findPython() {
-  for (const [command, prefixArgs] of pythonCandidates()) {
-    const result = run(command, [...prefixArgs, "--version"]);
-    if (result.status === 0) {
-      return [command, prefixArgs];
-    }
-  }
-
-  return null;
 }
 
 // --- Hook fast path (pure Node, no Python startup) ---
@@ -116,7 +89,8 @@ if (args[0] === "hook") {
   }
 
   if (hookType === "stop") {
-    const py = findPython();
+    // Bootstrap is fine here — the Stop hook is not latency-critical.
+    const py = resolvePython();
     if (py) {
       const [cmd, pre] = py;
       const r = run(cmd, [...pre, "-m", "kyp_mem.hooks", "stop"], "inherit");
@@ -126,7 +100,8 @@ if (args[0] === "hook") {
   }
 
   if (hookType === "session-start") {
-    const py = findPython();
+    // Good place to self-heal the venv at the start of a session.
+    const py = resolvePython();
     if (py) {
       const [cmd, pre] = py;
       const r = run(cmd, [...pre, "-m", "kyp_mem.cli", "hook", "session-start"], "inherit");
@@ -139,7 +114,19 @@ if (args[0] === "hook") {
   process.exit(1);
 }
 
-const python = findPython();
+// --- doctor: (re)provision the managed venv, then run the Python health check ---
+// Done in Node so it self-heals even when the venv is too broken to run Python.
+if (args[0] === "doctor") {
+  console.log("  Checking kyp-mem Python environment...");
+  if (!ensureVenv({ stdio: "inherit", force: true })) {
+    console.error("  \x1b[31m✗\x1b[0m Could not build the environment. Is Python 3.10+ installed?");
+    process.exit(1);
+  }
+  console.log(`  \x1b[32m✓\x1b[0m Environment ready (${venvDir()})`);
+  // fall through to run `kyp_mem.cli doctor` for the full health report
+}
+
+const python = resolvePython();
 
 if (python) {
   const [command, prefixArgs] = python;
