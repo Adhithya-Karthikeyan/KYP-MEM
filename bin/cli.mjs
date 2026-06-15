@@ -26,12 +26,24 @@ function run(command, cmdArgs, stdio = "ignore") {
 if (args[0] === "hook") {
   const hookType = args[1];
   const sessionDir = join(homedir(), ".kyp-mem", "sessions");
-  const sessionFile = join(sessionDir, "current.jsonl");
 
   const chunks = [];
   process.stdin.on("data", (chunk) => chunks.push(chunk));
   await new Promise((r) => process.stdin.on("end", r));
   const raw = Buffer.concat(chunks).toString();
+
+  // Partition the activity log per Claude session id. Previously every session
+  // (across all projects) appended to one shared current.jsonl, so concurrent
+  // sessions interleaved and the Stop hook filed the whole batch under whichever
+  // project logged first — leaking foreign summaries into unrelated projects.
+  let sessionId = "";
+  try {
+    sessionId = ((JSON.parse(raw) || {}).session_id || "").toString();
+  } catch (_) {}
+  const safeId = sessionId.replace(/[^A-Za-z0-9_-]/g, "");
+  const sessionFile = safeId
+    ? join(sessionDir, `current-${safeId}.jsonl`)
+    : join(sessionDir, "current.jsonl");
 
   if (hookType === "user-prompt") {
     try {
@@ -59,7 +71,7 @@ if (args[0] === "hook") {
       const input = data.tool_input || {};
       const rawResp = data.tool_response || "";
       const resp = (typeof rawResp === "string" ? rawResp : JSON.stringify(rawResp)).slice(0, 2000);
-      const entry = { ts: new Date().toISOString(), tool, cwd: process.cwd() };
+      const entry = { ts: new Date().toISOString(), tool, cwd: process.env.CLAUDE_PROJECT_DIR || process.cwd() };
 
       if (tool === "Edit" || tool === "Write") {
         entry.file = input.file_path || "";
@@ -93,7 +105,7 @@ if (args[0] === "hook") {
     const py = resolvePython();
     if (py) {
       const [cmd, pre] = py;
-      const r = run(cmd, [...pre, "-m", "kyp_mem.hooks", "stop"], "inherit");
+      const r = run(cmd, [...pre, "-m", "kyp_mem.hooks", "stop", safeId], "inherit");
       process.exit(r.status ?? 0);
     }
     process.exit(0);

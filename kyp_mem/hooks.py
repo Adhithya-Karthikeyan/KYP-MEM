@@ -10,6 +10,37 @@ from pathlib import Path
 SESSION_DIR = Path.home() / ".kyp-mem" / "sessions"
 CURRENT_SESSION = SESSION_DIR / "current.jsonl"
 
+
+def _session_file(session_id):
+    """Per-Claude-session activity log path.
+
+    Each Claude session gets its own ``current-<session_id>.jsonl`` so that
+    concurrent sessions in different projects never share one file. Falls back
+    to the legacy shared ``current.jsonl`` when no session id is available.
+    """
+    if session_id:
+        safe = "".join(c for c in str(session_id) if c.isalnum() or c in "_-")
+        if safe:
+            return SESSION_DIR / f"current-{safe}.jsonl"
+    return CURRENT_SESSION
+
+
+def _prune_stale_logs(max_age_days=3):
+    """Remove orphaned activity logs left by sessions that never fired Stop
+    (crashes, kills) plus the legacy shared current.jsonl once it goes idle."""
+    import time
+
+    cutoff = time.time() - max_age_days * 86400
+    try:
+        for f in SESSION_DIR.glob("current*.jsonl"):
+            try:
+                if f.stat().st_mtime < cutoff:
+                    f.unlink(missing_ok=True)
+            except OSError:
+                pass
+    except Exception:
+        pass
+
 MIN_ACTIONS = 5
 CHARS_PER_TOKEN = 4
 
@@ -123,6 +154,8 @@ def handle_session_start():
     cwd = os.environ.get("CLAUDE_PROJECT_DIR", os.getcwd())
     project_name = Path(cwd).name
 
+    _prune_stale_logs()
+
     try:
         from .config import get_vault_path
         from .vault import Vault
@@ -197,7 +230,7 @@ def handle_user_prompt():
     }
 
     SESSION_DIR.mkdir(parents=True, exist_ok=True)
-    with open(CURRENT_SESSION, "a") as f:
+    with open(_session_file(data.get("session_id", "")), "a") as f:
         f.write(json.dumps(entry) + "\n")
 
 
@@ -259,7 +292,7 @@ def handle_post_tool_use():
         return
 
     SESSION_DIR.mkdir(parents=True, exist_ok=True)
-    with open(CURRENT_SESSION, "a") as f:
+    with open(_session_file(data.get("session_id", "")), "a") as f:
         f.write(json.dumps(entry) + "\n")
 
 
@@ -517,13 +550,14 @@ Raw session data:
         return None
 
 
-def handle_stop():
-    if _is_subprocess() or not CURRENT_SESSION.exists():
+def handle_stop(session_id=""):
+    session_file = _session_file(session_id)
+    if _is_subprocess() or not session_file.exists():
         return
 
-    text = CURRENT_SESSION.read_text().strip()
+    text = session_file.read_text().strip()
     if not text:
-        CURRENT_SESSION.unlink(missing_ok=True)
+        session_file.unlink(missing_ok=True)
         return
 
     entries = []
@@ -534,12 +568,12 @@ def handle_stop():
             continue
 
     if not entries:
-        CURRENT_SESSION.unlink(missing_ok=True)
+        session_file.unlink(missing_ok=True)
         return
 
     write_actions = [e for e in entries if e.get("action") in ("edit", "create", "command")]
     if len(write_actions) < MIN_ACTIONS:
-        CURRENT_SESSION.unlink(missing_ok=True)
+        session_file.unlink(missing_ok=True)
         return
 
     project_dir = entries[0].get("cwd", "unknown")
@@ -695,8 +729,8 @@ def handle_stop():
         pass
 
     # Delete session file BEFORE summarization so the spawned claude subprocess
-    # doesn't pollute it via hooks writing back into current.jsonl
-    CURRENT_SESSION.unlink(missing_ok=True)
+    # doesn't pollute it via hooks writing back into the session log
+    session_file.unlink(missing_ok=True)
 
     # Try Claude summarization, fall back to raw sections
     summarized = _summarize_with_claude(raw_note, project_name)
@@ -769,7 +803,8 @@ def handle_stop():
 
 def main():
     if len(sys.argv) > 1 and sys.argv[1] == "stop":
-        handle_stop()
+        session_id = sys.argv[2] if len(sys.argv) > 2 else ""
+        handle_stop(session_id)
     else:
         raw = sys.stdin.read().strip()
         if not raw:
@@ -779,7 +814,7 @@ def main():
         except json.JSONDecodeError:
             return
         if "stop_reason" in data:
-            handle_stop()
+            handle_stop(data.get("session_id", ""))
 
 
 if __name__ == "__main__":

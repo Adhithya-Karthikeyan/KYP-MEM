@@ -1,0 +1,111 @@
+{
+  "version": "1.0.0",
+  "lastScanned": 1781535192276,
+  "projectRoot": "/Users/adhithya/Projects/tools/KYP-MEM",
+  "techStack": {
+    "languages": [
+      {
+        "name": "JavaScript/TypeScript",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "package.json"
+        ]
+      },
+      {
+        "name": "Python",
+        "version": null,
+        "confidence": "high",
+        "markers": [
+          "pyproject.toml"
+        ]
+      }
+    ],
+    "frameworks": [
+      {
+        "name": "fastapi",
+        "version": null,
+        "category": "backend"
+      }
+    ],
+    "packageManager": "npm",
+    "runtime": null
+  },
+  "build": {
+    "buildCommand": null,
+    "testCommand": "cd /Users/adhithya/Projects/tools/KYP-MEM\nPY=/Users/adhithya/.kyp-mem/venv/bin/python3\necho \"=== ruff (if available) ===\"; $PY -m ruff check kyp_mem/hooks.py 2>&1 | tail -15 || echo \"ruff not installed\"\necho \"=== pytest (if any) ===\"; ls tests 2>/dev/null && $PY -m pytest -q 2>&1 | tail -15 || echo \"no tests dir\"",
+    "lintCommand": "ruff check",
+    "devCommand": null,
+    "scripts": {
+      "postinstall": "node bin/install.mjs"
+    }
+  },
+  "conventions": {
+    "namingStyle": null,
+    "importStyle": null,
+    "testPattern": null,
+    "fileOrganization": null
+  },
+  "structure": {
+    "isMonorepo": false,
+    "workspaces": [],
+    "mainDirectories": [
+      "bin"
+    ],
+    "gitBranches": {
+      "defaultBranch": "main",
+      "branchingStrategy": null
+    }
+  },
+  "customNotes": [],
+  "directoryMap": {
+    "bin": {
+      "path": "bin",
+      "purpose": "Executable scripts",
+      "fileCount": 3,
+      "lastAccessed": 1781535192266,
+      "keyFiles": [
+        "cli.mjs",
+        "install.mjs",
+        "python-env.mjs"
+      ]
+    },
+    "kyp_mem": {
+      "path": "kyp_mem",
+      "purpose": null,
+      "fileCount": 8,
+      "lastAccessed": 1781535192266,
+      "keyFiles": [
+        "__init__.py",
+        "cli.py",
+        "config.py",
+        "hooks.py",
+        "server.py"
+      ]
+    },
+    "kyp_mem/static": {
+      "path": "kyp_mem/static",
+      "purpose": "Static files",
+      "fileCount": 1,
+      "lastAccessed": 1781535192268,
+      "keyFiles": [
+        "index.html"
+      ]
+    }
+  },
+  "hotPaths": [
+    {
+      "path": "kyp_mem/hooks.py",
+      "accessCount": 17,
+      "lastAccessed": 1781535821366,
+      "type": "file"
+    },
+    {
+      "path": "bin/cli.mjs",
+      "accessCount": 4,
+      "lastAccessed": 1781535638351,
+      "type": "file"
+    }
+  ],
+  "userDirectives": []
+}

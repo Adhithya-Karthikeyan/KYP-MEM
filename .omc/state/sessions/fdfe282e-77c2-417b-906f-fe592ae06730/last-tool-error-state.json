@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"/opt/homebrew/bin/python3 - <<'PY'\\nfrom kyp_mem.config import get_vault_path\\nfrom kyp_mem.vault import Vault\\nv = Vault(get_vault_path())\\nnotes = list(v.index.notes)\\nprint(\\\"total note...",
+  "error": "Exit code 1\nTraceback (most recent call last):\n  File \"<stdin>\", line 2, in <module>\n  File \"/Users/adhithya/Projects/tools/KYP-MEM/kyp_mem/vault.py\", line 5, in <module>\n    import yaml\nModuleNotFoundError: No module named 'yaml'",
+  "timestamp": "2026-06-15T14:56:09.622Z",
+  "retry_count": 1
+}
