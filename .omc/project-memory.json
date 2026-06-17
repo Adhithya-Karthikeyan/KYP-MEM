@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1781535192276,
+  "lastScanned": 1781693173431,
   "projectRoot": "/Users/adhithya/Projects/tools/KYP-MEM",
   "techStack": {
     "languages": [
@@ -33,7 +33,7 @@
   },
   "build": {
     "buildCommand": null,
-    "testCommand": "cd /Users/adhithya/Projects/tools/KYP-MEM\nPY=/Users/adhithya/.kyp-mem/venv/bin/python3\necho \"=== ruff (if available) ===\"; $PY -m ruff check kyp_mem/hooks.py 2>&1 | tail -15 || echo \"ruff not installed\"\necho \"=== pytest (if any) ===\"; ls tests 2>/dev/null && $PY -m pytest -q 2>&1 | tail -15 || echo \"no tests dir\"",
+    "testCommand": "pytest",
     "lintCommand": "ruff check",
     "devCommand": null,
     "scripts": {
@@ -63,7 +63,7 @@
       "path": "bin",
       "purpose": "Executable scripts",
       "fileCount": 3,
-      "lastAccessed": 1781535192266,
+      "lastAccessed": 1781693173419,
       "keyFiles": [
         "cli.mjs",
         "install.mjs",
@@ -74,7 +74,7 @@
       "path": "kyp_mem",
       "purpose": null,
       "fileCount": 8,
-      "lastAccessed": 1781535192266,
+      "lastAccessed": 1781693173420,
       "keyFiles": [
         "__init__.py",
         "cli.py",
@@ -87,7 +87,7 @@
       "path": "kyp_mem/static",
       "purpose": "Static files",
       "fileCount": 1,
-      "lastAccessed": 1781535192268,
+      "lastAccessed": 1781693173421,
       "keyFiles": [
         "index.html"
       ]
