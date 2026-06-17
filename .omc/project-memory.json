@@ -101,6 +101,12 @@
       "type": "file"
     },
     {
+      "path": "kyp_mem/static/index.html",
+      "accessCount": 14,
+      "lastAccessed": 1781711998109,
+      "type": "file"
+    },
+    {
       "path": "bin/cli.mjs",
       "accessCount": 5,
       "lastAccessed": 1781693861704,
@@ -119,9 +125,15 @@
       "type": "file"
     },
     {
+      "path": "kyp_mem/ui.py",
+      "accessCount": 3,
+      "lastAccessed": 1781711773276,
+      "type": "file"
+    },
+    {
       "path": "kyp_mem/vault.py",
-      "accessCount": 2,
-      "lastAccessed": 1781693939990,
+      "accessCount": 3,
+      "lastAccessed": 1781711814982,
       "type": "file"
     },
     {

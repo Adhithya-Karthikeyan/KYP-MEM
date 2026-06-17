@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"cd /Users/adhithya/Projects/tools/KYP-MEM\\nexport KYP_VAULT=$(mktemp -d)\\necho \\\"vault=$KYP_VAULT\\\"\\n\\n# 1. No objective yet -> CLI get shows not-set\\npython -m kyp_mem.cli objective TestP...",
-  "error": "Exit code 1\nvault=/var/folders/jl/f26mqkrx2svb0ffptv05tsyw0000gn/T/tmp.xqdjAgCTVA\nTraceback (most recent call last):\n  File \"<frozen runpy>\", line 203, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/Users/adhithya/Projects/tools/KYP-MEM/kyp_mem/cli.py\", line 640, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/adhithya/Projects/tools/KYP-MEM/kyp_mem/cli.py\", line 87, in main\n    _run_objective(args.project, \" \".join(args.text).strip())\n    ~~~~~~~~~~~~~~^^^^^^^^^...",
-  "timestamp": "2026-06-17T11:00:12.189Z",
+  "tool_input_preview": "{\"command\":\"ls -d .venv venv 2>/dev/null; cat pyproject.toml | grep -A20 dependencies | head -25; echo \\\"---\\\"; which uv 2>/dev/null && echo \\\"uv present\\\"\",\"description\":\"Find venv or uv\"}",
+  "error": "Exit code 1\ndependencies = [\n    \"mcp>=1.0.0\",\n    \"pyyaml>=6.0\",\n    \"fastapi>=0.100.0\",\n    \"uvicorn>=0.20.0\",\n    \"chromadb>=0.4.0\",\n    \"anthropic>=0.40.0\",\n]\n\n[project.urls]\nHomepage = \"https://github.com/kdbalagency/kyp-mem\"\nRepository = \"https://github.com/kdbalagency/kyp-mem\"\nIssues = \"https://github.com/kdbalagency/kyp-mem/issues\"\n\n[project.scripts]\nkyp-mem = \"kyp_mem.cli:main\"\n\n[tool.hatch.build.targets.wheel]\npackages = [\"kyp_mem\"]\n---\nuv not found",
+  "timestamp": "2026-06-17T15:52:07.049Z",
   "retry_count": 1
 }

@@ -1,0 +1,4 @@
+{"t":0,"agent":"a403877","agent_type":"designer","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a403877","agent_type":"designer","event":"agent_stop","success":true,"duration_ms":666821}
+{"t":0,"agent":"a93f18b","agent_type":"code-reviewer","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"a93f18b","agent_type":"code-reviewer","event":"agent_stop","success":true,"duration_ms":161355}

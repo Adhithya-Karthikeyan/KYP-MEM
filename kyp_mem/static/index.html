@@ -6,64 +6,86 @@
 <title>KYP-MEM</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
 <style>
 :root {
-  --bg: oklch(0.165 0.008 60);
-  --bg-2: oklch(0.195 0.009 60);
-  --panel: oklch(0.215 0.010 60);
-  --panel-2: oklch(0.245 0.010 60);
-  --line: oklch(0.305 0.012 55);
-  --line-2: oklch(0.385 0.014 55);
-  --fg: oklch(0.945 0.012 75);
-  --muted: oklch(0.68 0.012 65);
-  --dim: oklch(0.50 0.010 60);
-  --accent: oklch(0.78 0.13 45);
-  --accent-dim: oklch(0.55 0.10 45);
-  --warn: oklch(0.82 0.13 80);
-  --pin: oklch(0.78 0.13 30);
-  --link: oklch(0.78 0.10 220);
-  --r-sm: 3px;
-  --r: 5px;
-  --r-lg: 8px;
-  --pad-y: 14px;
-  --pad-x: 18px;
-  --row-y: 10px;
-  --gap: 14px;
-  --fz: 13px;
-  --fz-sm: 11.5px;
+  /* Surfaces */
+  --bg: #0a0a0c;
+  --bg-2: #0b0b0e;
+  --bg-grad-top: #101015;
+  --panel: rgba(255,255,255,0.04);
+  --panel-2: rgba(255,255,255,0.065);
+  --panel-solid: #15151a;
+  --panel-solid-2: #1b1b22;
+  --glass: linear-gradient(180deg, rgba(255,255,255,0.045), rgba(255,255,255,0.015));
+  --line: rgba(255,255,255,0.07);
+  --line-2: rgba(255,255,255,0.12);
+  --line-3: rgba(255,255,255,0.18);
+  /* Text */
+  --fg: #ededf2;
+  --muted: #a4a4b0;
+  --dim: #6c6c78;
+  /* Neon accent trio */
+  --c-violet: #8b7ff5;
+  --c-teal: #5eead4;
+  --c-amber: #e6b35c;
+  --c-violet-soft: rgba(139,127,245,0.16);
+  --c-teal-soft: rgba(94,234,212,0.16);
+  --c-amber-soft: rgba(230,179,92,0.16);
+  --accent: #8b7ff5;
+  --accent-dim: rgba(139,127,245,0.5);
+  --accent-soft: rgba(139,127,245,0.14);
+  --link: #7fb8f5;
+  --warn: #e6b35c;
+  /* Radii */
+  --r-sm: 6px;
+  --r: 10px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  /* Rhythm */
+  --pad-y: 18px;
+  --pad-x: 22px;
+  --row-y: 8px;
+  --gap: 16px;
+  --fz: 13.5px;
+  --fz-sm: 12px;
   --fz-xs: 10.5px;
   --fz-lg: 15px;
   --fz-xl: 22px;
+  --shadow-card: 0 1px 0 rgba(255,255,255,0.04) inset, 0 8px 28px rgba(0,0,0,0.45);
 }
 html[data-density="dense"] {
-  --pad-y: 10px; --pad-x: 14px; --row-y: 6px; --gap: 10px;
-  --fz: 12px; --fz-sm: 11px; --fz-xs: 10px; --fz-lg: 14px; --fz-xl: 20px;
+  --pad-y: 12px; --pad-x: 16px; --row-y: 6px; --gap: 12px;
+  --fz: 12.5px; --fz-sm: 11.5px; --fz-xs: 10px; --fz-lg: 14px; --fz-xl: 20px;
 }
 html[data-density="comfy"] {
-  --pad-y: 18px; --pad-x: 22px; --row-y: 14px; --gap: 18px;
-  --fz: 14px; --fz-sm: 12px; --fz-xs: 11px; --fz-lg: 16px; --fz-xl: 24px;
+  --pad-y: 24px; --pad-x: 28px; --row-y: 12px; --gap: 20px;
+  --fz: 14.5px; --fz-sm: 12.5px; --fz-xs: 11px; --fz-lg: 16px; --fz-xl: 24px;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body, #app { height: 100%; }
 body {
-  background: var(--bg);
+  background:
+    radial-gradient(1200px 700px at 70% -10%, rgba(139,127,245,0.07), transparent 60%),
+    radial-gradient(900px 600px at 10% 110%, rgba(94,234,212,0.045), transparent 55%),
+    linear-gradient(180deg, var(--bg-grad-top), var(--bg) 30%);
+  background-attachment: fixed;
   color: var(--fg);
-  font: 400 var(--fz)/1.5 "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
-  font-feature-settings: "calt" 1, "liga" 0, "zero" 1, "ss01" 1;
+  font: 400 var(--fz)/1.55 "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-feature-settings: "cv11" 1, "ss01" 1;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   overflow: hidden;
 }
-::selection { background: color-mix(in oklch, var(--accent) 35%, transparent); color: var(--fg); }
-@keyframes kypBlink { 0%, 55% { opacity: 0.7; } 56%, 100% { opacity: 0; } }
-@keyframes kypCaret { 0%, 50% { opacity: 1; } 51%, 100% { opacity: 0; } }
+.mono { font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace; }
+::selection { background: rgba(139,127,245,0.32); color: #fff; }
 ::-webkit-scrollbar { width: 10px; height: 10px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; border: 2px solid var(--bg); }
-::-webkit-scrollbar-thumb:hover { background: var(--line-2); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.16); background-clip: padding-box; }
 button, input, select, textarea { font: inherit; color: inherit; }
 button { background: none; border: 0; padding: 0; cursor: pointer; }
 a, .lnk { color: var(--link); text-decoration: none; }
@@ -71,24 +93,21 @@ a:hover, .lnk:hover { text-decoration: underline; text-underline-offset: 3px; }
 .acc { color: var(--accent); }
 .mut { color: var(--muted); }
 .dim { color: var(--dim); }
-.tab-nums { font-variant-numeric: tabular-nums; }
+.tab-nums { font-variant-numeric: tabular-nums; font-family: "JetBrains Mono", monospace; }
 
 /* Layout */
 #app {
   display: grid;
-  grid-template-rows: 44px 1fr 24px;
+  grid-template-rows: 52px 1fr 28px;
   height: 100vh;
   min-height: 0;
 }
 #main {
   display: grid;
-  grid-template-columns: var(--sidebar-w, 236px) auto minmax(0, 1fr);
+  grid-template-columns: var(--sidebar-w, 248px) auto minmax(0, 1fr);
   min-height: 0;
-  border-top: 1px solid var(--line);
 }
-#main.sidebar-hidden {
-  grid-template-columns: 0 0 minmax(0, 1fr);
-}
+#main.sidebar-hidden { grid-template-columns: 0 0 minmax(0, 1fr); }
 #main.sidebar-hidden #sidebar,
 #main.sidebar-hidden #resize-handle { display: none; }
 
@@ -99,17 +118,12 @@ a:hover, .lnk:hover { text-decoration: underline; text-underline-offset: 3px; }
   cursor: col-resize;
   position: relative;
   z-index: 10;
-  transition: background 0.2s;
+  transition: background 0.18s;
 }
-#resize-handle::before {
-  content: '';
-  position: absolute;
-  inset: 0 -4px;
-  z-index: 1;
-}
+#resize-handle::before { content: ''; position: absolute; inset: 0 -5px; z-index: 1; }
 #resize-handle:hover, #resize-handle.dragging {
   background: var(--accent);
-  box-shadow: 0 0 8px color-mix(in oklch, var(--accent) 40%, transparent);
+  box-shadow: 0 0 12px rgba(139,127,245,0.5);
 }
 body.resizing { cursor: col-resize !important; user-select: none !important; }
 body.resizing * { cursor: col-resize !important; pointer-events: none !important; }
@@ -120,471 +134,630 @@ body.resizing #resize-handle { pointer-events: auto !important; }
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
-  padding: 0 12px;
-  gap: 12px;
+  padding: 0 16px;
+  gap: 14px;
+  border-bottom: 1px solid var(--line);
+  background: linear-gradient(180deg, rgba(255,255,255,0.025), transparent);
 }
 .topbar-left { display: flex; align-items: center; gap: 14px; min-width: 0; }
-.topbar-right { display: flex; align-items: center; gap: 8px; }
+.topbar-right { display: flex; align-items: center; gap: 10px; }
 .toggle-btn {
-  width: 22px; height: 22px;
+  width: 30px; height: 30px;
   display: inline-flex; align-items: center; justify-content: center;
   color: var(--muted); border-radius: var(--r-sm);
-  border: 1px solid transparent;
+  border: 1px solid transparent; transition: all 0.15s;
 }
-.toggle-btn:hover { border-color: var(--line); color: var(--fg); }
+.toggle-btn:hover { border-color: var(--line-2); background: var(--panel); color: var(--fg); }
 
 /* Logo */
 .logo {
-  display: inline-flex; align-items: center; gap: 8px;
-  font-weight: 700; letter-spacing: 0.08em;
-  color: var(--accent); font-size: var(--fz-lg);
+  display: inline-flex; align-items: center; gap: 9px;
+  font-weight: 700; letter-spacing: -0.01em;
+  color: var(--fg); font-size: var(--fz-lg);
   white-space: nowrap;
 }
 .logo-mark {
-  display: inline-block; width: 8px; height: 8px;
-  background: currentColor; border-radius: 1.5px;
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--accent) 40%, transparent), 0 0 10px color-mix(in srgb, var(--accent) 60%, transparent);
+  display: inline-flex; width: 22px; height: 22px;
+  border-radius: 7px;
+  background: linear-gradient(145deg, var(--c-violet), #6b5fe0);
+  box-shadow: 0 0 0 1px rgba(139,127,245,0.4), 0 4px 14px rgba(139,127,245,0.45);
+  align-items: center; justify-content: center;
 }
+.logo-mark svg { width: 13px; height: 13px; }
+.logo .lo-sub { color: var(--dim); font-weight: 500; font-size: var(--fz-sm); letter-spacing: 0; margin-left: 2px; }
 
 /* Breadcrumb */
-.breadcrumb { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fz-sm); color: var(--muted); }
-.breadcrumb .bc-last { color: var(--fg); }
+.breadcrumb { display: inline-flex; align-items: center; gap: 6px; font-size: var(--fz-sm); color: var(--muted); min-width: 0; overflow: hidden; }
+.breadcrumb .bc-last { color: var(--fg); font-weight: 500; }
 .breadcrumb .bc-sep { color: var(--dim); }
 
 /* View switcher */
 .view-switch {
   display: inline-flex; border: 1px solid var(--line);
-  border-radius: var(--r-sm); padding: 2px; background: var(--panel);
+  border-radius: 9px; padding: 3px; background: rgba(0,0,0,0.25);
+  gap: 2px;
 }
 .view-switch button {
-  padding: 2px 10px; font-size: var(--fz-sm);
-  color: var(--muted); background: transparent; border-radius: 3px;
+  padding: 5px 12px; font-size: var(--fz-sm); font-weight: 500;
+  color: var(--muted); background: transparent; border-radius: 6px;
+  display: inline-flex; align-items: center; gap: 6px;
+  transition: all 0.15s;
 }
+.view-switch button svg { width: 13px; height: 13px; opacity: 0.85; }
+.view-switch button:hover { color: var(--fg); }
 .view-switch button.active {
-  color: var(--accent);
-  background: color-mix(in oklch, var(--accent) 14%, var(--panel));
+  color: #fff;
+  background: linear-gradient(180deg, rgba(139,127,245,0.28), rgba(139,127,245,0.16));
+  box-shadow: 0 0 0 1px rgba(139,127,245,0.3), 0 2px 8px rgba(139,127,245,0.2);
 }
 
 /* Ghost button */
 .ghost-btn {
-  padding: 3px 9px; border: 1px solid var(--line);
+  padding: 5px 11px; border: 1px solid var(--line);
   background: var(--panel); color: var(--muted);
-  border-radius: var(--r-sm); font-size: var(--fz-sm);
-  white-space: nowrap; transition: all 0.12s;
+  border-radius: var(--r-sm); font-size: var(--fz-sm); font-weight: 500;
+  white-space: nowrap; transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 6px;
 }
+.ghost-btn svg { width: 12px; height: 12px; }
 .ghost-btn:hover { border-color: var(--line-2); background: var(--panel-2); color: var(--fg); }
+.ghost-btn.primary { color: var(--accent); border-color: var(--accent-dim); background: var(--accent-soft); }
+.ghost-btn.primary:hover { background: rgba(139,127,245,0.22); }
 
 /* Search bar */
 .search-bar {
   display: inline-flex; align-items: center; gap: 8px;
-  padding: 3px 8px 3px 10px; border: 1px solid var(--line);
-  background: var(--panel); border-radius: var(--r-sm);
-  width: 220px; font-size: var(--fz-sm); position: relative;
+  padding: 6px 10px; border: 1px solid var(--line);
+  background: rgba(0,0,0,0.25); border-radius: 9px;
+  width: 244px; font-size: var(--fz-sm); position: relative;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.search-bar .s-prompt { color: var(--accent); }
+.search-bar:focus-within { border-color: var(--accent-dim); box-shadow: 0 0 0 3px rgba(139,127,245,0.12); }
+.search-bar .s-ico { color: var(--dim); display: inline-flex; }
+.search-bar .s-ico svg { width: 14px; height: 14px; }
 .search-bar input {
   flex: 1; min-width: 0; background: transparent; border: 0; outline: 0;
   color: var(--fg); font-size: var(--fz-sm); caret-color: var(--accent);
 }
 .search-bar input::placeholder { color: var(--dim); }
-.search-bar .s-caret {
-  width: 6px; height: 12px; background: var(--accent);
-  opacity: 0.6; margin-right: 2px;
-  animation: kypCaret 1.05s steps(1) infinite;
-}
 .search-bar .s-hint {
   font-size: var(--fz-xs); border: 1px solid var(--line);
-  border-radius: 3px; padding: 0 5px; color: var(--dim);
+  border-radius: 5px; padding: 1px 6px; color: var(--dim);
   font-variant-numeric: tabular-nums;
 }
 .search-dropdown {
-  position: absolute; top: calc(100% + 6px); left: 0; right: 0;
-  background: var(--panel); border: 1px solid var(--line);
-  border-radius: var(--r); max-height: 320px; overflow-y: auto;
-  z-index: 100; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+  position: absolute; top: calc(100% + 8px); left: 0; right: 0;
+  background: var(--panel-solid); border: 1px solid var(--line-2);
+  border-radius: var(--r); max-height: 360px; overflow-y: auto;
+  z-index: 100; display: none; box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+  backdrop-filter: blur(12px);
 }
 .search-dropdown.active { display: block; }
 .search-result {
-  padding: 8px 12px; cursor: pointer; border-bottom: 1px solid var(--line);
-  transition: background 0.1s;
+  padding: 10px 14px; cursor: pointer; border-bottom: 1px solid var(--line);
+  transition: background 0.12s;
 }
 .search-result:last-child { border-bottom: none; }
 .search-result:hover { background: var(--panel-2); }
-.search-result .sr-title { font-size: var(--fz-sm); color: var(--accent); font-weight: 500; }
-.search-result .sr-path { font-size: var(--fz-xs); color: var(--dim); margin-top: 2px; }
-.search-result .sr-snippet { font-size: var(--fz-xs); color: var(--muted); margin-top: 3px; }
+.search-result .sr-title { font-size: var(--fz-sm); color: var(--fg); font-weight: 600; }
+.search-result .sr-path { font-size: var(--fz-xs); color: var(--dim); margin-top: 3px; font-family: "JetBrains Mono", monospace; }
+.search-result .sr-snippet { font-size: var(--fz-xs); color: var(--muted); margin-top: 4px; }
 
 /* Sidebar */
 #sidebar {
   display: flex; flex-direction: column;
-  background: var(--bg); overflow: hidden; min-height: 0;
+  background: rgba(255,255,255,0.012);
+  border-right: 1px solid var(--line);
+  overflow: hidden; min-height: 0;
 }
 .sidebar-scroll {
-  overflow-y: auto; padding: 12px 4px 12px 12px;
-  display: flex; flex-direction: column; gap: 16px;
+  overflow-y: auto; padding: 16px 8px 16px 16px;
+  display: flex; flex-direction: column; gap: 22px;
   min-height: 0; flex: 1;
 }
 .side-section-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 0 8px;
+  padding: 0 0 10px;
 }
 .side-section-title {
-  display: inline-flex; align-items: center; gap: 6px;
-  font-size: var(--fz-xs); letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--dim);
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: var(--fz-xs); letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--dim); font-weight: 600;
 }
-.side-dot {
-  display: inline-block; width: 6px; height: 6px; border-radius: 999px;
-}
+.side-dot { display: inline-block; width: 7px; height: 7px; border-radius: 999px; }
 .side-add-btn {
-  font-size: var(--fz-xs); color: var(--dim); padding: 0 5px;
+  font-size: var(--fz-xs); color: var(--dim); padding: 2px 7px;
   border-radius: var(--r-sm); border: 1px solid transparent;
-  transition: all 0.12s;
+  transition: all 0.15s; font-weight: 500;
 }
-.side-add-btn:hover { border-color: var(--line); color: var(--fg); }
-.side-collapse-arrow {
-  display: inline-block; transition: transform 0.15s; margin-left: 4px;
-}
+.side-add-btn:hover { border-color: var(--line-2); background: var(--panel); color: var(--fg); }
+.side-collapse-arrow { display: inline-block; transition: transform 0.18s; margin-left: 4px; }
 .side-collapse-arrow.collapsed { transform: rotate(-90deg); }
+.side-collapse-arrow svg { width: 11px; height: 11px; }
 
 /* Sidebar search */
 .side-search {
-  width: 100%; background: var(--panel);
+  width: 100%; background: rgba(0,0,0,0.22);
   border: 1px solid var(--line); border-radius: var(--r-sm);
-  padding: 4px 8px; font-size: var(--fz-sm);
-  color: var(--fg); outline: 0; margin-bottom: 6px;
+  padding: 7px 10px; font-size: var(--fz-sm);
+  color: var(--fg); outline: 0; margin-bottom: 8px;
+  transition: border-color 0.15s;
 }
 .side-search::placeholder { color: var(--dim); }
 .side-search:focus { border-color: var(--accent-dim); }
 
 /* Tree folder header */
 .tree-folder {
-  display: flex; align-items: center; gap: 6px;
-  padding: 3px 0; font-size: var(--fz-sm); cursor: pointer;
-  user-select: none;
+  display: flex; align-items: center; gap: 7px;
+  padding: 5px 6px; font-size: var(--fz-sm); cursor: pointer;
+  user-select: none; border-radius: var(--r-sm); transition: background 0.12s;
 }
-.tree-folder .tf-arrow { font-size: 10px; color: var(--dim); transition: transform 0.15s; }
+.tree-folder:hover { background: var(--panel); }
+.tree-folder .tf-arrow { color: var(--dim); transition: transform 0.18s; display: inline-flex; }
+.tree-folder .tf-arrow svg { width: 10px; height: 10px; }
 .tree-folder .tf-arrow.closed { transform: rotate(-90deg); }
-.tree-folder .tf-icon { color: var(--muted); font-size: 11px; }
-.tree-folder .tf-label { flex: 1; color: var(--fg); }
+.tree-folder .tf-icon { color: var(--muted); display: inline-flex; }
+.tree-folder .tf-icon svg { width: 13px; height: 13px; }
+.tree-folder .tf-label { flex: 1; color: var(--fg); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tree-folder .tf-count { font-size: var(--fz-xs); color: var(--dim); font-variant-numeric: tabular-nums; }
-.tree-folder .tf-graph-btn { font-size: 11px; color: var(--dim); opacity: 0; transition: opacity 0.15s; padding: 0 2px; }
+.tree-folder .tf-graph-btn { color: var(--dim); opacity: 0; transition: opacity 0.15s; padding: 0 2px; display: inline-flex; }
+.tree-folder .tf-graph-btn svg { width: 13px; height: 13px; }
 .tree-folder:hover .tf-graph-btn { opacity: 1; }
 .tree-folder .tf-graph-btn:hover { color: var(--accent); }
 
 /* Sidebar rows */
 .sidebar-row {
-  display: flex; align-items: center; gap: 8px;
-  width: 100%; text-align: left; padding: 3px 8px 3px 6px;
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; text-align: left; padding: 5px 8px 5px 8px;
   border-radius: var(--r-sm); border-left: 2px solid transparent;
-  background: transparent; transition: background 0.1s;
+  background: transparent; transition: background 0.12s, border-color 0.12s;
 }
 .sidebar-row:hover { background: var(--panel); }
 .sidebar-row.active {
   border-left-color: var(--accent);
-  background: color-mix(in oklch, var(--accent) 10%, transparent);
+  background: var(--accent-soft);
 }
-.sidebar-row .sr-dot { font-size: 9px; }
+.sidebar-row .sr-ico { display: inline-flex; color: var(--dim); }
+.sidebar-row .sr-ico svg { width: 12px; height: 12px; }
 .sidebar-row .sr-label { flex: 1; font-size: var(--fz-sm); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.sidebar-row.active .sr-label { color: var(--accent); }
+.sidebar-row.active .sr-label { color: var(--fg); }
+.sidebar-row.active .sr-ico { color: var(--accent); }
 
 /* Tag chip */
 .tag-chip {
-  display: inline-flex; align-items: center; gap: 5px;
-  padding: 1px 7px; border: 1px solid var(--line);
+  display: inline-flex; align-items: center; gap: 4px;
+  padding: 3px 9px; border: 1px solid var(--line);
   background: var(--panel); color: var(--muted);
-  border-radius: var(--r-sm); font-size: var(--fz-sm);
-  white-space: nowrap; transition: color 0.12s, border-color 0.12s;
+  border-radius: 999px; font-size: var(--fz-sm); font-weight: 500;
+  white-space: nowrap; transition: all 0.15s;
 }
 .tag-chip:hover { border-color: var(--line-2); color: var(--fg); }
-.tag-chip.active { border-color: var(--accent-dim); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); color: var(--accent); }
+.tag-chip.active { border-color: var(--accent-dim); background: var(--accent-soft); color: var(--accent); }
 .tag-chip .tc-hash { color: var(--dim); }
+.tag-chip.active .tc-hash { color: var(--accent); }
 .tag-chip .tc-count { margin-left: 2px; font-size: var(--fz-xs); color: var(--dim); font-variant-numeric: tabular-nums; }
 
 /* StatusBar */
 #statusbar {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 14px; font-size: var(--fz-xs); color: var(--dim);
-  border-top: 1px solid var(--line); background: var(--bg);
+  padding: 0 16px; font-size: var(--fz-xs); color: var(--dim);
+  border-top: 1px solid var(--line); background: rgba(0,0,0,0.2);
 }
 .sb-left, .sb-right, .sb-center { display: flex; gap: 14px; align-items: center; }
-.sb-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--accent); display: inline-block; margin-right: 5px; }
+.sb-left .mut, .sb-right .mut, .sb-center .mut { color: var(--muted); }
+.sb-dot { width: 6px; height: 6px; border-radius: 999px; background: var(--c-teal); display: inline-block; margin-right: 6px; box-shadow: 0 0 6px rgba(94,234,212,0.6); }
 
 /* Content area */
 #content-area {
   padding: var(--pad-y) var(--pad-x);
   min-height: 0; min-width: 0;
-  border-left: 1px solid var(--line);
   overflow: hidden; display: flex; flex-direction: column;
 }
 
+/* ===== DASHBOARD ===== */
+.dash {
+  overflow-y: auto; height: 100%; min-height: 0; padding-right: 6px;
+}
+.dash-head {
+  display: flex; align-items: flex-end; justify-content: space-between;
+  margin-bottom: 20px; gap: 16px; flex-wrap: wrap;
+}
+.dash-title { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+.dash-sub { font-size: var(--fz-sm); color: var(--dim); margin-top: 4px; }
+.dash-head-actions { display: flex; gap: 8px; }
+
+.hero-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+@media (max-width: 1100px) { .hero-grid { grid-template-columns: repeat(2, 1fr); } }
+
+.stat-card {
+  position: relative; overflow: hidden;
+  background: var(--glass);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  padding: 18px 18px 14px;
+  box-shadow: var(--shadow-card);
+  transition: transform 0.18s, border-color 0.18s, box-shadow 0.18s;
+}
+.stat-card:hover { transform: translateY(-3px); border-color: var(--line-2); box-shadow: 0 1px 0 rgba(255,255,255,0.05) inset, 0 14px 38px rgba(0,0,0,0.5); }
+.stat-card .glow {
+  position: absolute; left: 50%; bottom: -60%; transform: translateX(-50%);
+  width: 150%; height: 130%; pointer-events: none; opacity: 0.9;
+  border-radius: 50%;
+}
+.stat-card[data-accent="violet"] .glow { background: radial-gradient(closest-side, rgba(139,127,245,0.4), transparent 70%); }
+.stat-card[data-accent="teal"] .glow { background: radial-gradient(closest-side, rgba(94,234,212,0.32), transparent 70%); }
+.stat-card[data-accent="amber"] .glow { background: radial-gradient(closest-side, rgba(230,179,92,0.32), transparent 70%); }
+.stat-card .sc-head { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 1; }
+.stat-card .sc-label { font-size: var(--fz-xs); letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.stat-card .sc-ico {
+  width: 30px; height: 30px; border-radius: 9px;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line-2);
+}
+.stat-card[data-accent="violet"] .sc-ico { color: var(--c-violet); background: var(--c-violet-soft); }
+.stat-card[data-accent="teal"] .sc-ico { color: var(--c-teal); background: var(--c-teal-soft); }
+.stat-card[data-accent="amber"] .sc-ico { color: var(--c-amber); background: var(--c-amber-soft); }
+.stat-card .sc-ico svg { width: 15px; height: 15px; }
+.stat-card .sc-value {
+  position: relative; z-index: 1;
+  font-size: 46px; font-weight: 700; line-height: 1.05; letter-spacing: -0.03em;
+  margin: 14px 0 2px; font-family: "JetBrains Mono", monospace; font-feature-settings: "tnum" 1;
+}
+.stat-card[data-accent="violet"] .sc-value { color: var(--c-violet); }
+.stat-card[data-accent="teal"] .sc-value { color: var(--c-teal); }
+.stat-card[data-accent="amber"] .sc-value { color: var(--c-amber); }
+.stat-card .sc-foot { position: relative; z-index: 1; display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; margin-top: 6px; }
+.stat-card .sc-meta { font-size: var(--fz-xs); color: var(--dim); }
+.stat-card .sc-spark { width: 96px; height: 34px; flex-shrink: 0; }
+
+/* Dashboard panels */
+.dash-grid {
+  display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: var(--gap);
+  margin-bottom: var(--gap);
+}
+@media (max-width: 1100px) { .dash-grid { grid-template-columns: 1fr; } }
+
+.panel {
+  background: var(--glass);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
+.panel-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 16px 18px 12px;
+}
+.panel-title { font-size: var(--fz); font-weight: 600; display: flex; align-items: center; gap: 9px; }
+.panel-title .pt-ico { color: var(--muted); display: inline-flex; }
+.panel-title .pt-ico svg { width: 15px; height: 15px; }
+.panel-body { padding: 0 18px 18px; }
+
+/* Chart */
+.chart-wrap { position: relative; width: 100%; height: 230px; }
+.chart-wrap svg { width: 100%; height: 100%; display: block; overflow: visible; }
+.chart-legend { display: flex; gap: 16px; padding: 0 18px 14px; }
+.chart-legend .cl-item { display: flex; align-items: center; gap: 7px; font-size: var(--fz-xs); color: var(--muted); }
+.chart-legend .cl-swatch { width: 16px; height: 3px; border-radius: 3px; }
+.chart-tooltip {
+  position: absolute; pointer-events: none; opacity: 0; transition: opacity 0.12s;
+  background: var(--panel-solid-2); border: 1px solid var(--line-2);
+  border-radius: 8px; padding: 7px 10px; font-size: var(--fz-xs);
+  white-space: nowrap; z-index: 5; box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+}
+.chart-tooltip .tt-title { color: var(--fg); font-weight: 600; margin-bottom: 3px; }
+.chart-tooltip .tt-row { color: var(--muted); display: flex; align-items: center; gap: 6px; }
+.chart-tooltip .tt-dot { width: 7px; height: 7px; border-radius: 999px; }
+
+/* Token economics bars */
+.econ-row { margin-bottom: 16px; }
+.econ-row:last-child { margin-bottom: 0; }
+.econ-top { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 7px; }
+.econ-label { font-size: var(--fz-sm); color: var(--muted); font-weight: 500; }
+.econ-val { font-size: var(--fz-sm); color: var(--fg); font-weight: 600; font-variant-numeric: tabular-nums; font-family: "JetBrains Mono", monospace; }
+.bar-track { height: 7px; border-radius: 999px; background: rgba(255,255,255,0.06); overflow: hidden; }
+.bar-fill { height: 100%; border-radius: 999px; transition: width 0.6s cubic-bezier(.22,1,.36,1); }
+.bar-fill.violet { background: linear-gradient(90deg, #6b5fe0, var(--c-violet)); }
+.bar-fill.teal { background: linear-gradient(90deg, #2bb59c, var(--c-teal)); }
+.bar-fill.amber { background: linear-gradient(90deg, #c9913f, var(--c-amber)); }
+
+/* Recent list */
+.recent-list { display: flex; flex-direction: column; }
+.recent-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 8px; border-radius: var(--r-sm);
+  cursor: pointer; transition: background 0.12s; text-align: left; width: 100%;
+}
+.recent-item:hover { background: var(--panel); }
+.recent-item .ri-ico {
+  width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  border: 1px solid var(--line-2); color: var(--c-teal); background: var(--c-teal-soft);
+}
+.recent-item .ri-ico.proj { color: var(--c-violet); background: var(--c-violet-soft); }
+.recent-item .ri-ico svg { width: 15px; height: 15px; }
+.recent-item .ri-body { flex: 1; min-width: 0; }
+.recent-item .ri-title { font-size: var(--fz-sm); color: var(--fg); font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-item .ri-sub { font-size: var(--fz-xs); color: var(--dim); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.recent-item .ri-meta { font-size: var(--fz-xs); color: var(--dim); flex-shrink: 0; font-variant-numeric: tabular-nums; }
+.dash-empty { padding: 28px; text-align: center; color: var(--dim); font-size: var(--fz-sm); }
+
 /* Note view */
 .note-view {
-  display: grid; grid-template-columns: minmax(0,1fr) 300px;
+  display: grid; grid-template-columns: minmax(0,1fr) 312px;
   gap: var(--gap); height: 100%; min-height: 0;
 }
 .note-view.no-rail { grid-template-columns: minmax(0,1fr); }
-.note-article { overflow-y: auto; min-width: 0; padding-right: 6px; }
+.note-article { overflow-y: auto; min-width: 0; padding-right: 8px; }
 .note-rail { display: flex; flex-direction: column; gap: var(--gap); overflow-y: auto; padding-bottom: 8px; }
-
-/* Command prompt strip */
-.cmd-strip {
-  display: flex; align-items: center; gap: 8px;
-  font-size: var(--fz-xs); color: var(--dim);
-  padding: 2px 0 10px; font-variant-numeric: tabular-nums;
-}
-.cmd-strip .cs-right { margin-left: auto; }
 
 /* Note title */
 .note-title {
-  margin: 12px 0 4px; font-size: calc(var(--fz-xl) + 8px);
-  letter-spacing: -0.01em; font-weight: 500; line-height: 1.15;
-}
-.note-title .title-caret {
-  display: inline-block; width: 0.5em; height: 0.85em;
-  background: var(--accent); margin-left: 6px;
-  vertical-align: -0.08em; opacity: 0.6;
-  animation: kypBlink 1.05s steps(1) infinite;
+  margin: 14px 0 6px; font-size: calc(var(--fz-xl) + 12px);
+  letter-spacing: -0.025em; font-weight: 700; line-height: 1.12;
 }
 .note-meta {
   font-size: var(--fz-xs); color: var(--dim);
-  margin-bottom: 22px; display: flex; gap: 14px;
+  margin-bottom: 26px; display: flex; gap: 16px; align-items: center;
 }
 .note-tags-strip {
   display: flex; align-items: center; justify-content: space-between;
-  gap: 10px; padding: 0 0 14px; flex-wrap: wrap;
+  gap: 10px; padding: 0 0 16px; flex-wrap: wrap;
 }
-.note-tags-left { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.note-tags-right { display: flex; gap: 6px; }
+.note-tags-left { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+.note-tags-right { display: flex; gap: 7px; }
 .note-dates { font-size: var(--fz-xs); color: var(--dim); margin-left: 8px; }
 
 /* Markdown body */
-.md-body h1 { font-size: calc(var(--fz-xl) + 4px); font-weight: 500; margin: 32px 0 14px; color: var(--fg); }
-.md-body h2 {
-  margin: 32px 0 14px; font-size: calc(var(--fz-lg) + 4px);
-  font-weight: 500; color: var(--fg); letter-spacing: -0.005em;
-}
-.md-body h3 { margin: 26px 0 10px; font-size: var(--fz-lg); font-weight: 500; color: var(--accent); }
-.md-body p { margin: 0 0 14px; line-height: 1.65; color: var(--muted); font-size: var(--fz); }
-.md-body ul, .md-body ol { padding-left: 22px; margin: 0 0 14px; }
-.md-body li { line-height: 1.65; color: var(--muted); font-size: var(--fz); margin: 4px 0; }
-.md-body li::marker { color: var(--dim); }
+.md-body h1 { font-size: calc(var(--fz-xl) + 6px); font-weight: 700; margin: 34px 0 16px; color: var(--fg); letter-spacing: -0.02em; }
+.md-body h2 { margin: 34px 0 16px; font-size: calc(var(--fz-lg) + 5px); font-weight: 600; color: var(--fg); letter-spacing: -0.01em; }
+.md-body h3 { margin: 28px 0 12px; font-size: var(--fz-lg); font-weight: 600; color: var(--accent); }
+.md-body p { margin: 0 0 16px; line-height: 1.72; color: var(--muted); font-size: var(--fz); }
+.md-body ul, .md-body ol { padding-left: 24px; margin: 0 0 16px; }
+.md-body li { line-height: 1.72; color: var(--muted); font-size: var(--fz); margin: 5px 0; }
+.md-body li::marker { color: var(--accent-dim); }
 .md-body a { color: var(--link); text-decoration: none; }
 .md-body a:hover { text-decoration: underline; text-underline-offset: 3px; }
-.md-body strong { color: var(--fg); font-weight: 500; }
+.md-body strong { color: var(--fg); font-weight: 600; }
 .md-body code {
-  font-size: 0.92em; padding: 1px 6px; border-radius: var(--r-sm);
-  background: color-mix(in oklch, var(--accent) 14%, var(--bg));
-  color: var(--accent);
-  border: 1px solid color-mix(in oklch, var(--accent) 28%, transparent);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 0.88em; padding: 2px 6px; border-radius: var(--r-sm);
+  background: rgba(139,127,245,0.12);
+  color: #b7adfb;
+  border: 1px solid rgba(139,127,245,0.22);
 }
 .md-body pre {
-  background: var(--bg); border: 1px solid var(--line);
-  border-radius: var(--r); padding: 14px 16px;
-  overflow-x: auto; margin: 14px 0;
+  background: rgba(0,0,0,0.32); border: 1px solid var(--line);
+  border-radius: var(--r); padding: 16px 18px;
+  overflow-x: auto; margin: 16px 0;
 }
-.md-body pre code { background: none; padding: 0; border: none; color: var(--muted); font-size: var(--fz); line-height: 1.6; }
-.md-body table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: var(--fz-sm); }
-.md-body th { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); color: var(--fg); font-weight: 500; }
-.md-body td { padding: 8px 12px; border-bottom: 1px solid var(--line); color: var(--muted); }
+.md-body pre code { font-family: "JetBrains Mono", monospace; background: none; padding: 0; border: none; color: var(--muted); font-size: 0.86em; line-height: 1.7; }
+.md-body table { width: 100%; border-collapse: collapse; margin: 16px 0; font-size: var(--fz-sm); }
+.md-body th { text-align: left; padding: 9px 13px; border-bottom: 1px solid var(--line-2); color: var(--fg); font-weight: 600; }
+.md-body td { padding: 9px 13px; border-bottom: 1px solid var(--line); color: var(--muted); }
 .md-body tr:last-child td { border-bottom: none; }
-.md-body blockquote { border-left: 2px solid var(--accent); padding: 8px 16px; margin: 14px 0; color: var(--muted); }
-.md-body hr { border: none; height: 1px; background: var(--line); margin: 24px 0; }
+.md-body blockquote { border-left: 2px solid var(--accent); padding: 8px 18px; margin: 16px 0; color: var(--muted); background: var(--accent-soft); border-radius: 0 var(--r-sm) var(--r-sm) 0; }
+.md-body hr { border: none; height: 1px; background: var(--line-2); margin: 28px 0; }
 .wikilink { color: var(--accent); cursor: pointer; border-bottom: 1px dashed var(--accent-dim); font-weight: 500; }
 .wikilink:hover { border-bottom-style: solid; }
 
 /* Rail cards */
-.rail-card { margin-bottom: 0; }
+.rail-card {
+  background: var(--glass); border: 1px solid var(--line);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-card);
+  overflow: hidden;
+}
 .rail-card-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 2px 2px 8px;
+  padding: 13px 14px 11px;
 }
 .rail-card-title {
-  display: flex; align-items: center; gap: 6px;
-  font-size: var(--fz-xs); letter-spacing: 0.08em;
-  text-transform: uppercase; color: var(--dim);
+  display: flex; align-items: center; gap: 7px;
+  font-size: var(--fz-xs); letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); font-weight: 600;
 }
-.rail-card-body {
-  border: 1px solid var(--line); background: var(--panel);
-  border-radius: var(--r); padding: 10px 12px;
-}
+.rail-card-title svg { width: 13px; height: 13px; }
+.rail-card-body { padding: 0 14px 14px; }
 .rail-icon-btn {
-  width: 20px; height: 18px; line-height: 16px;
+  width: 26px; height: 24px;
   border-radius: var(--r-sm); border: 1px solid var(--line);
-  color: var(--muted); font-size: 11px;
-  display: inline-flex; align-items: center; justify-content: center;
+  color: var(--muted); display: inline-flex; align-items: center; justify-content: center;
+  transition: all 0.15s;
 }
-.rail-icon-btn:hover { color: var(--fg); border-color: var(--line-2); }
+.rail-icon-btn svg { width: 13px; height: 13px; }
+.rail-icon-btn:hover { color: var(--fg); border-color: var(--line-2); background: var(--panel); }
 
 /* Outline */
 .outline-item {
-  display: block; font-size: var(--fz-sm); padding: 3px 4px;
+  display: block; font-size: var(--fz-sm); padding: 4px 6px;
   color: var(--muted); font-weight: 400; text-decoration: none;
   border-radius: var(--r-sm); cursor: pointer;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  transition: background 0.12s;
 }
-.outline-item:hover { background: var(--panel-2); }
-.outline-item.lv1 { color: var(--fg); font-weight: 500; }
+.outline-item:hover { background: var(--panel); color: var(--fg); }
+.outline-item.lv1 { color: var(--fg); font-weight: 600; }
 
 /* Backlink items */
 .bl-item {
   display: flex; align-items: center; gap: 8px;
-  padding: 5px 2px; font-size: var(--fz-sm); color: var(--muted); cursor: pointer;
+  padding: 6px 4px; font-size: var(--fz-sm); color: var(--muted); cursor: pointer;
+  border-radius: var(--r-sm); transition: background 0.12s;
 }
-.bl-item:hover { color: var(--fg); }
+.bl-item:hover { color: var(--fg); background: var(--panel); }
+.bl-item svg { width: 12px; height: 12px; color: var(--dim); flex-shrink: 0; }
 
 /* Session view */
-.session-view { overflow-y: auto; height: 100%; min-height: 0; padding-right: 6px; }
+.session-view { overflow-y: auto; height: 100%; min-height: 0; padding-right: 8px; }
 .session-status {
-  display: inline-flex; align-items: center; gap: 6px;
-  padding: 2px 8px; border-radius: var(--r-sm); font-size: var(--fz-sm);
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 4px 11px; border-radius: 999px; font-size: var(--fz-sm); font-weight: 500;
 }
-.session-status.live { border: 1px solid var(--accent-dim); background: color-mix(in oklch, var(--accent) 14%, var(--panel)); color: var(--accent); }
-.session-status.done { border: 1px solid var(--line); background: var(--panel); color: var(--muted); }
+.session-status.live { border: 1px solid var(--accent-dim); background: var(--accent-soft); color: var(--accent); }
+.session-status.done { border: 1px solid var(--line-2); background: var(--panel); color: var(--muted); }
 
 /* Session sections */
 .session-section {
-  margin-bottom: 20px; border: 1px solid var(--line);
-  border-radius: var(--r); background: var(--panel); overflow: hidden;
+  margin-bottom: var(--gap);
+  background: var(--glass);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg); overflow: hidden;
+  box-shadow: var(--shadow-card);
 }
 .ss-header {
-  padding: 10px 14px; font-size: var(--fz-lg); font-weight: 500;
-  display: flex; align-items: center; gap: 8px;
-  border-bottom: 1px solid var(--line); background: var(--bg-2);
+  padding: 13px 18px; font-size: var(--fz-lg); font-weight: 600;
+  display: flex; align-items: center; gap: 10px;
+  border-bottom: 1px solid var(--line);
 }
-.ss-body { padding: 12px 16px; }
-.ss-body.md-body { font-size: var(--fz-sm); line-height: 1.65; }
-.ss-body.md-body ul { padding-left: 18px; }
-.ss-body.md-body li { margin-bottom: 4px; }
-.prompts-list.scrollable { max-height: 280px; overflow-y: auto; }
-.prompt-entry { border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 10px; }
+.ss-header .ss-hico { display: inline-flex; color: var(--accent); }
+.ss-header .ss-hico svg { width: 15px; height: 15px; }
+.ss-body { padding: 16px 18px; }
+.ss-body.md-body { font-size: var(--fz-sm); line-height: 1.72; }
+.ss-body.md-body ul { padding-left: 20px; }
+.ss-body.md-body li { margin-bottom: 5px; }
+.prompts-list.scrollable { max-height: 300px; overflow-y: auto; }
+.prompt-entry { border-bottom: 1px solid var(--line); padding-bottom: 12px; margin-bottom: 12px; }
 .prompt-entry:last-child { border-bottom: none; padding-bottom: 0; margin-bottom: 0; }
-.prompt-entry h3 { font-size: var(--fz-sm); color: var(--accent); font-weight: 500; margin-bottom: 4px; }
+.prompt-entry h3 { font-size: var(--fz-sm); color: var(--accent); font-weight: 600; margin-bottom: 5px; }
 .prompt-entry blockquote {
-  border-left: 2px solid var(--accent-dim); padding-left: 12px;
-  color: var(--muted); font-size: var(--fz-sm); margin: 4px 0;
+  border-left: 2px solid var(--accent-dim); padding: 4px 14px;
+  color: var(--muted); font-size: var(--fz-sm); margin: 5px 0;
+  background: var(--accent-soft); border-radius: 0 var(--r-sm) var(--r-sm) 0;
 }
 
 /* Graph view */
 .graph-view {
-  display: grid; grid-template-columns: minmax(0,1fr) 300px;
+  display: grid; grid-template-columns: minmax(0,1fr) 312px;
   gap: var(--gap); height: 100%; min-height: 0;
 }
 .graph-canvas {
-  border: 1px solid var(--line); background: var(--panel);
-  border-radius: var(--r); position: relative; overflow: hidden;
-  display: flex; flex-direction: column;
+  border: 1px solid var(--line); background: var(--glass);
+  border-radius: var(--r-lg); position: relative; overflow: hidden;
+  display: flex; flex-direction: column; box-shadow: var(--shadow-card);
 }
 .graph-header {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 10px 14px; border-bottom: 1px solid var(--line);
-  background: var(--bg-2); gap: 12px; position: relative; z-index: 10;
+  padding: 13px 16px; border-bottom: 1px solid var(--line);
+  gap: 12px; position: relative; z-index: 10;
 }
-.graph-header .ghost-btn { cursor: pointer; }
 .graph-header-left { display: flex; align-items: center; gap: 10px; font-size: var(--fz-sm); white-space: nowrap; }
+.graph-header-left .gh-ico { color: var(--accent); display: inline-flex; }
+.graph-header-left .gh-ico svg { width: 16px; height: 16px; }
 .graph-header-right { display: flex; gap: 6px; flex-shrink: 0; }
 .tool-chip {
-  padding: 3px 9px; border-radius: var(--r-sm);
+  padding: 5px 11px; border-radius: var(--r-sm);
   border: 1px solid var(--line); color: var(--muted);
-  background: transparent; font-size: var(--fz-xs);
+  background: transparent; font-size: var(--fz-xs); font-weight: 500;
+  transition: all 0.15s;
 }
-.tool-chip.active { border-color: var(--accent-dim); color: var(--accent); background: color-mix(in oklch, var(--accent) 10%, var(--panel)); }
+.tool-chip:hover { color: var(--fg); border-color: var(--line-2); }
+.tool-chip.active { border-color: var(--accent-dim); color: var(--accent); background: var(--accent-soft); }
 .graph-svg-wrap { position: relative; flex: 1; min-height: 0; }
 .graph-svg-wrap svg { position: absolute; inset: 0; width: 100%; height: 100%; }
 .graph-legend {
-  position: absolute; left: 14px; bottom: 14px;
-  background: color-mix(in oklch, var(--bg) 85%, transparent);
-  border: 1px solid var(--line); border-radius: var(--r);
-  padding: 8px 10px; font-size: var(--fz-xs);
-  display: flex; flex-direction: column; gap: 5px;
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  position: absolute; left: 16px; bottom: 16px;
+  background: rgba(10,10,12,0.7);
+  border: 1px solid var(--line-2); border-radius: var(--r);
+  padding: 10px 12px; font-size: var(--fz-xs);
+  display: flex; flex-direction: column; gap: 6px;
+  backdrop-filter: blur(10px);
 }
-.graph-legend-title { color: var(--dim); letter-spacing: 0.08em; text-transform: uppercase; }
-.graph-legend-item { display: flex; align-items: center; gap: 8px; color: var(--muted); }
+.graph-legend-title { color: var(--dim); letter-spacing: 0.1em; text-transform: uppercase; font-weight: 600; }
+.graph-legend-item { display: flex; align-items: center; gap: 9px; color: var(--muted); }
 .graph-rail { display: flex; flex-direction: column; gap: var(--gap); overflow-y: auto; }
 .conn-item {
-  display: flex; align-items: center; gap: 8px;
-  width: 100%; padding: 4px 6px; border-radius: var(--r-sm);
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; padding: 6px 7px; border-radius: var(--r-sm);
   font-size: var(--fz-sm); color: var(--muted); text-align: left;
-  transition: background 0.1s;
+  transition: background 0.12s;
 }
-.conn-item:hover { background: var(--panel-2); }
+.conn-item:hover { background: var(--panel); color: var(--fg); }
 
 /* Modals */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(0,0,0,0.5);
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
   z-index: 200; display: none; align-items: flex-start;
-  justify-content: center; padding-top: 15vh;
-  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  justify-content: center; padding-top: 14vh;
+  backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
 }
 .modal-overlay.active { display: flex; }
 .modal-overlay.center { align-items: center; padding-top: 0; }
 .modal {
-  width: 480px; background: var(--panel);
-  border: 1px solid var(--line); border-radius: var(--r-lg);
-  box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+  width: 520px; background: var(--panel-solid);
+  border: 1px solid var(--line-2); border-radius: var(--r-xl);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.7);
   overflow: hidden;
 }
-.modal-sm { width: 420px; }
+.modal-sm { width: 440px; }
 .modal-header {
-  padding: 16px 20px 12px; border-bottom: 1px solid var(--line);
-  font-size: var(--fz-sm); font-weight: 600; color: var(--muted);
-  letter-spacing: 0.5px;
+  padding: 18px 22px 14px; border-bottom: 1px solid var(--line);
+  font-size: var(--fz-xs); font-weight: 700; color: var(--muted);
+  letter-spacing: 0.1em; text-transform: uppercase;
 }
-.modal-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; }
-.modal-footer { padding: 12px 20px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 8px; }
+.modal-body { padding: 18px 22px; display: flex; flex-direction: column; gap: 14px; }
+.modal-footer { padding: 14px 22px; border-top: 1px solid var(--line); display: flex; justify-content: flex-end; gap: 9px; }
 .modal-field label {
   display: block; font-size: var(--fz-xs); font-weight: 600;
-  text-transform: uppercase; letter-spacing: 1px; color: var(--dim); margin-bottom: 4px;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); margin-bottom: 6px;
 }
 .modal-field input, .modal-field textarea {
-  width: 100%; background: var(--bg); border: 1px solid var(--line);
-  color: var(--fg); padding: 8px 12px; border-radius: var(--r); outline: none;
+  width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--line);
+  color: var(--fg); padding: 10px 13px; border-radius: var(--r); outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
-.modal-field input:focus, .modal-field textarea:focus { border-color: var(--accent-dim); }
-.modal-field textarea { min-height: 60px; resize: vertical; }
+.modal-field input:focus, .modal-field textarea:focus { border-color: var(--accent-dim); box-shadow: 0 0 0 3px rgba(139,127,245,0.12); }
+.modal-field textarea { min-height: 68px; resize: vertical; }
 .modal-btn {
-  padding: 6px 14px; border-radius: var(--r-sm); font-size: var(--fz-sm);
-  border: 1px solid var(--line); color: var(--muted); background: var(--panel);
+  padding: 8px 16px; border-radius: var(--r-sm); font-size: var(--fz-sm); font-weight: 500;
+  border: 1px solid var(--line-2); color: var(--muted); background: var(--panel);
+  transition: all 0.15s;
 }
-.modal-btn:hover { border-color: var(--line-2); color: var(--fg); }
-.modal-btn.primary { border-color: var(--accent-dim); color: var(--accent); background: color-mix(in oklch, var(--accent) 10%, var(--panel)); }
-.modal-btn.primary:hover { background: color-mix(in oklch, var(--accent) 18%, var(--panel)); }
+.modal-btn:hover { border-color: var(--line-3); color: var(--fg); background: var(--panel-2); }
+.modal-btn.primary { border-color: var(--accent-dim); color: #fff; background: linear-gradient(180deg, rgba(139,127,245,0.5), rgba(139,127,245,0.32)); }
+.modal-btn.primary:hover { background: linear-gradient(180deg, rgba(139,127,245,0.62), rgba(139,127,245,0.42)); }
 
 /* Edit modal */
 .edit-textarea {
-  width: 100%; height: 50vh; background: var(--bg);
+  width: 100%; height: 52vh; background: rgba(0,0,0,0.35);
   border: 1px solid var(--line); color: var(--fg);
-  padding: 16px; border-radius: var(--r); outline: none;
-  font-size: var(--fz); line-height: 1.6; resize: none;
+  padding: 18px; border-radius: var(--r); outline: none;
+  font-family: "JetBrains Mono", monospace;
+  font-size: var(--fz); line-height: 1.7; resize: none;
 }
-.edit-textarea:focus { border-color: var(--accent-dim); }
+.edit-textarea:focus { border-color: var(--accent-dim); box-shadow: 0 0 0 3px rgba(139,127,245,0.12); }
 
 /* Quick switcher */
 .qs-input {
   width: 100%; background: transparent; border: none;
   border-bottom: 1px solid var(--line); color: var(--fg);
-  font-size: 14px; padding: 16px 20px; outline: none;
+  font-size: 15px; padding: 18px 22px; outline: none;
 }
 .qs-input::placeholder { color: var(--dim); }
-.qs-results { max-height: 320px; overflow-y: auto; }
+.qs-results { max-height: 340px; overflow-y: auto; }
 .qs-item {
-  padding: 10px 20px; cursor: pointer;
-  display: flex; align-items: center; gap: 10px; transition: background 0.1s;
+  padding: 11px 22px; cursor: pointer;
+  display: flex; align-items: center; gap: 12px; transition: background 0.1s;
 }
 .qs-item:hover, .qs-item.selected { background: var(--panel-2); }
-.qs-item .qs-icon { color: var(--accent); font-size: 10px; opacity: 0.7; }
+.qs-item .qs-icon { color: var(--accent); display: inline-flex; opacity: 0.85; }
+.qs-item .qs-icon svg { width: 14px; height: 14px; }
 .qs-item .qs-name { font-size: var(--fz); color: var(--fg); font-weight: 500; }
-.qs-item .qs-path { font-size: var(--fz-xs); color: var(--dim); margin-left: auto; }
+.qs-item .qs-path { font-size: var(--fz-xs); color: var(--dim); margin-left: auto; font-family: "JetBrains Mono", monospace; }
 .qs-item.selected .qs-name { color: var(--accent); }
-.qs-empty { padding: 20px; text-align: center; color: var(--dim); font-size: var(--fz-sm); }
+.qs-empty { padding: 22px; text-align: center; color: var(--dim); font-size: var(--fz-sm); }
 
 /* Session search results in sidebar */
-.ss-results { max-height: 160px; overflow-y: auto; margin-bottom: 6px; }
-.ss-result { padding: 5px 8px; border-radius: var(--r-sm); cursor: pointer; margin: 1px 0; }
+.ss-results { max-height: 180px; overflow-y: auto; margin-bottom: 8px; }
+.ss-result { padding: 7px 9px; border-radius: var(--r-sm); cursor: pointer; margin: 1px 0; transition: background 0.12s; }
 .ss-result:hover { background: var(--panel); }
-.ss-result .ssr-title { font-size: var(--fz-sm); color: var(--accent); font-weight: 500; }
-.ss-result .ssr-snippet { font-size: var(--fz-xs); color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ss-result .ssr-title { font-size: var(--fz-sm); color: var(--accent); font-weight: 600; }
+.ss-result .ssr-snippet { font-size: var(--fz-xs); color: var(--muted); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* empty state center */
+.center-empty { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; gap: 14px; }
 </style>
 </head>
 <body>
@@ -593,24 +766,27 @@ body.resizing #resize-handle { pointer-events: auto !important; }
   <header id="topbar">
     <div class="topbar-left">
       <button class="toggle-btn" id="sidebar-toggle" title="Toggle sidebar">
-        <svg width="14" height="14" viewBox="0 0 14 14"><rect x="0.5" y="1.5" width="13" height="11" rx="1.5" fill="none" stroke="currentColor"/><line x1="5" y1="1.5" x2="5" y2="12.5" stroke="currentColor"/></svg>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="1.5" y="2.5" width="13" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/><line x1="6" y1="2.5" x2="6" y2="13.5" stroke="currentColor" stroke-width="1.3"/></svg>
       </button>
-      <span class="logo"><span class="logo-mark"></span>KYP·MEM</span>
-      <span class="dim" style="font-size:var(--fz-sm);letter-spacing:0.01em">know your project</span>
+      <span class="logo">
+        <span class="logo-mark"><svg viewBox="0 0 16 16" fill="none"><path d="M3 3v10M3 8l6-5M3 8l6 5" stroke="#fff" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+        KYP<span style="color:var(--dim)">·</span>MEM
+        <span class="lo-sub">know your project</span>
+      </span>
       <span class="dim">·</span>
       <span class="breadcrumb" id="breadcrumb"></span>
     </div>
     <div class="topbar-right">
       <div class="view-switch" id="view-switch">
-        <button class="active" data-view="note">note</button>
-        <button data-view="session">session</button>
-        <button data-view="graph">graph</button>
+        <button class="active" data-view="dashboard"><svg viewBox="0 0 16 16" fill="none"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.3" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1.3" stroke="currentColor" stroke-width="1.3"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1.3" stroke="currentColor" stroke-width="1.3"/><rect x="9" y="9" width="5.5" height="5.5" rx="1.3" stroke="currentColor" stroke-width="1.3"/></svg>overview</button>
+        <button data-view="note"><svg viewBox="0 0 16 16" fill="none"><path d="M3.5 2h6l3 3v9a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M9 2v4h4" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>note</button>
+        <button data-view="session"><svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.5V8l2.5 1.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>session</button>
+        <button data-view="graph"><svg viewBox="0 0 16 16" fill="none"><circle cx="4" cy="4" r="2" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="5" r="2" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="12" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M5.6 5.3 9.5 11M5.7 5l4.4-.3" stroke="currentColor" stroke-width="1.2"/></svg>graph</button>
       </div>
-      <button class="ghost-btn" id="new-project-btn">+ project</button>
+      <button class="ghost-btn primary" id="new-project-btn"><svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>project</button>
       <div class="search-bar" id="search-bar">
-        <span class="s-prompt">$</span>
-        <input type="text" id="search-input" placeholder="search vault">
-        <span class="s-caret"></span>
+        <span class="s-ico"><svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" stroke-width="1.4"/><path d="M10.5 10.5 14 14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+        <input type="text" id="search-input" placeholder="Search vault…">
         <span class="s-hint">⌘K</span>
         <div class="search-dropdown" id="search-dropdown"></div>
       </div>
@@ -632,7 +808,7 @@ body.resizing #resize-handle { pointer-events: auto !important; }
       <span><span class="mut tab-nums" id="stat-notes">0</span> notes</span>
       <span><span class="mut tab-nums" id="stat-folders">0</span> folders</span>
       <span>·</span>
-      <span>store <span class="mut">~/.kyp-mem/vault</span></span>
+      <span>store <span class="mut mono">~/.kyp-mem/vault</span></span>
       <span><i class="sb-dot"></i>sync ok</span>
     </div>
     <div class="sb-center" id="token-economics" style="display:none;">
@@ -647,7 +823,7 @@ body.resizing #resize-handle { pointer-events: auto !important; }
       <span>·</span>
       <span class="tab-nums" id="clock"></span>
       <span>·</span>
-      <span class="tab-nums mut">v0.4.3</span>
+      <span class="tab-nums mut">v0.8.0</span>
     </div>
   </footer>
 </div>
@@ -655,21 +831,21 @@ body.resizing #resize-handle { pointer-events: auto !important; }
 <!-- Quick Switcher -->
 <div class="modal-overlay" id="qs-overlay">
   <div class="modal">
-    <input type="text" class="qs-input" id="qs-input" placeholder="Jump to note...">
+    <input type="text" class="qs-input" id="qs-input" placeholder="Jump to note…">
     <div class="qs-results" id="qs-results"></div>
   </div>
 </div>
 
 <!-- Edit Modal -->
 <div class="modal-overlay center" id="edit-overlay">
-  <div class="modal" style="width:640px">
-    <div class="modal-header" id="edit-path"></div>
-    <div style="padding:16px 20px">
-      <textarea class="edit-textarea" id="edit-textarea" placeholder="Write markdown..."></textarea>
+  <div class="modal" style="width:680px">
+    <div class="modal-header mono" id="edit-path"></div>
+    <div style="padding:18px 22px">
+      <textarea class="edit-textarea" id="edit-textarea" placeholder="Write markdown…"></textarea>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn" id="edit-cancel">ESC</button>
-      <button class="modal-btn primary" id="edit-save">SAVE</button>
+      <button class="modal-btn" id="edit-cancel">Cancel</button>
+      <button class="modal-btn primary" id="edit-save">Save ⌘S</button>
     </div>
   </div>
 </div>
@@ -677,14 +853,14 @@ body.resizing #resize-handle { pointer-events: auto !important; }
 <!-- Session Create Modal -->
 <div class="modal-overlay center" id="session-create-overlay">
   <div class="modal modal-sm">
-    <div class="modal-header">NEW SESSION</div>
+    <div class="modal-header">New Session</div>
     <div class="modal-body">
-      <div class="modal-field"><label>Project</label><input type="text" id="sc-project" list="sc-project-list" placeholder="Project name..."><datalist id="sc-project-list"></datalist></div>
+      <div class="modal-field"><label>Project</label><input type="text" id="sc-project" list="sc-project-list" placeholder="Project name…"><datalist id="sc-project-list"></datalist></div>
       <div class="modal-field"><label>Summary</label><textarea id="sc-summary" placeholder="What are you working on?"></textarea></div>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn" id="sc-cancel">CANCEL</button>
-      <button class="modal-btn primary" id="sc-create">CREATE</button>
+      <button class="modal-btn" id="sc-cancel">Cancel</button>
+      <button class="modal-btn primary" id="sc-create">Create</button>
     </div>
   </div>
 </div>
@@ -692,40 +868,64 @@ body.resizing #resize-handle { pointer-events: auto !important; }
 <!-- Project Create Modal -->
 <div class="modal-overlay center" id="project-create-overlay">
   <div class="modal modal-sm">
-    <div class="modal-header">NEW PROJECT</div>
+    <div class="modal-header">New Project</div>
     <div class="modal-body">
-      <div class="modal-field"><label>Project Name</label><input type="text" id="pc-name" placeholder="My Project..."></div>
-      <div class="modal-field"><label>Overview (optional)</label><textarea id="pc-overview" placeholder="Brief description..."></textarea></div>
+      <div class="modal-field"><label>Project Name</label><input type="text" id="pc-name" placeholder="My Project…"></div>
+      <div class="modal-field"><label>Overview (optional)</label><textarea id="pc-overview" placeholder="Brief description…"></textarea></div>
     </div>
     <div class="modal-footer">
-      <button class="modal-btn" id="pc-cancel">CANCEL</button>
-      <button class="modal-btn primary" id="pc-create">CREATE</button>
+      <button class="modal-btn" id="pc-cancel">Cancel</button>
+      <button class="modal-btn primary" id="pc-create">Create</button>
     </div>
   </div>
 </div>
 
 <script>
+// ─── Icons (inline SVG strings) ───────────────────────────────────────────────
+const ICON = {
+  note: '<svg viewBox="0 0 16 16" fill="none"><path d="M3.5 2h6l3 3v9a1 1 0 0 1-1 1h-8a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M9 2v4h4" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>',
+  session: '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.5V8l2.5 1.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+  folder: '<svg viewBox="0 0 16 16" fill="none"><path d="M1.8 4a1 1 0 0 1 1-1h3.3l1.2 1.5h5a1 1 0 0 1 1 1V12a1 1 0 0 1-1 1H2.8a1 1 0 0 1-1-1V4z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>',
+  graph: '<svg viewBox="0 0 16 16" fill="none"><circle cx="4" cy="4" r="2" stroke="currentColor" stroke-width="1.3"/><circle cx="12" cy="5" r="2" stroke="currentColor" stroke-width="1.3"/><circle cx="7" cy="12" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M5.6 5.3 9.5 11M5.7 5l4.4-.3" stroke="currentColor" stroke-width="1.2"/></svg>',
+  chevron: '<svg viewBox="0 0 16 16" fill="none"><path d="M5.5 3.5 10 8l-4.5 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  caretDown: '<svg viewBox="0 0 16 16" fill="none"><path d="M4 6l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  doc: '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="2" stroke="currentColor" stroke-width="1.3"/></svg>',
+  notes: '<svg viewBox="0 0 16 16" fill="none"><path d="M4 1.5h5l3 3V13a1.5 1.5 0 0 1-1.5 1.5h-6A1.5 1.5 0 0 1 3 13V3A1.5 1.5 0 0 1 4 1.5z" stroke="currentColor" stroke-width="1.3"/><path d="M5.5 7.5h5M5.5 10h3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+  clock: '<svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.3"/><path d="M8 4.5V8l2.5 1.6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+  spark: '<svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5l1.6 4.4 4.4 1.6-4.4 1.6L8 14.5 6.4 9.6 2 8l4.4-1.6L8 1.5z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>',
+  layers: '<svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5 14.5 5 8 8.5 1.5 5 8 1.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><path d="M2.5 8.5 8 11.5l5.5-3M2.5 11.5 8 14.5l5.5-3" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>',
+  activity: '<svg viewBox="0 0 16 16" fill="none"><path d="M1.5 9.5 4 9.5 6 3.5 9 12.5 11 7.5h3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  gauge: '<svg viewBox="0 0 16 16" fill="none"><path d="M2.5 12a6 6 0 1 1 11 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M8 10l3-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+  arrowLeft: '<svg viewBox="0 0 16 16" fill="none"><path d="M9.5 3.5 5 8l4.5 4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  expand: '<svg viewBox="0 0 16 16" fill="none"><path d="M9.5 2.5h4v4M6.5 13.5h-4v-4M13.5 2.5 9 7M2.5 13.5 7 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  edit: '<svg viewBox="0 0 16 16" fill="none"><path d="M11 2.5 13.5 5 5.5 13H3v-2.5L11 2.5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/></svg>',
+  trash: '<svg viewBox="0 0 16 16" fill="none"><path d="M2.5 4h11M6 4V2.5h4V4M4 4l.6 9a1 1 0 0 0 1 1h4.8a1 1 0 0 0 1-1L12 4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  link: '<svg viewBox="0 0 16 16" fill="none"><path d="M6.5 9.5 9.5 6.5M7 4l1-1a2.8 2.8 0 0 1 4 4l-1 1M9 12l-1 1a2.8 2.8 0 0 1-4-4l1-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>',
+  list: '<svg viewBox="0 0 16 16" fill="none"><path d="M5 4h9M5 8h9M5 12h6M2 4h.01M2 8h.01M2 12h.01" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>',
+  tag: '<svg viewBox="0 0 16 16" fill="none"><path d="M2 2.5h5l6.5 6.5a1.2 1.2 0 0 1 0 1.7l-3.3 3.3a1.2 1.2 0 0 1-1.7 0L2 7.5v-5z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/><circle cx="5" cy="5" r="0.9" fill="currentColor"/></svg>',
+};
+
 // ─── State ───────────────────────────────────────────────────────────────────
 let currentPath = null;
 let currentNote = null;
 let treeData = null;
 let allNotes = {};
 let activeTagFilters = new Set();
-let view = 'note';
+let view = 'dashboard';
 let activeSession = null;
 let sidebarOpen = localStorage.getItem('kyp-sidebar-open') !== 'false';
 let qsSelectedIndex = 0;
 let editingPath = null;
 let editingNote = null;
 let lastKnownStats = null;
-let graphHeight = parseInt(localStorage.getItem('kyp-graph-h')) || 240;
 let _graphData = null;
+let _sessionsData = {};
 let searchTimeout, sessionSearchTimeout;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 async function fetchJSON(url) { const r = await fetch(url, { cache: 'no-store' }); return r.json(); }
-
 function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 function formatSessionTime(filename) {
   const stem = filename.replace('.md', '');
@@ -735,7 +935,7 @@ function formatSessionTime(filename) {
   const hr = parseInt(h), ampm = hr >= 12 ? 'PM' : 'AM';
   const hr12 = hr % 12 || 12;
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `${months[parseInt(mo)-1]} ${parseInt(d)}, ${hr12}:${mi} ${ampm}`;
+  return months[parseInt(mo)-1] + ' ' + parseInt(d) + ', ' + hr12 + ':' + mi + ' ' + ampm;
 }
 
 function findNotePath(name) {
@@ -759,13 +959,19 @@ function isSessionPath(path) {
   return path.includes('/Sessions/') || path.startsWith('Sessions/');
 }
 
+function fmtTokens(n) {
+  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
+  return String(n);
+}
+
 // ─── Clock ───────────────────────────────────────────────────────────────────
 function updateClock() {
   const d = new Date();
   const h = d.getHours() % 12 || 12;
   const m = String(d.getMinutes()).padStart(2, '0');
   const ampm = d.getHours() >= 12 ? 'PM' : 'AM';
-  $('clock').textContent = `${h}:${m} ${ampm}`;
+  $('clock').textContent = h + ':' + m + ' ' + ampm;
 }
 updateClock();
 setInterval(updateClock, 30000);
@@ -777,8 +983,8 @@ function updateBreadcrumb(path) {
   const parts = path.replace('.md', '').split('/').filter(Boolean);
   bc.innerHTML = parts.map((p, i) =>
     i < parts.length - 1
-      ? `<span>${p}</span><span class="bc-sep">/</span>`
-      : `<span class="bc-last">${p}</span>`
+      ? '<span>' + esc(p) + '</span><span class="bc-sep">/</span>'
+      : '<span class="bc-last">' + esc(p) + '</span>'
   ).join('');
 }
 
@@ -791,18 +997,27 @@ function setView(v) {
 }
 
 $('view-switch').addEventListener('click', e => {
-  if (e.target.dataset.view) {
-    setView(e.target.dataset.view);
-    if (view === 'graph') { _graphProject = null; _graphData = null; renderGraphView(); }
+  const btn = e.target.closest('button[data-view]');
+  if (btn && btn.dataset.view) {
+    setView(btn.dataset.view);
+    if (view === 'dashboard') { updateBreadcrumb(null); renderDashboard(); }
+    else if (view === 'graph') { _graphProject = null; _graphData = null; renderGraphView(); }
     else if (view === 'session' && activeSession) loadNote(activeSession);
     else if (view === 'note' && currentPath) loadNote(currentPath);
+    else if (view === 'note') showNotePlaceholder();
+    else if (view === 'session') showSessionPlaceholder();
   }
 });
 
-// ─── Sidebar Toggle ──────────────────────────────────────────────────────────
-function applySidebar() {
-  $('main').classList.toggle('sidebar-hidden', !sidebarOpen);
+function showNotePlaceholder() {
+  $('content-area').innerHTML = '<div class="center-empty"><span class="dim">' + ICON.note + '</span><span class="dim" style="font-size:var(--fz-sm)">Select a note from the sidebar, or press <span style="border:1px solid var(--line-2);border-radius:5px;padding:1px 6px;color:var(--muted)">⌘O</span></span></div>';
 }
+function showSessionPlaceholder() {
+  $('content-area').innerHTML = '<div class="center-empty"><span class="dim">' + ICON.session + '</span><span class="dim" style="font-size:var(--fz-sm)">Open a session from the sidebar</span></div>';
+}
+
+// ─── Sidebar Toggle ──────────────────────────────────────────────────────────
+function applySidebar() { $('main').classList.toggle('sidebar-hidden', !sidebarOpen); }
 $('sidebar-toggle').addEventListener('click', () => {
   sidebarOpen = !sidebarOpen;
   localStorage.setItem('kyp-sidebar-open', sidebarOpen);
@@ -810,24 +1025,21 @@ $('sidebar-toggle').addEventListener('click', () => {
 });
 applySidebar();
 
-// Rail is always open
 let railOpen = true;
 
 // ─── Resize Handle ───────────────────────────────────────────────────────────
 (function initResize() {
   const handle = $('resize-handle');
   const main = $('main');
-  let sidebarW = parseInt(localStorage.getItem('kyp-sidebar-w')) || 236;
+  let sidebarW = parseInt(localStorage.getItem('kyp-sidebar-w')) || 248;
   main.style.setProperty('--sidebar-w', sidebarW + 'px');
-
   handle.addEventListener('mousedown', e => {
     e.preventDefault();
     const startX = e.clientX, startW = sidebarW;
     handle.classList.add('dragging');
     document.body.classList.add('resizing');
-
     function onMove(ev) {
-      sidebarW = Math.max(180, Math.min(400, startW + (ev.clientX - startX)));
+      sidebarW = Math.max(200, Math.min(420, startW + (ev.clientX - startX)));
       main.style.setProperty('--sidebar-w', sidebarW + 'px');
     }
     function onUp() {
@@ -849,50 +1061,52 @@ function renderSidebar(sessionsData) {
 
   // Sessions section
   const sessSection = document.createElement('section');
-  sessSection.innerHTML = `
-    <div class="side-section-header">
-      <span class="side-section-title"><span class="side-dot" style="background:var(--accent)"></span>sessions</span>
-      <button class="side-add-btn" id="sidebar-new-session">+ new</button>
-    </div>
-  `;
+  sessSection.innerHTML =
+    '<div class="side-section-header">' +
+      '<span class="side-section-title"><span class="side-dot" style="background:var(--c-teal);box-shadow:0 0 6px var(--c-teal)"></span>sessions</span>' +
+      '<button class="side-add-btn" id="sidebar-new-session">+ new</button>' +
+    '</div>';
   const sessSearch = document.createElement('input');
   sessSearch.className = 'side-search';
-  sessSearch.placeholder = '⌕ semantic search session…';
+  sessSearch.placeholder = 'Semantic search sessions…';
   sessSection.appendChild(sessSearch);
 
   const ssResults = document.createElement('div');
   ssResults.className = 'ss-results';
   sessSection.appendChild(ssResults);
 
-  // Session search
   sessSearch.addEventListener('input', () => {
     clearTimeout(sessionSearchTimeout);
     const q = sessSearch.value.trim();
     if (!q) { ssResults.innerHTML = ''; return; }
     sessionSearchTimeout = setTimeout(async () => {
-      const results = await fetchJSON(`/api/sessions/search?q=${encodeURIComponent(q)}`);
+      const results = await fetchJSON('/api/sessions/search?q=' + encodeURIComponent(q));
       ssResults.innerHTML = '';
       results.forEach(r => {
         const div = document.createElement('div');
         div.className = 'ss-result';
-        div.innerHTML = `<div class="ssr-title">${r.title}</div><div class="ssr-snippet">${(r.snippet || '').substring(0, 100)}</div>`;
+        div.innerHTML = '<div class="ssr-title">' + esc(r.title) + '</div><div class="ssr-snippet">' + esc((r.snippet || '').substring(0, 100)) + '</div>';
         div.addEventListener('click', () => { openSession(r.path); sessSearch.value = ''; ssResults.innerHTML = ''; });
         ssResults.appendChild(div);
       });
     }, 250);
   });
 
-  // Session groups
   const sortedProjects = Object.keys(sessionsData).sort();
   sortedProjects.forEach(project => {
     const sessions = sessionsData[project];
     const group = document.createElement('div');
     const folder = document.createElement('div');
     folder.className = 'tree-folder';
-    folder.innerHTML = `<span class="tf-arrow closed">▸</span><span class="tf-icon">≡</span><span class="tf-label">${project}</span><span class="tf-count">${sessions.length}</span><button class="tf-graph-btn ghost-btn" title="Open graph for ${project}" data-project="${project}">▦</button>`;
+    folder.innerHTML =
+      '<span class="tf-arrow closed">' + ICON.chevron + '</span>' +
+      '<span class="tf-icon">' + ICON.folder + '</span>' +
+      '<span class="tf-label">' + esc(project) + '</span>' +
+      '<span class="tf-count">' + sessions.length + '</span>' +
+      '<button class="tf-graph-btn" title="Open graph for ' + esc(project) + '" data-project="' + esc(project) + '">' + ICON.graph + '</button>';
 
     const list = document.createElement('div');
-    list.style.cssText = 'display:none;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px;';
+    list.style.cssText = 'display:none;flex-direction:column;gap:1px;padding-left:18px;margin-top:2px;';
 
     sessions.sort((a, b) => b.path.localeCompare(a.path));
     const MAX_VISIBLE = 5;
@@ -900,44 +1114,39 @@ function renderSidebar(sessionsData) {
       const row = document.createElement('button');
       row.className = 'sidebar-row';
       row.dataset.path = s.path;
-      if (idx >= MAX_VISIBLE) row.style.display = 'none';
-      if (idx >= MAX_VISIBLE) row.dataset.overflow = 'true';
+      if (idx >= MAX_VISIBLE) { row.style.display = 'none'; row.dataset.overflow = 'true'; }
       const displayTime = formatSessionTime(s.path.split('/').pop());
-      row.innerHTML = `<span class="sr-dot" style="color:var(--dim)">●</span><span class="sr-label">${displayTime}</span>`;
+      row.innerHTML = '<span class="sr-ico">' + ICON.session + '</span><span class="sr-label">' + esc(displayTime) + '</span>';
       row.addEventListener('click', () => openSession(s.path));
       list.appendChild(row);
     });
     if (sessions.length > MAX_VISIBLE) {
       const expandBtn = document.createElement('button');
       expandBtn.className = 'sidebar-row expand-sessions-btn';
-      expandBtn.innerHTML = `<span class="sr-dot" style="color:var(--dim)">⋯</span><span class="sr-label" style="color:var(--dim);font-style:italic">show ${sessions.length - MAX_VISIBLE} more</span>`;
+      const moreLabel = (n) => '<span class="sr-ico" style="opacity:0.6">' + ICON.caretDown + '</span><span class="sr-label" style="color:var(--dim);font-style:italic">' + n + '</span>';
+      expandBtn.innerHTML = moreLabel('show ' + (sessions.length - MAX_VISIBLE) + ' more');
       expandBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         const hidden = list.querySelectorAll('[data-overflow]');
         const isExpanded = expandBtn.dataset.expanded === 'true';
         hidden.forEach(r => r.style.display = isExpanded ? 'none' : 'flex');
         expandBtn.dataset.expanded = isExpanded ? '' : 'true';
-        expandBtn.innerHTML = isExpanded
-          ? `<span class="sr-dot" style="color:var(--dim)">⋯</span><span class="sr-label" style="color:var(--dim);font-style:italic">show ${sessions.length - MAX_VISIBLE} more</span>`
-          : `<span class="sr-dot" style="color:var(--dim)">⋯</span><span class="sr-label" style="color:var(--dim);font-style:italic">show less</span>`;
+        expandBtn.innerHTML = isExpanded ? moreLabel('show ' + (sessions.length - MAX_VISIBLE) + ' more') : moreLabel('show less');
       });
       list.appendChild(expandBtn);
     }
 
     folder.querySelector('.tf-graph-btn').addEventListener('click', (e) => {
       e.stopPropagation();
-      _graphProject = project;
-      _graphData = null;
-      setView('graph');
-      renderGraphView();
+      _graphProject = project; _graphData = null;
+      setView('graph'); renderGraphView();
     });
 
     folder.addEventListener('click', () => {
       const arrow = folder.querySelector('.tf-arrow');
-      const isOpen = arrow.textContent === '▾';
-      arrow.textContent = isOpen ? '▸' : '▾';
-      arrow.classList.toggle('closed', isOpen);
-      list.style.display = isOpen ? 'none' : 'flex';
+      const open = !arrow.classList.contains('closed');
+      arrow.classList.toggle('closed', open);
+      list.style.display = open ? 'none' : 'flex';
     });
 
     group.appendChild(folder);
@@ -948,39 +1157,38 @@ function renderSidebar(sessionsData) {
 
   // Projects section
   const projSection = document.createElement('section');
-  projSection.innerHTML = `
-    <div class="side-section-header">
-      <span class="side-section-title"><span class="side-dot" style="background:var(--accent)"></span>projects</span>
-      <button class="side-add-btn" id="sidebar-new-project">+ new</button>
-    </div>
-  `;
+  projSection.innerHTML =
+    '<div class="side-section-header">' +
+      '<span class="side-section-title"><span class="side-dot" style="background:var(--c-violet);box-shadow:0 0 6px var(--c-violet)"></span>projects</span>' +
+      '<button class="side-add-btn" id="sidebar-new-project">+ new</button>' +
+    '</div>';
   renderProjectTree(projSection);
   container.appendChild(projSection);
 
   // Tags section
   const tagSection = document.createElement('section');
   let tagsOpen = false;
-  tagSection.innerHTML = `
-    <div class="side-section-header">
-      <button class="side-section-title" id="tags-toggle"><span class="side-dot" style="background:var(--muted);opacity:0.4"></span>tags<span class="side-collapse-arrow collapsed">▾</span></button>
-    </div>
-  `;
+  tagSection.innerHTML =
+    '<div class="side-section-header">' +
+      '<button class="side-section-title" id="tags-toggle"><span class="side-dot" style="background:var(--c-amber);box-shadow:0 0 6px var(--c-amber)"></span>tags<span class="side-collapse-arrow collapsed">' + ICON.caretDown + '</span></button>' +
+    '</div>';
   const tagBody = document.createElement('div');
-  tagBody.style.cssText = 'display:none;flex-wrap:wrap;gap:5px;';
+  tagBody.id = 'tag-cloud-body';
+  tagBody.style.cssText = 'display:none;flex-wrap:wrap;gap:6px;';
   renderTagCloud(tagBody);
   tagSection.appendChild(tagBody);
   container.appendChild(tagSection);
 
-  // Wire tag toggle
   tagSection.querySelector('#tags-toggle').addEventListener('click', () => {
     tagsOpen = !tagsOpen;
     tagBody.style.display = tagsOpen ? 'flex' : 'none';
     tagSection.querySelector('.side-collapse-arrow').classList.toggle('collapsed', !tagsOpen);
   });
 
-  // Wire add buttons
-  container.querySelector('#sidebar-new-session')?.addEventListener('click', () => openSessionCreate(''));
-  container.querySelector('#sidebar-new-project')?.addEventListener('click', () => openProjectCreate());
+  container.querySelector('#sidebar-new-session') && container.querySelector('#sidebar-new-session').addEventListener('click', () => openSessionCreate(''));
+  container.querySelector('#sidebar-new-project') && container.querySelector('#sidebar-new-project').addEventListener('click', () => openProjectCreate());
+
+  markActiveItems();
 }
 
 function renderProjectTree(container) {
@@ -992,24 +1200,26 @@ function renderProjectTree(container) {
       const folder = document.createElement('div');
       folder.className = 'tree-folder';
       const isTopLevel = depth === 0;
-      folder.innerHTML = `<span class="tf-arrow closed">▸</span><span class="tf-icon">≡</span><span class="tf-label">${node.name}</span>${isTopLevel ? `<button class="tf-graph-btn ghost-btn" title="Open graph for ${node.name}" data-project="${node.name}">▦</button>` : ''}`;
+      folder.innerHTML =
+        '<span class="tf-arrow closed">' + ICON.chevron + '</span>' +
+        '<span class="tf-icon">' + ICON.folder + '</span>' +
+        '<span class="tf-label">' + esc(node.name) + '</span>' +
+        (isTopLevel ? '<button class="tf-graph-btn" title="Open graph for ' + esc(node.name) + '" data-project="' + esc(node.name) + '">' + ICON.graph + '</button>' : '');
       const children = document.createElement('div');
-      children.style.cssText = 'display:none;flex-direction:column;gap:1px;padding-left:16px;margin-top:2px;';
+      children.style.cssText = 'display:none;flex-direction:column;gap:1px;padding-left:18px;margin-top:2px;';
 
       folder.addEventListener('click', () => {
         const arrow = folder.querySelector('.tf-arrow');
-        const isOpen = arrow.textContent === '▾';
-        arrow.textContent = isOpen ? '▸' : '▾';
-        children.style.display = isOpen ? 'none' : 'flex';
+        const open = !arrow.classList.contains('closed');
+        arrow.classList.toggle('closed', open);
+        children.style.display = open ? 'none' : 'flex';
       });
 
       if (isTopLevel) {
         folder.querySelector('.tf-graph-btn').addEventListener('click', (e) => {
           e.stopPropagation();
-          _graphProject = node.name;
-          _graphData = null;
-          setView('graph');
-          renderGraphView();
+          _graphProject = node.name; _graphData = null;
+          setView('graph'); renderGraphView();
         });
       }
 
@@ -1022,7 +1232,7 @@ function renderProjectTree(container) {
       row.className = 'sidebar-row';
       row.dataset.path = node.path;
       const name = node.name.replace('.md', '');
-      row.innerHTML = `<span style="color:var(--muted);font-size:10px">◇</span><span class="sr-label">${name}</span>`;
+      row.innerHTML = '<span class="sr-ico">' + ICON.note + '</span><span class="sr-label">' + esc(name) + '</span>';
       row.addEventListener('click', () => { setView('note'); loadNote(node.path); });
       parent.appendChild(row);
     } else if (node.children) {
@@ -1039,7 +1249,7 @@ function renderTagCloud(container) {
   sorted.forEach(([tag, count]) => {
     const chip = document.createElement('button');
     chip.className = 'tag-chip' + (activeTagFilters.has(tag) ? ' active' : '');
-    chip.innerHTML = `<span class="tc-hash">#</span>${tag}<span class="tc-count">${count}</span>`;
+    chip.innerHTML = '<span class="tc-hash">#</span>' + esc(tag) + '<span class="tc-count">' + count + '</span>';
     chip.addEventListener('click', () => {
       if (activeTagFilters.has(tag)) activeTagFilters.delete(tag);
       else activeTagFilters.add(tag);
@@ -1064,8 +1274,7 @@ function applyTagFilter() {
       el.style.display = matches ? '' : 'none';
     });
   }
-  // Re-render tag chips
-  const tagBody = document.querySelector('.sidebar-scroll section:last-child > div[style*="flex-wrap"]');
+  const tagBody = document.getElementById('tag-cloud-body');
   if (tagBody) renderTagCloud(tagBody);
 }
 
@@ -1085,31 +1294,355 @@ function openSession(path) {
 
 async function deleteSession(path) {
   if (!confirm('Delete this session?')) return;
-  const res = await fetch(`/api/note/${path}`, { method: 'DELETE' });
+  const res = await fetch('/api/note/' + path, { method: 'DELETE' });
   const data = await res.json();
   if (data.ok) {
     activeSession = null;
     currentPath = null;
     $('content-area').innerHTML = '<div class="dim" style="padding:40px;text-align:center">Session deleted</div>';
-    refreshAll();
+    refreshTree();
   }
 }
 
 // ─── Load Note ───────────────────────────────────────────────────────────────
 async function loadNote(path) {
   currentPath = path;
-  const note = await fetchJSON(`/api/note/${path}`);
+  const note = await fetchJSON('/api/note/' + path);
   if (note.error) return;
   currentNote = note;
   markActiveItems();
   updateBreadcrumb(path);
+  if (view === 'session') { activeSession = path; renderSessionView(note); }
+  else { renderNoteView(note); }
+}
 
-  if (view === 'session') {
-    activeSession = path;
-    renderSessionView(note);
-  } else {
-    renderNoteView(note);
+// ═══════════════════════════════════════════════════════════════════════════════
+// DASHBOARD
+// ═══════════════════════════════════════════════════════════════════════════════
+async function renderDashboard() {
+  const area = $('content-area');
+  updateBreadcrumb(null);
+  area.innerHTML =
+    '<div class="dash" id="dash-scroll">' +
+      '<div class="dash-head">' +
+        '<div><div class="dash-title">Overview</div><div class="dash-sub">Your project memory at a glance</div></div>' +
+        '<div class="dash-head-actions">' +
+          '<button class="ghost-btn" id="dash-new-session">' + ICON.session + ' New session</button>' +
+          '<button class="ghost-btn primary" id="dash-new-project">' + ICON.folder + ' New project</button>' +
+        '</div>' +
+      '</div>' +
+      '<div class="hero-grid" id="hero-grid"></div>' +
+      '<div class="dash-grid">' +
+        '<div class="panel">' +
+          '<div class="panel-head"><div class="panel-title"><span class="pt-ico">' + ICON.activity + '</span>Session activity</div><div class="dim" style="font-size:var(--fz-xs)" id="dash-activity-range">Last 14 days</div></div>' +
+          '<div class="chart-legend" id="dash-chart-legend"></div>' +
+          '<div class="panel-body"><div class="chart-wrap" id="dash-activity-chart"></div></div>' +
+        '</div>' +
+        '<div class="panel">' +
+          '<div class="panel-head"><div class="panel-title"><span class="pt-ico">' + ICON.gauge + '</span>Token economics</div></div>' +
+          '<div class="panel-body" id="dash-econ"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="dash-grid">' +
+        '<div class="panel">' +
+          '<div class="panel-head"><div class="panel-title"><span class="pt-ico">' + ICON.clock + '</span>Recent sessions</div></div>' +
+          '<div class="panel-body"><div class="recent-list" id="dash-recent-sessions"></div></div>' +
+        '</div>' +
+        '<div class="panel">' +
+          '<div class="panel-head"><div class="panel-title"><span class="pt-ico">' + ICON.folder + '</span>Projects</div></div>' +
+          '<div class="panel-body"><div class="recent-list" id="dash-projects"></div></div>' +
+        '</div>' +
+      '</div>' +
+      '<div style="height:24px"></div>' +
+    '</div>';
+
+  area.querySelector('#dash-new-session').addEventListener('click', () => openSessionCreate(''));
+  area.querySelector('#dash-new-project').addEventListener('click', () => openProjectCreate());
+
+  // Gather data
+  let stats = {}, sessionsData = _sessionsData || {}, projects = [], te = {};
+  try {
+    [stats, sessionsData, projects, te] = await Promise.all([
+      fetchJSON('/api/stats'),
+      fetchJSON('/api/sessions'),
+      fetchJSON('/api/projects'),
+      fetchJSON('/api/token-economics'),
+    ]);
+  } catch (e) { console.error('dashboard data error', e); }
+
+  _sessionsData = sessionsData || {};
+
+  // Flatten sessions
+  const allSessions = [];
+  Object.entries(sessionsData || {}).forEach(([proj, arr]) => {
+    (arr || []).forEach(s => allSessions.push(Object.assign({ project: proj }, s)));
+  });
+  const totalSessions = allSessions.length;
+
+  // Build per-day activity from session filenames / created dates
+  const dayCounts = buildDailySeries(allSessions, te && te.sessions);
+
+  // ── Hero cards ──
+  const notesCount = (stats && stats.notes != null) ? stats.notes : 0;
+  const projCount = (projects || []).length;
+  let savedDisplay = '—', savedMeta = 'no data yet';
+  if (te && te.compression_ratio > 0) {
+    savedDisplay = te.compression_ratio + 'x';
+    savedMeta = 'avg ' + fmtTokens(te.avg_exploration_per_session) + 't / session saved';
+  } else if (te && te.total_exploration_tokens > 0) {
+    savedDisplay = fmtTokens(te.total_exploration_tokens);
+    savedMeta = 'total exploration tokens';
   }
+
+  const heroSparkNotes = dayCounts.map(d => d.count);
+  const teSeries = (te && te.sessions || []).map(s => s.exploration_tokens || 0);
+
+  const hero = $('hero-grid');
+  hero.innerHTML = '';
+  hero.appendChild(makeStatCard('violet', ICON.notes, 'Notes', notesCount, (stats.tags != null ? stats.tags + ' tags · ' : '') + (stats.links != null ? stats.links + ' links' : 'knowledge base'), heroSparkNotes));
+  hero.appendChild(makeStatCard('teal', ICON.session, 'Sessions', totalSessions, projCount + ' project' + (projCount === 1 ? '' : 's'), heroSparkNotes));
+  hero.appendChild(makeStatCard('amber', ICON.spark, 'Tokens saved', savedDisplay, savedMeta, teSeries.length ? teSeries : heroSparkNotes));
+  hero.appendChild(makeStatCard('violet', ICON.folder, 'Projects', projCount, ((stats.folders != null ? stats.folders : 0)) + ' folders', heroSparkNotes));
+
+  // ── Activity chart ──
+  drawActivityChart($('dash-activity-chart'), $('dash-chart-legend'), dayCounts);
+
+  // ── Token economics bars ──
+  renderEconBars($('dash-econ'), te);
+
+  // ── Recent sessions ──
+  renderRecentSessions($('dash-recent-sessions'), allSessions);
+
+  // ── Projects ──
+  renderProjectsList($('dash-projects'), projects, sessionsData);
+}
+
+function makeStatCard(accent, icon, label, value, meta, sparkData) {
+  const card = document.createElement('div');
+  card.className = 'stat-card';
+  card.dataset.accent = accent;
+  const valStr = (typeof value === 'number') ? value.toLocaleString() : value;
+  card.innerHTML =
+    '<div class="glow"></div>' +
+    '<div class="sc-head"><span class="sc-label">' + esc(label) + '</span><span class="sc-ico">' + icon + '</span></div>' +
+    '<div class="sc-value">' + esc(valStr) + '</div>' +
+    '<div class="sc-foot"><span class="sc-meta">' + esc(meta) + '</span><span class="sc-spark"></span></div>';
+  setTimeout(() => drawSparkline(card.querySelector('.sc-spark'), sparkData || [], accent), 0);
+  return card;
+}
+
+function buildDailySeries(allSessions, teSessions) {
+  // Prefer session note paths (deterministic dates); fall back to te sessions ts
+  const DAYS = 14;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const buckets = [];
+  const idxByKey = {};
+  for (let i = DAYS - 1; i >= 0; i--) {
+    const d = new Date(today); d.setDate(today.getDate() - i);
+    const key = d.toISOString().slice(0, 10);
+    idxByKey[key] = buckets.length;
+    buckets.push({ date: d, key: key, count: 0, tokens: 0 });
+  }
+  (allSessions || []).forEach(s => {
+    const fname = (s.path || '').split('/').pop().replace('.md', '');
+    const m = fname.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    let key = null;
+    if (m) key = m[1] + '-' + m[2] + '-' + m[3];
+    else if (s.created) key = String(s.created).slice(0, 10);
+    if (key != null && idxByKey[key] != null) buckets[idxByKey[key]].count += 1;
+  });
+  (teSessions || []).forEach(s => {
+    if (!s.ts) return;
+    const key = String(s.ts).slice(0, 10);
+    if (idxByKey[key] != null) buckets[idxByKey[key]].tokens += (s.exploration_tokens || 0);
+  });
+  return buckets;
+}
+
+// ─── D3 sparkline ────────────────────────────────────────────────────────────
+function drawSparkline(container, data, accent) {
+  if (!container) return;
+  container.innerHTML = '';
+  const colors = { violet: '#8b7ff5', teal: '#5eead4', amber: '#e6b35c' };
+  const col = colors[accent] || '#8b7ff5';
+  const W = 96, H = 34;
+  const arr = (data && data.length) ? data.slice(-16) : [0, 0];
+  if (arr.length < 2) arr.push(arr[0] || 0);
+  const max = Math.max(1, d3.max(arr));
+  const x = d3.scaleLinear().domain([0, arr.length - 1]).range([1, W - 1]);
+  const y = d3.scaleLinear().domain([0, max]).range([H - 3, 3]);
+  const svg = d3.select(container).append('svg').attr('viewBox', '0 0 ' + W + ' ' + H).attr('preserveAspectRatio', 'none');
+  const gid = 'sg-' + accent + '-' + Math.random().toString(36).slice(2, 7);
+  const grad = svg.append('defs').append('linearGradient').attr('id', gid).attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 1);
+  grad.append('stop').attr('offset', '0%').attr('stop-color', col).attr('stop-opacity', 0.35);
+  grad.append('stop').attr('offset', '100%').attr('stop-color', col).attr('stop-opacity', 0);
+  const area = d3.area().x((d, i) => x(i)).y0(H).y1(d => y(d)).curve(d3.curveMonotoneX);
+  const line = d3.line().x((d, i) => x(i)).y(d => y(d)).curve(d3.curveMonotoneX);
+  svg.append('path').attr('d', area(arr)).attr('fill', 'url(#' + gid + ')');
+  svg.append('path').attr('d', line(arr)).attr('fill', 'none').attr('stroke', col).attr('stroke-width', 1.6).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
+}
+
+// ─── D3 activity area chart ──────────────────────────────────────────────────
+function drawActivityChart(container, legendEl, dayCounts) {
+  if (!container) return;
+  container.innerHTML = '';
+  const hasTokens = dayCounts.some(d => d.tokens > 0);
+  legendEl.innerHTML =
+    '<div class="cl-item"><span class="cl-swatch" style="background:var(--c-teal)"></span>Sessions</div>' +
+    (hasTokens ? '<div class="cl-item"><span class="cl-swatch" style="background:var(--c-amber)"></span>Exploration tokens</div>' : '');
+
+  const rect = container.getBoundingClientRect();
+  const W = rect.width || 600, H = rect.height || 230;
+  const m = { top: 10, right: 14, bottom: 24, left: 30 };
+  const iw = W - m.left - m.right, ih = H - m.top - m.bottom;
+
+  const svg = d3.select(container).append('svg').attr('viewBox', '0 0 ' + W + ' ' + H);
+  const g = svg.append('g').attr('transform', 'translate(' + m.left + ',' + m.top + ')');
+
+  const x = d3.scalePoint().domain(dayCounts.map((d, i) => i)).range([0, iw]);
+  const maxC = Math.max(1, d3.max(dayCounts, d => d.count));
+  const yC = d3.scaleLinear().domain([0, maxC]).nice().range([ih, 0]);
+  const maxT = Math.max(1, d3.max(dayCounts, d => d.tokens));
+  const yT = d3.scaleLinear().domain([0, maxT]).range([ih, 0]);
+
+  // gridlines
+  yC.ticks(4).forEach(t => {
+    g.append('line').attr('x1', 0).attr('x2', iw).attr('y1', yC(t)).attr('y2', yC(t))
+      .attr('stroke', 'rgba(255,255,255,0.05)').attr('stroke-width', 1);
+    g.append('text').attr('x', -8).attr('y', yC(t) + 3).attr('text-anchor', 'end')
+      .attr('font-size', 9.5).attr('fill', '#6c6c78').style('font-family', 'JetBrains Mono, monospace').text(t);
+  });
+
+  // x labels (every ~3rd)
+  dayCounts.forEach((d, i) => {
+    if (i % 3 !== 0 && i !== dayCounts.length - 1) return;
+    g.append('text').attr('x', x(i)).attr('y', ih + 16).attr('text-anchor', 'middle')
+      .attr('font-size', 9.5).attr('fill', '#6c6c78').style('font-family', 'JetBrains Mono, monospace')
+      .text((d.date.getMonth() + 1) + '/' + d.date.getDate());
+  });
+
+  const defs = svg.append('defs');
+  const gA = defs.append('linearGradient').attr('id', 'areaTeal').attr('x1', 0).attr('y1', 0).attr('x2', 0).attr('y2', 1);
+  gA.append('stop').attr('offset', '0%').attr('stop-color', '#5eead4').attr('stop-opacity', 0.32);
+  gA.append('stop').attr('offset', '100%').attr('stop-color', '#5eead4').attr('stop-opacity', 0);
+
+  const area = d3.area().x((d, i) => x(i)).y0(ih).y1(d => yC(d.count)).curve(d3.curveMonotoneX);
+  const lineC = d3.line().x((d, i) => x(i)).y(d => yC(d.count)).curve(d3.curveMonotoneX);
+  g.append('path').datum(dayCounts).attr('d', area).attr('fill', 'url(#areaTeal)');
+  g.append('path').datum(dayCounts).attr('d', lineC).attr('fill', 'none').attr('stroke', '#5eead4').attr('stroke-width', 2).attr('stroke-linecap', 'round').attr('stroke-linejoin', 'round');
+
+  if (hasTokens) {
+    const lineT = d3.line().x((d, i) => x(i)).y(d => yT(d.tokens)).curve(d3.curveMonotoneX);
+    g.append('path').datum(dayCounts).attr('d', lineT).attr('fill', 'none').attr('stroke', '#e6b35c').attr('stroke-width', 1.6).attr('stroke-dasharray', '4 3').attr('stroke-opacity', 0.9);
+  }
+
+  // tooltip + hover dots
+  const tip = document.createElement('div');
+  tip.className = 'chart-tooltip';
+  container.appendChild(tip);
+  const focus = g.append('circle').attr('r', 4).attr('fill', '#5eead4').attr('stroke', '#0a0a0c').attr('stroke-width', 1.5).style('opacity', 0);
+
+  svg.append('rect').attr('x', m.left).attr('y', m.top).attr('width', iw).attr('height', ih).attr('fill', 'transparent')
+    .on('mousemove', function (ev) {
+      const [mx] = d3.pointer(ev, g.node());
+      let nearest = 0, best = Infinity;
+      dayCounts.forEach((d, i) => { const dist = Math.abs(x(i) - mx); if (dist < best) { best = dist; nearest = i; } });
+      const d = dayCounts[nearest];
+      focus.attr('cx', x(nearest)).attr('cy', yC(d.count)).style('opacity', 1);
+      tip.style.opacity = 1;
+      tip.innerHTML = '<div class="tt-title">' + (d.date.getMonth() + 1) + '/' + d.date.getDate() + '</div>' +
+        '<div class="tt-row"><span class="tt-dot" style="background:#5eead4"></span>' + d.count + ' session' + (d.count === 1 ? '' : 's') + '</div>' +
+        (hasTokens ? '<div class="tt-row"><span class="tt-dot" style="background:#e6b35c"></span>' + fmtTokens(d.tokens) + ' tokens</div>' : '');
+      const tx = Math.min(m.left + x(nearest) + 12, W - 120);
+      tip.style.left = tx + 'px';
+      tip.style.top = (m.top + yC(d.count) - 10) + 'px';
+    })
+    .on('mouseleave', () => { focus.style('opacity', 0); tip.style.opacity = 0; });
+}
+
+function renderEconBars(container, te) {
+  if (!container) return;
+  if (!te || !te.session_count) {
+    container.innerHTML = '<div class="dash-empty">No token economics recorded yet.<br>Run a few agent sessions to populate this.</div>';
+    return;
+  }
+  const explore = te.total_exploration_tokens || 0;
+  const inject = te.latest_injection_tokens || 0;
+  const savingsPct = te.per_session_savings_pct || 0;
+  const compRatio = te.compression_ratio || 0;
+  const avgExp = te.avg_exploration_per_session || 0;
+
+  // Exploration vs injection — show injection as a fraction of avg exploration
+  const injectFrac = avgExp > 0 ? Math.min(100, Math.round((inject / avgExp) * 100)) : 0;
+  // Compression: map ratio onto a bar (cap at 20x = 100%)
+  const compFrac = compRatio > 0 ? Math.min(100, Math.round((compRatio / 20) * 100)) : 0;
+
+  const rows = [
+    { label: 'Per-session savings', val: savingsPct + '%', pct: Math.min(100, savingsPct), cls: 'teal' },
+    { label: 'Compression ratio', val: (compRatio > 0 ? compRatio + 'x' : '—'), pct: compFrac, cls: 'violet' },
+    { label: 'Injection vs cold-start', val: fmtTokens(inject) + 't / ' + fmtTokens(avgExp) + 't', pct: injectFrac, cls: 'amber' },
+  ];
+  container.innerHTML = rows.map(r =>
+    '<div class="econ-row">' +
+      '<div class="econ-top"><span class="econ-label">' + r.label + '</span><span class="econ-val">' + r.val + '</span></div>' +
+      '<div class="bar-track"><div class="bar-fill ' + r.cls + '" style="width:0%" data-w="' + r.pct + '"></div></div>' +
+    '</div>'
+  ).join('') +
+  '<div style="display:flex;justify-content:space-between;margin-top:18px;padding-top:14px;border-top:1px solid var(--line);font-size:var(--fz-xs);color:var(--dim)">' +
+    '<span>total explore <span class="mut tab-nums">' + fmtTokens(explore) + 't</span></span>' +
+    '<span>' + (te.session_count || 0) + ' sessions tracked</span>' +
+  '</div>';
+  // animate
+  setTimeout(() => { container.querySelectorAll('.bar-fill').forEach(b => { b.style.width = b.dataset.w + '%'; }); }, 60);
+}
+
+function renderRecentSessions(container, allSessions) {
+  if (!container) return;
+  if (!allSessions.length) {
+    container.innerHTML = '<div class="dash-empty">No sessions yet.</div>';
+    return;
+  }
+  const sorted = [...allSessions].sort((a, b) => (b.path || '').localeCompare(a.path || '')).slice(0, 6);
+  container.innerHTML = '';
+  sorted.forEach(s => {
+    const item = document.createElement('button');
+    item.className = 'recent-item';
+    const time = formatSessionTime((s.path || '').split('/').pop());
+    const sub = s.summary ? s.summary : s.project;
+    item.innerHTML =
+      '<span class="ri-ico">' + ICON.session + '</span>' +
+      '<span class="ri-body"><span class="ri-title">' + esc(s.project) + '</span><span class="ri-sub">' + esc(sub) + '</span></span>' +
+      '<span class="ri-meta">' + esc(time) + '</span>';
+    item.addEventListener('click', () => openSession(s.path));
+    container.appendChild(item);
+  });
+}
+
+function renderProjectsList(container, projects, sessionsData) {
+  if (!container) return;
+  if (!projects || !projects.length) {
+    container.innerHTML = '<div class="dash-empty">No projects yet. Create one to get started.</div>';
+    return;
+  }
+  container.innerHTML = '';
+  projects.slice(0, 8).forEach(p => {
+    const item = document.createElement('button');
+    item.className = 'recent-item';
+    const knowledgePath = p.name + '/Knowledge.md';
+    item.innerHTML =
+      '<span class="ri-ico proj">' + ICON.folder + '</span>' +
+      '<span class="ri-body"><span class="ri-title">' + esc(p.name) + '</span><span class="ri-sub">' + p.session_count + ' session' + (p.session_count === 1 ? '' : 's') + '</span></span>' +
+      '<span class="ri-meta">' + ICON.graph + '</span>';
+    item.addEventListener('click', () => {
+      if (allNotes[knowledgePath]) { setView('note'); loadNote(knowledgePath); }
+      else { _graphProject = p.name; _graphData = null; setView('graph'); renderGraphView(); }
+    });
+    item.querySelector('.ri-meta').addEventListener('click', (e) => {
+      e.stopPropagation();
+      _graphProject = p.name; _graphData = null; setView('graph'); renderGraphView();
+    });
+    container.appendChild(item);
+  });
 }
 
 // ─── Note View ───────────────────────────────────────────────────────────────
@@ -1121,65 +1654,47 @@ function renderNoteView(note) {
   let md = note.content || '';
   md = md.replace(/\[\[([^\]]+)\]\]/g, (_, link) => {
     const display = link.includes('#') ? link.split('#').pop() : link;
-    return `<span class="wikilink" data-link="${link}">${display}</span>`;
+    return '<span class="wikilink" data-link="' + esc(link) + '">' + esc(display) + '</span>';
   });
 
   const tagsHtml = (note.tags || []).map(t =>
-    `<button class="tag-chip" data-tag="${t}"><span class="tc-hash">#</span>${t}</button>`
+    '<button class="tag-chip" data-tag="' + esc(t) + '"><span class="tc-hash">#</span>' + esc(t) + '</button>'
   ).join('');
 
   const railClass = railOpen ? '' : ' no-rail';
-  area.innerHTML = `
-    <div class="note-view${railClass}">
-      <article class="note-article">
-        <div class="cmd-strip">
-          <span class="acc">$</span>
-          <span class="mut">kyp_read</span>
-          <span>${note.path.replace('.md','')}</span>
-          <span class="cs-right dim">↳ ok · ${wordCount.toLocaleString()} words · ${readTime}</span>
-        </div>
-        <div class="note-tags-strip">
-          <div class="note-tags-left">
-            ${tagsHtml}
-            <span class="note-dates">created <span class="mut tab-nums">${note.created || ''}</span> · edited <span class="mut">${note.updated || ''}</span></span>
-          </div>
-          <div class="note-tags-right">
-            <button class="ghost-btn" id="note-edit-btn">⌥ edit</button>
-          </div>
-        </div>
-        <h1 class="note-title">${note.title}<span class="title-caret"></span></h1>
-        <div class="note-meta">
-          <span><span class="mut tab-nums">${wordCount.toLocaleString()}</span> words</span>
-          <span>·</span>
-          <span><span class="mut">${readTime}</span> read</span>
-        </div>
-        <div class="md-body">${marked.parse(md)}</div>
-        <div style="height:80px"></div>
-      </article>
-      ${railOpen ? `<aside class="note-rail" id="note-rail"></aside>` : ''}
-    </div>
-  `;
+  area.innerHTML =
+    '<div class="note-view' + railClass + '">' +
+      '<article class="note-article">' +
+        '<div class="note-tags-strip">' +
+          '<div class="note-tags-left">' + tagsHtml +
+            '<span class="note-dates">created <span class="mut tab-nums">' + esc(note.created || '') + '</span> · edited <span class="mut tab-nums">' + esc(note.updated || '') + '</span></span>' +
+          '</div>' +
+          '<div class="note-tags-right"><button class="ghost-btn" id="note-edit-btn">' + ICON.edit + ' Edit</button></div>' +
+        '</div>' +
+        '<h1 class="note-title">' + esc(note.title) + '</h1>' +
+        '<div class="note-meta">' +
+          '<span><span class="mut tab-nums">' + wordCount.toLocaleString() + '</span> words</span>' +
+          '<span>·</span><span><span class="mut">' + readTime + '</span> read</span>' +
+          '<span>·</span><span class="mono dim">' + esc(note.path.replace('.md', '')) + '</span>' +
+        '</div>' +
+        '<div class="md-body">' + marked.parse(md) + '</div>' +
+        '<div style="height:80px"></div>' +
+      '</article>' +
+      (railOpen ? '<aside class="note-rail" id="note-rail"></aside>' : '') +
+    '</div>';
 
-  // Wire wikilinks
   area.querySelectorAll('.wikilink').forEach(el => {
     el.addEventListener('click', () => {
       const target = findNotePath(el.dataset.link.split('#')[0]);
       if (target) loadNote(target);
     });
   });
-
-  // Wire tag clicks
   area.querySelectorAll('.tag-chip[data-tag]').forEach(el => {
-    el.addEventListener('click', () => {
-      activeTagFilters.add(el.dataset.tag);
-      applyTagFilter();
-    });
+    el.addEventListener('click', () => { activeTagFilters.add(el.dataset.tag); applyTagFilter(); });
   });
+  const editBtn = area.querySelector('#note-edit-btn');
+  if (editBtn) editBtn.addEventListener('click', () => openEditor(note.path));
 
-  // Wire edit button
-  area.querySelector('#note-edit-btn')?.addEventListener('click', () => openEditor(note.path));
-
-  // Render rail
   if (railOpen) renderRail(note);
 }
 
@@ -1189,41 +1704,38 @@ function renderRail(note) {
   if (!rail) return;
   rail.innerHTML = '';
 
-  // Local graph
-  const graphCard = createRailCard('local graph', null, {
-    right: `<div style="display:flex;gap:2px"><button class="rail-icon-btn" id="rail-graph-expand" title="Open full graph">⤢</button></div>`
+  const graphCard = createRailCard('local graph', ICON.graph, null, {
+    right: '<button class="rail-icon-btn" id="rail-graph-expand" title="Open full graph">' + ICON.expand + '</button>'
   });
   const graphBody = graphCard.querySelector('.rail-card-body');
-  graphBody.style.cssText = 'position:relative;height:240px;padding:0;overflow:hidden;';
+  graphBody.style.cssText = 'position:relative;height:240px;padding:0;overflow:hidden;margin:0 12px 12px;border:1px solid var(--line);border-radius:var(--r);background:rgba(0,0,0,0.2);';
   renderLocalGraph(graphBody, note);
   rail.appendChild(graphCard);
 
-  graphCard.querySelector('#rail-graph-expand')?.addEventListener('click', () => {
+  const expBtn = graphCard.querySelector('#rail-graph-expand');
+  if (expBtn) expBtn.addEventListener('click', () => {
     const parts = (note.path || '').split('/');
-    _graphProject = parts.length > 1 ? parts[0] : null;
-    _graphData = null;
-    setView('graph');
-    renderGraphView();
+    _graphProject = parts.length > 1 ? parts[0] : null; _graphData = null;
+    setView('graph'); renderGraphView();
   });
 
-  // Outline
   const headings = [];
   (note.content || '').split('\n').forEach(line => {
     const m = line.match(/^(#{1,3})\s+(.+)/);
     if (m) headings.push({ level: m[1].length, text: m[2].trim() });
   });
   if (headings.length > 1) {
-    const outCard = createRailCard(`outline <span class="dim tab-nums" style="margin-left:6px">${headings.length}</span>`, null, { collapsible: true });
+    const outCard = createRailCard('outline <span class="dim tab-nums" style="margin-left:6px">' + headings.length + '</span>', ICON.list, null, { collapsible: true });
     const outBody = outCard.querySelector('.rail-card-body');
     outBody.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
     headings.forEach(h => {
       const el = document.createElement('div');
       el.className = 'outline-item' + (h.level === 1 ? ' lv1' : '');
-      el.style.paddingLeft = (4 + (h.level - 1) * 12) + 'px';
+      el.style.paddingLeft = (6 + (h.level - 1) * 12) + 'px';
       el.textContent = h.text;
       el.addEventListener('click', () => {
         const target = Array.from(document.querySelectorAll('.md-body h1,.md-body h2,.md-body h3')).find(
-          el => el.textContent.trim() === h.text
+          x => x.textContent.trim() === h.text
         );
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
       });
@@ -1232,15 +1744,14 @@ function renderRail(note) {
     rail.appendChild(outCard);
   }
 
-  // Backlinks
   const backlinks = note.backlinks || [];
   if (backlinks.length > 0) {
-    const blCard = createRailCard(`backlinks <span class="dim tab-nums" style="margin-left:6px">${backlinks.length}</span>`, null, { collapsible: true });
+    const blCard = createRailCard('backlinks <span class="dim tab-nums" style="margin-left:6px">' + backlinks.length + '</span>', ICON.link, null, { collapsible: true });
     const blBody = blCard.querySelector('.rail-card-body');
     backlinks.forEach(bl => {
       const item = document.createElement('div');
       item.className = 'bl-item';
-      item.innerHTML = `<span class="dim">←</span><span>${bl.title || bl.path}</span>`;
+      item.innerHTML = ICON.arrowLeft + '<span>' + esc(bl.title || bl.path) + '</span>';
       item.addEventListener('click', () => loadNote(bl.path));
       blBody.appendChild(item);
     });
@@ -1248,18 +1759,18 @@ function renderRail(note) {
   }
 }
 
-function createRailCard(title, content, opts = {}) {
+function createRailCard(title, icon, content, opts) {
+  opts = opts || {};
   const card = document.createElement('div');
   card.className = 'rail-card';
   let collapseHtml = '';
-  if (opts.collapsible) collapseHtml = '<span class="side-collapse-arrow" style="margin-right:4px">▾</span>';
-  card.innerHTML = `
-    <div class="rail-card-header">
-      <button class="rail-card-title">${collapseHtml}<span>${title}</span></button>
-      ${opts.right || ''}
-    </div>
-    <div class="rail-card-body">${content || ''}</div>
-  `;
+  if (opts.collapsible) collapseHtml = '<span class="side-collapse-arrow" style="margin-right:4px">' + ICON.caretDown + '</span>';
+  card.innerHTML =
+    '<div class="rail-card-header">' +
+      '<button class="rail-card-title">' + collapseHtml + (icon ? '<span style="display:inline-flex">' + icon + '</span>' : '') + '<span>' + title + '</span></button>' +
+      (opts.right || '') +
+    '</div>' +
+    '<div class="rail-card-body">' + (content || '') + '</div>';
   if (opts.collapsible) {
     const titleBtn = card.querySelector('.rail-card-title');
     const body = card.querySelector('.rail-card-body');
@@ -1277,31 +1788,22 @@ function createRailCard(title, content, opts = {}) {
 function renderLocalGraph(container, note) {
   const nodes = new Map();
   const links = [];
-
   nodes.set(note.path, { id: note.path, title: note.title, kind: 'note', center: true });
 
   (note.links || []).forEach(link => {
     const path = findNotePath(link);
     if (path && !nodes.has(path)) {
-      nodes.set(path, { id: path, title: allNotes[path]?.title || link, kind: 'note', center: false });
+      nodes.set(path, { id: path, title: allNotes[path] ? allNotes[path].title : link, kind: 'note', center: false });
       links.push({ source: note.path, target: path });
-    } else if (path) {
-      links.push({ source: note.path, target: path });
-    }
+    } else if (path) { links.push({ source: note.path, target: path }); }
   });
-
   (note.backlinks || []).forEach(bl => {
     const p = bl.path;
-    if (p && !nodes.has(p)) {
-      nodes.set(p, { id: p, title: bl.title || p, kind: isSessionPath(p) ? 'session' : 'note', center: false });
-    }
+    if (p && !nodes.has(p)) nodes.set(p, { id: p, title: bl.title || p, kind: isSessionPath(p) ? 'session' : 'note', center: false });
     if (p) links.push({ source: p, target: note.path });
   });
-
   (note.related || []).slice(0, 5).forEach(r => {
-    if (r.path && !nodes.has(r.path)) {
-      nodes.set(r.path, { id: r.path, title: r.title, kind: isSessionPath(r.path) ? 'session' : 'note', center: false });
-    }
+    if (r.path && !nodes.has(r.path)) nodes.set(r.path, { id: r.path, title: r.title, kind: isSessionPath(r.path) ? 'session' : 'note', center: false });
     if (r.path) links.push({ source: note.path, target: r.path, session: isSessionPath(r.path) });
   });
 
@@ -1311,10 +1813,8 @@ function renderLocalGraph(container, note) {
     return;
   }
 
-  const width = 100, height = 100;
   const svg = d3.select(container).append('svg')
-    .attr('viewBox', '0 0 100 100')
-    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .attr('viewBox', '0 0 100 100').attr('preserveAspectRatio', 'xMidYMid meet')
     .style('width', '100%').style('height', '100%');
 
   const simulation = d3.forceSimulation(nodeArray)
@@ -1322,84 +1822,57 @@ function renderLocalGraph(container, note) {
     .force('charge', d3.forceManyBody().strength(-80))
     .force('center', d3.forceCenter(50, 50))
     .force('collision', d3.forceCollide(8));
-
-  simulation.on('tick', () => {
-    nodeArray.forEach(d => {
-      d.x = Math.max(10, Math.min(90, d.x));
-      d.y = Math.max(10, Math.min(90, d.y));
-    });
-  });
-
-  // Run simulation
+  simulation.on('tick', () => { nodeArray.forEach(d => { d.x = Math.max(10, Math.min(90, d.x)); d.y = Math.max(10, Math.min(90, d.y)); }); });
   for (let i = 0; i < 120; i++) simulation.tick();
   simulation.stop();
 
-  // Draw edges
   links.forEach(l => {
     const s = typeof l.source === 'object' ? l.source : nodeArray.find(n => n.id === l.source);
     const t = typeof l.target === 'object' ? l.target : nodeArray.find(n => n.id === l.target);
     if (!s || !t) return;
     const isSession = l.session || s.kind === 'session' || t.kind === 'session';
-    svg.append('line')
-      .attr('x1', s.x).attr('y1', s.y).attr('x2', t.x).attr('y2', t.y)
-      .attr('stroke', 'var(--line-2)')
-      .attr('stroke-width', 0.22)
+    svg.append('line').attr('x1', s.x).attr('y1', s.y).attr('x2', t.x).attr('y2', t.y)
+      .attr('stroke', 'rgba(255,255,255,0.18)').attr('stroke-width', 0.3)
       .attr('stroke-opacity', isSession ? 0.5 : 0.85)
-      .attr('stroke-dasharray', isSession ? '0.9 0.9' : '')
-      .attr('stroke-linecap', 'round');
+      .attr('stroke-dasharray', isSession ? '0.9 0.9' : '').attr('stroke-linecap', 'round');
   });
 
-  // Draw nodes
   nodeArray.forEach(n => {
-    const r = n.center ? 5 : (n.kind === 'session' ? 2.2 : 3.2);
+    const r = n.center ? 5 : (n.kind === 'session' ? 2.4 : 3.2);
     const g = svg.append('g').style('cursor', 'pointer');
-
     if (n.center) {
-      g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r * 1.9)
-        .attr('fill', 'var(--accent)').attr('fill-opacity', 0.18);
-      g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
-        .attr('fill', 'var(--accent)');
-      g.append('text').attr('x', n.x).attr('y', n.y + r + 6)
-        .attr('text-anchor', 'middle').attr('font-size', 2.5).attr('font-weight', 500)
-        .attr('fill', 'var(--accent)')
-        .style('font-family', 'JetBrains Mono, monospace')
+      g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r * 1.9).attr('fill', '#8b7ff5').attr('fill-opacity', 0.22);
+      g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r).attr('fill', '#8b7ff5');
+      g.append('text').attr('x', n.x).attr('y', n.y + r + 6).attr('text-anchor', 'middle').attr('font-size', 2.5).attr('font-weight', 600)
+        .attr('fill', '#b7adfb').style('font-family', 'JetBrains Mono, monospace')
         .text(n.title.length > 24 ? n.title.substring(0, 22) + '…' : n.title);
     } else if (n.kind === 'session') {
-      g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
-        .attr('fill', 'var(--bg)').attr('stroke', 'var(--muted)').attr('stroke-width', 0.35);
+      g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r).attr('fill', '#0b0b0e').attr('stroke', '#5eead4').attr('stroke-width', 0.4);
     } else {
-      g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
-        .attr('fill', 'var(--panel-2)').attr('stroke', 'var(--accent)').attr('stroke-width', 0.5);
+      g.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r).attr('fill', 'rgba(255,255,255,0.06)').attr('stroke', '#8b7ff5').attr('stroke-width', 0.5);
     }
-
     g.on('click', () => { if (!n.center) loadNote(n.id); });
   });
 }
 
 // ─── Session View ────────────────────────────────────────────────────────────
 function extractSection(content, sectionName) {
-  const idx = content.indexOf(`## ${sectionName}`);
+  const idx = content.indexOf('## ' + sectionName);
   if (idx === -1) return '';
   const nextSec = content.indexOf('\n## ', idx + 5);
   const block = nextSec !== -1 ? content.substring(idx, nextSec) : content.substring(idx);
-  return block.replace(`## ${sectionName}`, '').trim();
+  return block.replace('## ' + sectionName, '').trim();
 }
 
 function renderSessionView(note) {
   const area = $('content-area');
   const content = note.content || '';
-
-  // Extract summary
   let summary = extractSection(content, 'Summary');
-
-  // Extract session ID
   const pathParts = note.path.split('/');
   const sessionFile = pathParts[pathParts.length - 1].replace('.md', '');
   const projectName = pathParts[0] || '';
-
   const wordCount = content.split(/\s+/).filter(Boolean).length;
 
-  // Extract each section
   const promptsRaw = extractSection(content, 'PROMPTS');
   const investigated = extractSection(content, 'INVESTIGATED');
   const learned = extractSection(content, 'LEARNED');
@@ -1407,74 +1880,51 @@ function renderSessionView(note) {
   const nextSteps = extractSection(content, 'NEXT STEPS');
 
   const sectionNames = ['Summary', 'PROMPTS', 'INVESTIGATED', 'LEARNED', 'COMPLETED', 'NEXT STEPS'];
-  const presentSections = sectionNames.filter(s => content.includes(`## ${s}`));
-
-  // Count prompt entries
+  const presentSections = sectionNames.filter(s => content.includes('## ' + s));
   const promptEntries = promptsRaw.split(/^###\s+/m).filter(p => p.trim());
   const hasMultiplePrompts = promptEntries.length > 1;
 
   const tagsHtml = (note.tags || ['session', 'auto-captured']).map(t =>
-    `<button class="tag-chip"><span class="tc-hash">#</span>${t}</button>`
+    '<button class="tag-chip"><span class="tc-hash">#</span>' + esc(t) + '</button>'
   ).join('');
 
-  area.innerHTML = `
-    <article class="session-view">
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0 14px">
-        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
-          <span class="session-status done"><i style="width:6px;height:6px;border-radius:999px;background:var(--muted);display:inline-block"></i> done</span>
-          ${tagsHtml}
-          <span class="dim" style="font-size:var(--fz-xs);margin-left:8px">${note.created || sessionFile}</span>
-        </div>
-        <div style="display:flex;gap:6px">
-          <button class="ghost-btn" onclick="openEditor('${note.path}')">⌥ edit</button>
-          <button class="ghost-btn" style="color:var(--muted)" onclick="deleteSession('${note.path}')">✕ delete</button>
-        </div>
-      </div>
-      <h1 style="margin:12px 0 4px;font-size:calc(var(--fz-xl) + 6px);font-weight:500;letter-spacing:-0.01em">
-        Session ${sessionFile}
-      </h1>
-      <div class="dim" style="font-size:var(--fz-xs);margin-bottom:22px;display:flex;gap:14px">
-        <span>words <span class="mut tab-nums">${wordCount.toLocaleString()}</span></span>
-        <span>·</span>
-        <span>project <span class="acc">${projectName}</span></span>
-        <span>·</span>
-        <span>sections <span class="mut tab-nums">${presentSections.length}</span></span>
-      </div>
-      ${summary ? `
-      <div class="session-section">
-        <div class="ss-header"><span class="dim" style="font-size:var(--fz-sm)">##</span> Summary</div>
-        <div class="ss-body md-body">${marked.parse(summary)}</div>
-      </div>` : ''}
-      ${promptsRaw ? `
-      <div class="session-section">
-        <div class="ss-header"><span class="dim" style="font-size:var(--fz-sm)">##</span> Prompts <span class="dim tab-nums" style="font-size:var(--fz-xs);margin-left:6px">${promptEntries.length}</span></div>
-        <div class="ss-body prompts-list${hasMultiplePrompts ? ' scrollable' : ''}" id="session-prompts"></div>
-      </div>` : ''}
-      ${investigated ? `
-      <div class="session-section">
-        <div class="ss-header"><span class="dim" style="font-size:var(--fz-sm)">##</span> Investigated</div>
-        <div class="ss-body md-body">${marked.parse(investigated)}</div>
-      </div>` : ''}
-      ${learned ? `
-      <div class="session-section">
-        <div class="ss-header"><span class="dim" style="font-size:var(--fz-sm)">##</span> Learned</div>
-        <div class="ss-body md-body">${marked.parse(learned)}</div>
-      </div>` : ''}
-      ${completed ? `
-      <div class="session-section">
-        <div class="ss-header"><span class="dim" style="font-size:var(--fz-sm)">##</span> Completed</div>
-        <div class="ss-body md-body">${marked.parse(completed)}</div>
-      </div>` : ''}
-      ${nextSteps ? `
-      <div class="session-section">
-        <div class="ss-header"><span class="dim" style="font-size:var(--fz-sm)">##</span> Next Steps</div>
-        <div class="ss-body md-body">${marked.parse(nextSteps)}</div>
-      </div>` : ''}
-      <div style="height:60px"></div>
-    </article>
-  `;
+  const sec = (title, bodyHtml, extra) =>
+    '<div class="session-section">' +
+      '<div class="ss-header"><span class="ss-hico">' + ICON.doc + '</span>' + title + (extra || '') + '</div>' +
+      bodyHtml +
+    '</div>';
 
-  // Render prompts with scrollable container
+  area.innerHTML =
+    '<article class="session-view">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;padding:2px 0 16px;gap:10px;flex-wrap:wrap">' +
+        '<div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap">' +
+          '<span class="session-status done"><i style="width:6px;height:6px;border-radius:999px;background:var(--muted);display:inline-block"></i> done</span>' +
+          tagsHtml +
+          '<span class="dim" style="font-size:var(--fz-xs);margin-left:8px">' + esc(note.created || sessionFile) + '</span>' +
+        '</div>' +
+        '<div style="display:flex;gap:7px">' +
+          '<button class="ghost-btn" id="session-edit-btn">' + ICON.edit + ' Edit</button>' +
+          '<button class="ghost-btn" id="session-delete-btn">' + ICON.trash + ' Delete</button>' +
+        '</div>' +
+      '</div>' +
+      '<h1 style="margin:10px 0 6px;font-size:calc(var(--fz-xl) + 8px);font-weight:700;letter-spacing:-0.02em">Session ' + esc(sessionFile) + '</h1>' +
+      '<div class="dim" style="font-size:var(--fz-xs);margin-bottom:24px;display:flex;gap:16px;align-items:center">' +
+        '<span>words <span class="mut tab-nums">' + wordCount.toLocaleString() + '</span></span><span>·</span>' +
+        '<span>project <span class="acc">' + esc(projectName) + '</span></span><span>·</span>' +
+        '<span>sections <span class="mut tab-nums">' + presentSections.length + '</span></span>' +
+      '</div>' +
+      (summary ? sec('Summary', '<div class="ss-body md-body">' + marked.parse(summary) + '</div>') : '') +
+      (promptsRaw ? sec('Prompts', '<div class="ss-body prompts-list' + (hasMultiplePrompts ? ' scrollable' : '') + '" id="session-prompts"></div>', '<span class="dim tab-nums" style="font-size:var(--fz-xs);margin-left:6px">' + promptEntries.length + '</span>') : '') +
+      (investigated ? sec('Investigated', '<div class="ss-body md-body">' + marked.parse(investigated) + '</div>') : '') +
+      (learned ? sec('Learned', '<div class="ss-body md-body">' + marked.parse(learned) + '</div>') : '') +
+      (completed ? sec('Completed', '<div class="ss-body md-body">' + marked.parse(completed) + '</div>') : '') +
+      (nextSteps ? sec('Next Steps', '<div class="ss-body md-body">' + marked.parse(nextSteps) + '</div>') : '') +
+      '<div style="height:60px"></div>' +
+    '</article>';
+
+  $('session-edit-btn')?.addEventListener('click', () => openEditor(note.path));
+  $('session-delete-btn')?.addEventListener('click', () => deleteSession(note.path));
+
   const promptsContainer = $('session-prompts');
   if (promptsContainer && promptEntries.length > 0) {
     promptEntries.forEach(entry => {
@@ -1492,82 +1942,71 @@ let _graphProject = null;
 
 function renderGraphView() {
   const area = $('content-area');
-  area.innerHTML = `
-    <div class="graph-view">
-      <section class="graph-canvas">
-        <div class="graph-header">
-          <div class="graph-header-left">
-            <span class="acc">▦</span>
-            <button class="tool-chip graph-mode active" data-mode="projects">projects</button>
-            <button class="tool-chip graph-mode" data-mode="sessions">sessions</button>
-            <span class="dim tab-nums" id="graph-stats"></span>
-            <span id="graph-project-filter" style="display:none;font-size:var(--fz-sm);color:var(--accent);margin-left:4px">
-              <span id="graph-project-name"></span>
-              <button class="ghost-btn" id="graph-clear-project" style="color:var(--muted);margin-left:4px;font-size:var(--fz-xs)" title="Show all projects">✕</button>
-            </span>
-          </div>
-          <div class="graph-header-right">
-            <button class="tool-chip graph-layout active" data-layout="force">force</button>
-            <button class="tool-chip graph-layout" data-layout="radial">radial</button>
-            <button class="tool-chip graph-layout" data-layout="time">time</button>
-            <button class="ghost-btn" id="graph-close">✕</button>
-          </div>
-        </div>
-        <div class="graph-svg-wrap" id="graph-svg-wrap"></div>
-        <div class="graph-legend" id="graph-legend"></div>
-      </section>
-      <aside class="graph-rail" id="graph-rail">
-        <div class="rail-card">
-          <div class="rail-card-header"><span class="rail-card-title"><span>focused</span></span></div>
-          <div class="rail-card-body" id="graph-focused">
-            <div class="dim" style="font-size:var(--fz-xs)">Hover or click a node</div>
-          </div>
-        </div>
-        <div class="rail-card">
-          <div class="rail-card-header"><span class="rail-card-title"><span>connections</span></span></div>
-          <div class="rail-card-body" id="graph-connections"></div>
-        </div>
-      </aside>
-    </div>
-  `;
+  area.innerHTML =
+    '<div class="graph-view">' +
+      '<section class="graph-canvas">' +
+        '<div class="graph-header">' +
+          '<div class="graph-header-left">' +
+            '<span class="gh-ico">' + ICON.graph + '</span>' +
+            '<button class="tool-chip graph-mode active" data-mode="projects">projects</button>' +
+            '<button class="tool-chip graph-mode" data-mode="sessions">sessions</button>' +
+            '<span class="dim tab-nums" id="graph-stats"></span>' +
+            '<span id="graph-project-filter" style="display:none;font-size:var(--fz-sm);color:var(--accent);margin-left:4px">' +
+              '<span id="graph-project-name"></span>' +
+              '<button class="ghost-btn" id="graph-clear-project" style="color:var(--muted);margin-left:4px;font-size:var(--fz-xs)" title="Show all projects">✕</button>' +
+            '</span>' +
+          '</div>' +
+          '<div class="graph-header-right">' +
+            '<button class="tool-chip graph-layout active" data-layout="force">force</button>' +
+            '<button class="tool-chip graph-layout" data-layout="radial">radial</button>' +
+            '<button class="tool-chip graph-layout" data-layout="time">time</button>' +
+            '<button class="ghost-btn" id="graph-close">✕</button>' +
+          '</div>' +
+        '</div>' +
+        '<div class="graph-svg-wrap" id="graph-svg-wrap"></div>' +
+        '<div class="graph-legend" id="graph-legend"></div>' +
+      '</section>' +
+      '<aside class="graph-rail" id="graph-rail">' +
+        '<div class="rail-card">' +
+          '<div class="rail-card-header"><span class="rail-card-title"><span style="display:inline-flex">' + ICON.doc + '</span><span>focused</span></span></div>' +
+          '<div class="rail-card-body" id="graph-focused"><div class="dim" style="font-size:var(--fz-xs)">Hover or click a node</div></div>' +
+        '</div>' +
+        '<div class="rail-card">' +
+          '<div class="rail-card-header"><span class="rail-card-title"><span style="display:inline-flex">' + ICON.link + '</span><span>connections</span></span></div>' +
+          '<div class="rail-card-body" id="graph-connections"></div>' +
+        '</div>' +
+      '</aside>' +
+    '</div>';
 
   updateGraphLegend();
   updateGraphProjectFilter();
 
   const closeBtn = $('graph-close');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      _graphProject = null;
-      setView('note');
-      if (currentPath) loadNote(currentPath);
-      else $('content-area').innerHTML = '<div style="padding:40px;color:var(--muted)">Select a note from the sidebar</div>';
-    });
-  }
-
-  // Clear project filter
-  $('graph-clear-project')?.addEventListener('click', () => {
+  if (closeBtn) closeBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     _graphProject = null;
-    _graphData = null;
-    updateGraphProjectFilter();
+    if (currentPath) { setView('note'); loadNote(currentPath); }
+    else { setView('dashboard'); renderDashboard(); }
+  });
+
+  const clearBtn = $('graph-clear-project');
+  if (clearBtn) clearBtn.addEventListener('click', () => {
+    _graphProject = null; _graphData = null; updateGraphProjectFilter();
     const activeLayout = document.querySelector('.graph-layout.active');
     buildFullGraph(activeLayout ? activeLayout.dataset.layout : 'force');
   });
 
-  // Mode toggle (projects / sessions)
   document.querySelectorAll('.graph-mode').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.graph-mode').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      _graphMode = btn.dataset.mode;
-      _graphData = null;
+      _graphMode = btn.dataset.mode; _graphData = null;
       updateGraphLegend();
       const activeLayout = document.querySelector('.graph-layout.active');
       buildFullGraph(activeLayout ? activeLayout.dataset.layout : 'force');
     });
   });
 
-  // Layout toggle (force / radial / time)
   document.querySelectorAll('.graph-layout').forEach(chip => {
     chip.addEventListener('click', () => {
       document.querySelectorAll('.graph-layout').forEach(c => c.classList.remove('active'));
@@ -1582,29 +2021,23 @@ function renderGraphView() {
 function updateGraphProjectFilter() {
   const el = $('graph-project-filter');
   if (!el) return;
-  if (_graphProject) {
-    $('graph-project-name').textContent = `› ${_graphProject}`;
-    el.style.display = 'inline';
-  } else {
-    el.style.display = 'none';
-  }
+  if (_graphProject) { $('graph-project-name').textContent = '› ' + _graphProject; el.style.display = 'inline'; }
+  else el.style.display = 'none';
 }
 
 function updateGraphLegend() {
   const legend = $('graph-legend');
   if (!legend) return;
   if (_graphMode === 'sessions') {
-    legend.innerHTML = `
-      <div class="graph-legend-title">sessions</div>
-      <div class="graph-legend-item"><i style="width:8px;height:8px;border-radius:999px;background:var(--panel-2);border:1px solid var(--muted)"></i>session</div>
-      <div class="graph-legend-item"><i style="width:12px;height:0;border-top:1px dashed var(--line-2)"></i>temporal link</div>
-    `;
+    legend.innerHTML =
+      '<div class="graph-legend-title">sessions</div>' +
+      '<div class="graph-legend-item"><i style="width:8px;height:8px;border-radius:999px;background:#0b0b0e;border:1px solid #5eead4"></i>session</div>' +
+      '<div class="graph-legend-item"><i style="width:12px;height:0;border-top:1px dashed rgba(255,255,255,0.3)"></i>temporal link</div>';
   } else {
-    legend.innerHTML = `
-      <div class="graph-legend-title">projects</div>
-      <div class="graph-legend-item"><i style="width:8px;height:8px;border-radius:999px;background:var(--accent)"></i>notes</div>
-      <div class="graph-legend-item"><i style="width:12px;height:1px;background:var(--line-2)"></i>wikilink</div>
-    `;
+    legend.innerHTML =
+      '<div class="graph-legend-title">projects</div>' +
+      '<div class="graph-legend-item"><i style="width:8px;height:8px;border-radius:999px;background:#8b7ff5"></i>notes</div>' +
+      '<div class="graph-legend-item"><i style="width:12px;height:1px;background:rgba(255,255,255,0.3)"></i>wikilink</div>';
   }
 }
 
@@ -1614,74 +2047,52 @@ async function buildFullGraph(layout) {
   wrap.innerHTML = '';
 
   if (!_graphData) {
-    let url = `/api/graph?kind=${_graphMode}`;
-    if (_graphProject) url += `&project=${encodeURIComponent(_graphProject)}`;
+    let url = '/api/graph?kind=' + _graphMode;
+    if (_graphProject) url += '&project=' + encodeURIComponent(_graphProject);
     _graphData = await fetchJSON(url);
   }
 
-  let nodes = _graphData.nodes.map(n => ({ ...n }));
-  let links = _graphData.edges.map(e => ({ ...e }));
+  let nodes = _graphData.nodes.map(n => Object.assign({}, n));
+  let links = _graphData.edges.map(e => Object.assign({}, e));
 
-  // For sessions mode, create temporal links between consecutive sessions
   if (_graphMode === 'sessions' && links.length === 0 && nodes.length > 1) {
     const sorted = [...nodes].sort((a, b) => a.id.localeCompare(b.id));
-    for (let i = 1; i < sorted.length; i++) {
-      links.push({ source: sorted[i - 1].id, target: sorted[i].id });
-    }
+    for (let i = 1; i < sorted.length; i++) links.push({ source: sorted[i - 1].id, target: sorted[i].id });
   }
 
   const nodeMap = new Map(nodes.map(n => [n.id, n]));
-
-  $('graph-stats').textContent = `${nodes.length}n · ${links.length}e`;
+  $('graph-stats').textContent = nodes.length + 'n · ' + links.length + 'e';
   if (nodes.length === 0) {
     wrap.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--muted);font-size:var(--fz-sm)">No nodes to display</div>';
     return;
   }
 
   const rect = wrap.getBoundingClientRect();
-  const W = rect.width || 800;
-  const H = rect.height || 500;
+  const W = rect.width || 800, H = rect.height || 500;
 
-  const svg = d3.select(wrap).append('svg')
-    .attr('viewBox', `0 0 ${W} ${H}`)
-    .attr('preserveAspectRatio', 'xMidYMid meet');
+  const svg = d3.select(wrap).append('svg').attr('viewBox', '0 0 ' + W + ' ' + H).attr('preserveAspectRatio', 'xMidYMid meet');
 
   const defs = svg.append('defs');
-  const pattern = defs.append('pattern').attr('id', 'dotgrid').attr('width', 20).attr('height', 20).attr('patternUnits', 'userSpaceOnUse');
-  pattern.append('circle').attr('cx', 10).attr('cy', 10).attr('r', 0.8).attr('fill', 'var(--line)');
+  const pattern = defs.append('pattern').attr('id', 'dotgrid').attr('width', 22).attr('height', 22).attr('patternUnits', 'userSpaceOnUse');
+  pattern.append('circle').attr('cx', 11).attr('cy', 11).attr('r', 0.8).attr('fill', 'rgba(255,255,255,0.06)');
   svg.append('rect').attr('width', W).attr('height', H).attr('fill', 'url(#dotgrid)');
 
   const g = svg.append('g');
   const zoom = d3.zoom().scaleExtent([0.3, 5]).on('zoom', e => g.attr('transform', e.transform));
   svg.call(zoom);
 
-  // Compute positions based on layout
   const noteNodes = nodes.filter(n => n.kind === 'note');
   const sessionNodes = nodes.filter(n => n.kind === 'session');
   const cx = W / 2, cy = H / 2;
 
   if (layout === 'radial') {
-    const noteR = Math.min(W, H) * 0.25;
-    const sessionR = Math.min(W, H) * 0.42;
-    noteNodes.forEach((n, i) => {
-      const a = (2 * Math.PI * i) / Math.max(noteNodes.length, 1) - Math.PI / 2;
-      n.x = cx + noteR * Math.cos(a);
-      n.y = cy + noteR * Math.sin(a);
-    });
-    sessionNodes.forEach((n, i) => {
-      const a = (2 * Math.PI * i) / Math.max(sessionNodes.length, 1) - Math.PI / 2;
-      n.x = cx + sessionR * Math.cos(a);
-      n.y = cy + sessionR * Math.sin(a);
-    });
+    const noteR = Math.min(W, H) * 0.25, sessionR = Math.min(W, H) * 0.42;
+    noteNodes.forEach((n, i) => { const a = (2 * Math.PI * i) / Math.max(noteNodes.length, 1) - Math.PI / 2; n.x = cx + noteR * Math.cos(a); n.y = cy + noteR * Math.sin(a); });
+    sessionNodes.forEach((n, i) => { const a = (2 * Math.PI * i) / Math.max(sessionNodes.length, 1) - Math.PI / 2; n.x = cx + sessionR * Math.cos(a); n.y = cy + sessionR * Math.sin(a); });
   } else if (layout === 'time') {
     const sorted = [...nodes].sort((a, b) => a.id.localeCompare(b.id));
-    const pad = 80;
-    const usableW = W - pad * 2;
-    sorted.forEach((n, i) => {
-      const src = nodes.find(x => x.id === n.id);
-      src.x = pad + (usableW * i) / Math.max(sorted.length - 1, 1);
-      src.y = n.kind === 'note' ? cy - 60 : cy + 60;
-    });
+    const pad = 80, usableW = W - pad * 2;
+    sorted.forEach((n, i) => { const src = nodes.find(x => x.id === n.id); src.x = pad + (usableW * i) / Math.max(sorted.length - 1, 1); src.y = n.kind === 'note' ? cy - 60 : cy + 60; });
   } else {
     const sim = d3.forceSimulation(nodes)
       .force('link', d3.forceLink(links).id(d => d.id).distance(80).strength(0.6))
@@ -1694,62 +2105,42 @@ async function buildFullGraph(layout) {
     sim.stop();
   }
 
-  nodes.forEach(d => {
-    d.x = Math.max(40, Math.min(W - 40, d.x || cx));
-    d.y = Math.max(40, Math.min(H - 40, d.y || cy));
-  });
+  nodes.forEach(d => { d.x = Math.max(40, Math.min(W - 40, d.x || cx)); d.y = Math.max(40, Math.min(H - 40, d.y || cy)); });
 
-  // Draw edges
   const edgeGroup = g.append('g');
   links.forEach(l => {
     const s = typeof l.source === 'object' ? l.source : nodeMap.get(l.source);
     const t = typeof l.target === 'object' ? l.target : nodeMap.get(l.target);
     if (!s || !t) return;
     const isTemporal = _graphMode === 'sessions';
-    edgeGroup.append('line')
-      .attr('x1', s.x).attr('y1', s.y).attr('x2', t.x).attr('y2', t.y)
-      .attr('stroke', 'var(--line-2)').attr('stroke-width', isTemporal ? 1 : 1.2)
-      .attr('stroke-opacity', isTemporal ? 0.3 : 0.6)
-      .attr('stroke-dasharray', isTemporal ? '4 3' : '')
-      .attr('stroke-linecap', 'round');
+    edgeGroup.append('line').attr('x1', s.x).attr('y1', s.y).attr('x2', t.x).attr('y2', t.y)
+      .attr('stroke', isTemporal ? '#5eead4' : '#8b7ff5').attr('stroke-width', isTemporal ? 1 : 1.2)
+      .attr('stroke-opacity', isTemporal ? 0.25 : 0.4)
+      .attr('stroke-dasharray', isTemporal ? '4 3' : '').attr('stroke-linecap', 'round');
   });
 
-  // Draw nodes
   const nodeGroup = g.append('g');
   nodes.forEach(n => {
     const isPrimary = _graphMode === 'sessions' ? n.kind === 'session' : n.kind === 'note';
+    const accentCol = _graphMode === 'sessions' ? '#5eead4' : '#8b7ff5';
     const r = isPrimary ? 10 : 6;
     const ng = nodeGroup.append('g').style('cursor', 'pointer');
-
     if (isPrimary) {
-      ng.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r + 4)
-        .attr('fill', 'var(--accent)').attr('fill-opacity', 0.12);
-      ng.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
-        .attr('fill', 'var(--panel-2)').attr('stroke', 'var(--accent)').attr('stroke-width', 1.5);
+      ng.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r + 5).attr('fill', accentCol).attr('fill-opacity', 0.15);
+      ng.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r).attr('fill', 'rgba(255,255,255,0.06)').attr('stroke', accentCol).attr('stroke-width', 1.6);
     } else {
-      ng.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r)
-        .attr('fill', 'var(--bg-2)').attr('stroke', 'var(--muted)').attr('stroke-width', 1.2);
+      ng.append('circle').attr('cx', n.x).attr('cy', n.y).attr('r', r).attr('fill', 'rgba(255,255,255,0.04)').attr('stroke', 'var(--muted)').attr('stroke-width', 1.2);
     }
-
     let label = n.title;
     if (_graphMode === 'sessions' && n.kind === 'session') {
       const m = n.id.match(/(\d{4}-\d{2}-\d{2})_(\d{2})(\d{2})/);
-      label = m ? `${m[1]} ${m[2]}:${m[3]}` : n.title;
+      label = m ? m[1] + ' ' + m[2] + ':' + m[3] : n.title;
     }
     if (label.length > 22) label = label.substring(0, 20) + '…';
-
-    ng.append('text').attr('x', n.x).attr('y', n.y + r + 14)
-      .attr('text-anchor', 'middle').attr('font-size', 11)
-      .attr('fill', isPrimary ? 'var(--muted)' : 'var(--dim)').attr('opacity', 0.9)
-      .style('font-family', 'JetBrains Mono, monospace')
-      .text(label);
-
-    ng.on('click', () => {
-      updateGraphRail(n, links, nodes);
-      if (isSessionPath(n.id)) { openSession(n.id); }
-      else { setView('note'); loadNote(n.id); }
-    });
-
+    ng.append('text').attr('x', n.x).attr('y', n.y + r + 15).attr('text-anchor', 'middle').attr('font-size', 11)
+      .attr('fill', isPrimary ? '#a4a4b0' : '#6c6c78').attr('opacity', 0.95)
+      .style('font-family', 'JetBrains Mono, monospace').text(label);
+    ng.on('click', () => { updateGraphRail(n, links, nodes); if (isSessionPath(n.id)) openSession(n.id); else { setView('note'); loadNote(n.id); } });
     ng.on('mouseenter', () => updateGraphRail(n, links, nodes));
   });
 }
@@ -1758,7 +2149,6 @@ function updateGraphRail(node, links, nodes) {
   const focused = $('graph-focused');
   const conns = $('graph-connections');
   if (!focused || !conns) return;
-
   const neighbors = new Set();
   links.forEach(l => {
     const sId = typeof l.source === 'object' ? l.source.id : l.source;
@@ -1766,51 +2156,39 @@ function updateGraphRail(node, links, nodes) {
     if (sId === node.id) neighbors.add(tId);
     if (tId === node.id) neighbors.add(sId);
   });
-
-  const dotColor = node.kind === 'session' ? 'var(--muted)' : 'var(--accent)';
-  focused.innerHTML = `
-    <div style="display:flex;align-items:center;gap:8px">
-      <i style="width:9px;height:9px;border-radius:999px;background:${dotColor}"></i>
-      <span style="font-weight:500">${node.title}</span>
-    </div>
-    <div class="dim" style="font-size:var(--fz-xs);margin-top:6px">degree ${neighbors.size} · ${node.kind}</div>
-  `;
-
+  const dotColor = node.kind === 'session' ? '#5eead4' : '#8b7ff5';
+  focused.innerHTML =
+    '<div style="display:flex;align-items:center;gap:8px"><i style="width:9px;height:9px;border-radius:999px;background:' + dotColor + '"></i><span style="font-weight:600">' + esc(node.title) + '</span></div>' +
+    '<div class="dim" style="font-size:var(--fz-xs);margin-top:6px">degree ' + neighbors.size + ' · ' + node.kind + '</div>';
   conns.innerHTML = '';
   [...neighbors].forEach(id => {
     const n = nodes.find(x => x.id === id);
     if (!n) return;
     const btn = document.createElement('button');
     btn.className = 'conn-item';
-    const kindColor = n.kind === 'session' ? 'var(--dim)' : 'var(--accent)';
-    btn.innerHTML = `<i style="width:6px;height:6px;border-radius:999px;background:${kindColor};flex-shrink:0"></i><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${n.title}</span><span class="dim" style="font-size:var(--fz-xs);flex-shrink:0">${n.kind}</span>`;
-    btn.addEventListener('click', () => {
-      if (isSessionPath(n.id)) openSession(n.id);
-      else { setView('note'); loadNote(n.id); }
-    });
+    const kindColor = n.kind === 'session' ? '#5eead4' : '#8b7ff5';
+    btn.innerHTML = '<i style="width:6px;height:6px;border-radius:999px;background:' + kindColor + ';flex-shrink:0"></i><span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(n.title) + '</span><span class="dim" style="font-size:var(--fz-xs);flex-shrink:0">' + n.kind + '</span>';
+    btn.addEventListener('click', () => { if (isSessionPath(n.id)) openSession(n.id); else { setView('note'); loadNote(n.id); } });
     conns.appendChild(btn);
   });
 }
 
 // ─── Editor ──────────────────────────────────────────────────────────────────
 async function openEditor(path) {
-  const note = await fetchJSON(`/api/note/${path}`);
+  const note = await fetchJSON('/api/note/' + path);
   if (note.error) return;
-  editingPath = path;
-  editingNote = note;
+  editingPath = path; editingNote = note;
   $('edit-path').textContent = path;
   $('edit-textarea').value = note.content || '';
   $('edit-overlay').classList.add('active');
   $('edit-textarea').focus();
 }
-
 function closeEditor() { $('edit-overlay').classList.remove('active'); editingPath = null; }
-
 $('edit-cancel').addEventListener('click', closeEditor);
 $('edit-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeEditor(); });
 $('edit-save').addEventListener('click', async () => {
   if (!editingPath) return;
-  await fetch(`/api/note/${editingPath}`, {
+  await fetch('/api/note/' + editingPath, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ content: $('edit-textarea').value, tags: editingNote.tags || [], properties: editingNote.properties || {} }),
   });
@@ -1823,19 +2201,13 @@ function openSessionCreate(defaultProject) {
   const datalist = $('sc-project-list');
   datalist.innerHTML = '';
   const projects = new Set();
-  for (const path of Object.keys(allNotes)) {
-    const parts = path.split('/');
-    if (parts.length > 1) projects.add(parts[0]);
-  }
-  for (const p of [...projects].sort()) {
-    const opt = document.createElement('option'); opt.value = p; datalist.appendChild(opt);
-  }
+  for (const path of Object.keys(allNotes)) { const parts = path.split('/'); if (parts.length > 1) projects.add(parts[0]); }
+  for (const p of [...projects].sort()) { const opt = document.createElement('option'); opt.value = p; datalist.appendChild(opt); }
   $('sc-project').value = defaultProject || '';
   $('sc-summary').value = '';
   $('session-create-overlay').classList.add('active');
   (defaultProject ? $('sc-summary') : $('sc-project')).focus();
 }
-
 function closeSessionCreate() { $('session-create-overlay').classList.remove('active'); }
 $('sc-cancel').addEventListener('click', closeSessionCreate);
 $('session-create-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeSessionCreate(); });
@@ -1845,7 +2217,7 @@ $('sc-create').addEventListener('click', async () => {
   if (!project) { $('sc-project').focus(); return; }
   const resp = await fetch('/api/sessions/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ project, summary }) });
   const result = await resp.json();
-  if (result.ok) { closeSessionCreate(); await refreshTree(); loadNote(result.path); }
+  if (result.ok) { closeSessionCreate(); await refreshTree(); openSession(result.path); }
 });
 
 // ─── Project Create ──────────────────────────────────────────────────────────
@@ -1864,28 +2236,24 @@ $('pc-create').addEventListener('click', async () => {
   if (!name) { $('pc-name').focus(); return; }
   const resp = await fetch('/api/projects/create', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ name, overview }) });
   const result = await resp.json();
-  if (result.ok) { closeProjectCreate(); await refreshTree(); loadNote(result.path); }
+  if (result.ok) { closeProjectCreate(); await refreshTree(); setView('note'); loadNote(result.path); }
 });
 
 // ─── Quick Switcher ──────────────────────────────────────────────────────────
 function openQuickSwitcher() {
   $('qs-overlay').classList.add('active');
-  $('qs-input').value = '';
-  $('qs-input').focus();
-  qsSelectedIndex = 0;
-  renderQsResults('');
+  $('qs-input').value = ''; $('qs-input').focus();
+  qsSelectedIndex = 0; renderQsResults('');
 }
 function closeQuickSwitcher() { $('qs-overlay').classList.remove('active'); }
 $('qs-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) closeQuickSwitcher(); });
-
 $('qs-input').addEventListener('input', e => { qsSelectedIndex = 0; renderQsResults(e.target.value.trim().toLowerCase()); });
 $('qs-input').addEventListener('keydown', e => {
   const items = document.querySelectorAll('.qs-item');
   if (e.key === 'ArrowDown') { e.preventDefault(); qsSelectedIndex = Math.min(qsSelectedIndex + 1, items.length - 1); updateQsSelection(); }
   else if (e.key === 'ArrowUp') { e.preventDefault(); qsSelectedIndex = Math.max(qsSelectedIndex - 1, 0); updateQsSelection(); }
-  else if (e.key === 'Enter') { e.preventDefault(); const sel = items[qsSelectedIndex]; if (sel) { loadNote(sel.dataset.path); closeQuickSwitcher(); } }
+  else if (e.key === 'Enter') { e.preventDefault(); const sel = items[qsSelectedIndex]; if (sel) { setView('note'); loadNote(sel.dataset.path); closeQuickSwitcher(); } }
 });
-
 function renderQsResults(query) {
   const container = $('qs-results');
   let entries = Object.entries(allNotes);
@@ -1895,27 +2263,24 @@ function renderQsResults(query) {
   if (entries.length === 0) { container.innerHTML = '<div class="qs-empty">No notes found</div>'; return; }
   container.innerHTML = entries.map(([path, note], i) => {
     const folder = path.includes('/') ? path.split('/').slice(0, -1).join('/') : '';
-    return `<div class="qs-item${i === qsSelectedIndex ? ' selected' : ''}" data-path="${path}"><span class="qs-icon">◇</span><span class="qs-name">${note.title}</span>${folder ? `<span class="qs-path">${folder}</span>` : ''}</div>`;
+    return '<div class="qs-item' + (i === qsSelectedIndex ? ' selected' : '') + '" data-path="' + esc(path) + '"><span class="qs-icon">' + ICON.note + '</span><span class="qs-name">' + esc(note.title) + '</span>' + (folder ? '<span class="qs-path">' + esc(folder) + '</span>' : '') + '</div>';
   }).join('');
   container.querySelectorAll('.qs-item').forEach((el, i) => {
-    el.addEventListener('click', () => { loadNote(el.dataset.path); closeQuickSwitcher(); });
+    el.addEventListener('click', () => { setView('note'); loadNote(el.dataset.path); closeQuickSwitcher(); });
     el.addEventListener('mouseenter', () => { qsSelectedIndex = i; updateQsSelection(); });
   });
 }
-function updateQsSelection() {
-  document.querySelectorAll('.qs-item').forEach((el, i) => el.classList.toggle('selected', i === qsSelectedIndex));
-}
+function updateQsSelection() { document.querySelectorAll('.qs-item').forEach((el, i) => el.classList.toggle('selected', i === qsSelectedIndex)); }
 
 // ─── Search ──────────────────────────────────────────────────────────────────
 const searchInput = $('search-input');
 const searchDropdown = $('search-dropdown');
-
 searchInput.addEventListener('input', () => {
   clearTimeout(searchTimeout);
   const q = searchInput.value.trim();
   if (!q) { searchDropdown.classList.remove('active'); return; }
   searchTimeout = setTimeout(async () => {
-    const results = await fetchJSON(`/api/search?q=${encodeURIComponent(q)}`);
+    const results = await fetchJSON('/api/search?q=' + encodeURIComponent(q));
     searchDropdown.innerHTML = '';
     if (results.length === 0) {
       searchDropdown.innerHTML = '<div class="search-result"><div class="sr-title" style="color:var(--dim)">No results</div></div>';
@@ -1923,17 +2288,14 @@ searchInput.addEventListener('input', () => {
       results.forEach(r => {
         const div = document.createElement('div');
         div.className = 'search-result';
-        div.innerHTML = `<div class="sr-title">${r.title}</div><div class="sr-path">${r.path}</div>${r.snippet ? `<div class="sr-snippet">${r.snippet.substring(0, 120)}</div>` : ''}`;
-        div.addEventListener('click', () => { loadNote(r.path); searchDropdown.classList.remove('active'); searchInput.value = ''; });
+        div.innerHTML = '<div class="sr-title">' + esc(r.title) + '</div><div class="sr-path">' + esc(r.path) + '</div>' + (r.snippet ? '<div class="sr-snippet">' + esc(r.snippet.substring(0, 120)) + '</div>' : '');
+        div.addEventListener('click', () => { setView('note'); loadNote(r.path); searchDropdown.classList.remove('active'); searchInput.value = ''; });
         searchDropdown.appendChild(div);
       });
     }
     searchDropdown.classList.add('active');
   }, 200);
 });
-
-searchInput.addEventListener('focus', () => { $('search-bar').querySelector('.s-caret').style.display = 'none'; $('search-bar').querySelector('.s-hint').style.display = 'none'; });
-searchInput.addEventListener('blur', () => { if (!searchInput.value) { $('search-bar').querySelector('.s-caret').style.display = ''; $('search-bar').querySelector('.s-hint').style.display = ''; } });
 document.addEventListener('click', e => { if (!e.target.closest('.search-bar')) searchDropdown.classList.remove('active'); });
 
 // ─── Keyboard Shortcuts ──────────────────────────────────────────────────────
@@ -1945,12 +2307,6 @@ document.addEventListener('keydown', e => {
 });
 
 // ─── Refresh & Polling ───────────────────────────────────────────────────────
-function fmtTokens(n) {
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'k';
-  return String(n);
-}
-
 async function loadTokenEconomics() {
   try {
     const te = await fetchJSON('/api/token-economics');
@@ -1959,13 +2315,11 @@ async function loadTokenEconomics() {
       $('te-inject').textContent = te.latest_injection_tokens > 0 ? fmtTokens(te.latest_injection_tokens) + 't' : '—';
       if (te.compression_ratio > 0) {
         $('te-savings').textContent = te.compression_ratio + 'x';
-        $('te-savings').parentElement.title = `${te.per_session_savings_pct}% per session — injection is ${te.compression_ratio}x smaller than avg exploration (${fmtTokens(te.avg_exploration_per_session)}t)`;
-      } else {
-        $('te-savings').textContent = '—';
-      }
+        $('te-savings').parentElement.title = te.per_session_savings_pct + '% per session — injection is ' + te.compression_ratio + 'x smaller than avg exploration (' + fmtTokens(te.avg_exploration_per_session) + 't)';
+      } else { $('te-savings').textContent = '—'; }
       $('token-economics').style.display = '';
     }
-  } catch {}
+  } catch (e) {}
 }
 
 async function refreshTree() {
@@ -1973,6 +2327,7 @@ async function refreshTree() {
     fetchJSON('/api/tree'), fetchJSON('/api/sessions'), fetchJSON('/api/stats'),
   ]);
   treeData = rawTree;
+  _sessionsData = sessionsData;
   allNotes = {};
   function walk(node) {
     if (node.type === 'note') allNotes[node.path] = { title: node.name.replace('.md', ''), tags: node.tags || [] };
@@ -1989,13 +2344,14 @@ async function refreshTree() {
 async function pollForChanges() {
   try {
     const stats = await fetchJSON('/api/stats');
-    const key = `${stats.notes}:${stats.links}:${stats.tags}`;
+    const key = stats.notes + ':' + stats.links + ':' + stats.tags;
     if (lastKnownStats && lastKnownStats !== key) {
       await refreshTree();
-      if (currentPath) loadNote(currentPath);
+      if (view === 'dashboard') renderDashboard();
+      else if (currentPath) loadNote(currentPath);
     }
     lastKnownStats = key;
-  } catch {}
+  } catch (e) {}
 }
 
 // ─── Init ────────────────────────────────────────────────────────────────────
@@ -2008,30 +2364,25 @@ async function init() {
       fetchJSON('/api/tree'), fetchJSON('/api/sessions'), fetchJSON('/api/stats'),
     ]);
     treeData = rawTree;
-
+    _sessionsData = sessionsData;
     function walk(node) {
       if (node.type === 'note') allNotes[node.path] = { title: node.name.replace('.md', ''), tags: node.tags || [] };
       (node.children || []).forEach(walk);
     }
     walk(treeData);
-
     renderSidebar(sessionsData);
     $('stat-notes').textContent = stats.notes;
     $('stat-folders').textContent = stats.folders;
     loadTokenEconomics();
+    lastKnownStats = stats.notes + ':' + stats.links + ':' + stats.tags;
   } catch (e) {
     console.error('KYP-MEM init failed:', e);
-    $('sidebar-scroll').innerHTML = `<div style="padding:12px;color:#f66;font-size:12px">Init error: ${e.message}<br>Check console for details</div>`;
+    $('sidebar-scroll').innerHTML = '<div style="padding:12px;color:#f87171;font-size:12px">Init error: ' + esc(e.message) + '<br>Check console for details</div>';
   }
 
-  // Show empty state
-  $('content-area').innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:12px">
-      <span class="logo" style="font-size:28px;opacity:0.6"><span class="logo-mark" style="width:12px;height:12px"></span>KYP·MEM</span>
-      <span class="dim" style="font-size:var(--fz-sm);letter-spacing:3px;text-transform:uppercase">know your project memory</span>
-      <span class="dim" style="font-size:var(--fz-sm);margin-top:24px">Select a note or press <span style="border:1px solid var(--line);border-radius:3px;padding:0 5px;color:var(--muted)">⌘O</span> to quick-switch</span>
-    </div>
-  `;
+  // Default landing: dashboard
+  setView('dashboard');
+  renderDashboard();
 }
 
 init();
