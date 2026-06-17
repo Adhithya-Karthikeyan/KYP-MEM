@@ -96,14 +96,38 @@
   "hotPaths": [
     {
       "path": "kyp_mem/hooks.py",
-      "accessCount": 17,
-      "lastAccessed": 1781535821366,
+      "accessCount": 19,
+      "lastAccessed": 1781693969992,
       "type": "file"
     },
     {
       "path": "bin/cli.mjs",
+      "accessCount": 5,
+      "lastAccessed": 1781693861704,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/cli.py",
       "accessCount": 4,
-      "lastAccessed": 1781535638351,
+      "lastAccessed": 1781694000903,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/server.py",
+      "accessCount": 3,
+      "lastAccessed": 1781694055547,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/vault.py",
+      "accessCount": 2,
+      "lastAccessed": 1781693939990,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/config.py",
+      "accessCount": 1,
+      "lastAccessed": 1781693876285,
       "type": "file"
     }
   ],

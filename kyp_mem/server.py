@@ -22,6 +22,7 @@ YOU MUST FOLLOW THESE INSTRUCTIONS when kyp-mem tools are available.
 2. Call `kyp_project_context(project)` to load the project's knowledge base, notes, and recent session summaries.
 3. If no project exists yet, call `kyp_project_context` anyway — if it returns empty, ask the user if you should create one.
 4. Use the returned context to ground yourself: understand architecture, known bugs, past decisions, and what was done in recent sessions. Do NOT ask the user questions that are already answered in the project context.
+5. Check the project objective with `kyp_objective_get(project)`. If none is set, ask the user for the project's main goal and save it with `kyp_objective_set(project, objective)`. Keep your work aligned to this objective.
 
 ### DURING WORK — WHEN TO SEARCH SESSIONS
 Call `kyp_session_search(query)` when:
@@ -340,6 +341,31 @@ def kyp_sessions(project: str = "", limit: int = 10) -> str:
         date = note.created or note.updated or ""
         lines.append(f"  {date} — {note.title} ({path}){tags}")
     return "\n".join(lines)
+
+
+@mcp.tool()
+def kyp_objective_get(project: str) -> str:
+    """Get the recorded objective / main goal for a project. The objective is injected at every session start. Returns a not-set message if none exists yet."""
+    note = vault.read(f"{project}/Objective.md")
+    if not note:
+        return f"No objective set for '{project}'. Ask the user for the project's main goal, then call kyp_objective_set."
+    content = note.content.strip()
+    lines = content.split("\n")
+    if lines and lines[0].lstrip().startswith("# "):
+        content = "\n".join(lines[1:]).strip()
+    return content or f"No objective set for '{project}'."
+
+
+@mcp.tool()
+def kyp_objective_set(project: str, objective: str) -> str:
+    """Set (or replace) the objective / main goal for a project. This is injected into every future session start so work stays aligned. Call this once the user tells you what the project is for."""
+    objective = objective.strip()
+    if not objective:
+        return "Objective text is empty — nothing saved."
+    path = f"{project}/Objective.md"
+    content = f"# Objective\n\n{objective}\n"
+    vault.write_note(path, content, ["objective", project.lower().replace(" ", "-")], {})
+    return f"Objective saved for '{project}' ({path}). It will be injected at every session start."
 
 
 @mcp.tool()

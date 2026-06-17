@@ -145,8 +145,42 @@ def _build_stats_line(project_name, injected_chars, session_ids):
         return None
 
 
+def _objective_note_path(project_name):
+    """Canonical vault path for a project's objective note."""
+    return f"{project_name}/Objective.md"
+
+
+def _find_objective_path(vault, project_name):
+    """Case-insensitive lookup of the objective note (vault casing may differ
+    from the cwd basename on case-insensitive filesystems)."""
+    target = f"{project_name}/objective.md".lower()
+    for p in vault.index.notes:
+        if p.lower() == target:
+            return p
+    return None
+
+
+def _read_objective(vault, project_name):
+    """Return the objective text for a project, or None if not set.
+
+    Strips an optional leading ``# ...`` heading so only the objective body
+    is surfaced.
+    """
+    path = _find_objective_path(vault, project_name)
+    if not path:
+        return None
+    note = vault.read(path)
+    if not note:
+        return None
+    lines = note.content.strip().split("\n")
+    if lines and lines[0].lstrip().startswith("# "):
+        lines = lines[1:]
+    text = "\n".join(lines).strip()
+    return text or None
+
+
 def handle_session_start():
-    """Inject recent session memory into the conversation at session start."""
+    """Inject the project objective and recent session memory at session start."""
     sys.stdin.read()
     if _is_subprocess():
         return
@@ -167,36 +201,63 @@ def handle_session_start():
         # filesystems "KYP-MEM" and "kyp-mem" are the same directory).
         prefix = f"{project_name}/".lower()
         project_notes = [p for p in vault.index.notes if p.lower().startswith(prefix)]
-        if not project_notes:
-            return
+
+        objective = _read_objective(vault, project_name)
 
         sessions = sorted(
             (p for p in project_notes if "/sessions/" in p.lower()),
             reverse=True,
         )[:10]
-        if not sessions:
-            return
 
-        parts = [f"# [kyp-mem] {project_name} — Recent Sessions"]
+        # Nothing to say: no objective to surface, no objective to request
+        # (project is already known but sessions just haven't been captured),
+        # and no sessions. Only stay silent when this is an established project
+        # with an objective but zero sessions — otherwise we always at least
+        # surface or request the objective.
+        if not objective and not project_notes and not sessions:
+            # Brand-new / unknown directory: still ask for an objective so the
+            # project starts with a clear goal.
+            pass
+
+        parts = [f"# [kyp-mem] {project_name} — Session Context"]
         parts.append(f"Use `kyp_search` or `kyp_project_context` for architecture/project knowledge on demand.\n")
 
-        parts.append(f"## Last {len(sessions)} Sessions")
-        for sp in sessions:
-            note = vault.read(sp)
-            if not note:
-                continue
-            parts.append(f"### {note.title}")
-            summary = _extract_session_summary(note.content)
-            parts.append(summary)
+        # --- Objective (always first) ---
+        if objective:
+            parts.append("## 🎯 Objective")
+            parts.append(objective)
+            parts.append("")
+        else:
+            parts.append("## 🎯 Objective — NOT SET")
+            parts.append(
+                f"No objective is recorded for **{project_name}**. Before anything else, "
+                "ask the user: **\"What is the main objective / goal for this project?\"** "
+                "When they answer, save it by calling "
+                f"`kyp_objective_set(project=\"{project_name}\", objective=\"...\")` "
+                f"(or `kyp_write(\"{project_name}/Objective.md\", ...)`). "
+                "Keep your work aligned to this objective every session."
+            )
             parts.append("")
 
-        session_ids = {Path(sp).stem for sp in sessions}
-        stats_line = _build_stats_line(project_name, len("\n".join(parts)), session_ids)
-        if stats_line:
-            parts.append(stats_line)
+        # --- Recent sessions ---
+        if sessions:
+            parts.append(f"## Last {len(sessions)} Sessions")
+            for sp in sessions:
+                note = vault.read(sp)
+                if not note:
+                    continue
+                parts.append(f"### {note.title}")
+                summary = _extract_session_summary(note.content)
+                parts.append(summary)
+                parts.append("")
+
+            session_ids = {Path(sp).stem for sp in sessions}
+            stats_line = _build_stats_line(project_name, len("\n".join(parts)), session_ids)
+            if stats_line:
+                parts.append(stats_line)
 
         parts.append("")
-        parts.append("**CRITICAL: Your FIRST response to the user MUST be displaying the session summaries below. Do NOT skip this. Do NOT wait for user input. Display them immediately, formatted cleanly, before doing anything else.**")
+        parts.append("**CRITICAL: Your FIRST response to the user MUST surface this context — display the session summaries above (if any) and the objective. If the objective is NOT SET, ask the user for it as instructed. Do this immediately, formatted cleanly, before anything else.**")
 
         output = "\n".join(parts)
 

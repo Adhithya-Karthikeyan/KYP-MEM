@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cd /Users/adhithya/Projects/tools/KYP-MEM\\nexport KYP_VAULT=$(mktemp -d)\\necho \\\"vault=$KYP_VAULT\\\"\\n\\n# 1. No objective yet -> CLI get shows not-set\\npython -m kyp_mem.cli objective TestP...",
+  "error": "Exit code 1\nvault=/var/folders/jl/f26mqkrx2svb0ffptv05tsyw0000gn/T/tmp.xqdjAgCTVA\nTraceback (most recent call last):\n  File \"<frozen runpy>\", line 203, in _run_module_as_main\n  File \"<frozen runpy>\", line 88, in _run_code\n  File \"/Users/adhithya/Projects/tools/KYP-MEM/kyp_mem/cli.py\", line 640, in <module>\n    main()\n    ~~~~^^\n  File \"/Users/adhithya/Projects/tools/KYP-MEM/kyp_mem/cli.py\", line 87, in main\n    _run_objective(args.project, \" \".join(args.text).strip())\n    ~~~~~~~~~~~~~~^^^^^^^^^...",
+  "timestamp": "2026-06-17T11:00:12.189Z",
+  "retry_count": 1
+}

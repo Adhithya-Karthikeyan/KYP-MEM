@@ -49,6 +49,10 @@ def main():
     cfg_parser.add_argument("key", nargs="?", help="Config key (e.g. session_model)")
     cfg_parser.add_argument("value", nargs="?", help="Value to set")
 
+    obj_parser = subparsers.add_parser("objective", help="Get or set a project's objective (injected at session start)")
+    obj_parser.add_argument("project", nargs="?", help="Project name (defaults to current directory name)")
+    obj_parser.add_argument("text", nargs="*", help="Objective text to set (omit to read the current objective)")
+
     hook_parser = subparsers.add_parser("hook", help="Handle Claude Code hook events (internal)")
     hook_sub = hook_parser.add_subparsers(dest="hook_command")
     hook_sub.add_parser("session-start", help="Inject project context at session start")
@@ -79,6 +83,8 @@ def main():
         _run_install_hooks(global_config=args.global_config, remove=args.remove)
     elif args.command == "config":
         _run_config(args.key, args.value)
+    elif args.command == "objective":
+        _run_objective(args.project, " ".join(args.text).strip())
     elif args.command == "uninstall":
         _run_uninstall(purge=args.purge)
     elif args.command == "doctor":
@@ -458,6 +464,39 @@ def _run_config(key, value):
     config[key] = value
     save_config(config)
     print(f"  {G}✓{R} {key} = {value}")
+
+
+def _run_objective(project, text):
+    from .config import get_vault_path
+    from .vault import Vault
+
+    project = project or Path.cwd().name
+    vault = Vault(get_vault_path())
+    path = f"{project}/Objective.md"
+
+    if not text:
+        note = vault.read(path)
+        print()
+        print(f"  {C}KYP-MEM{R} — Objective for {G}{project}{R}")
+        print()
+        if not note:
+            print(f"  {Y}(not set){R}")
+            print(f"  {D}  Set one: kyp-mem objective {project} \"<your goal>\"{R}")
+        else:
+            content = note.content.strip()
+            lines = content.split("\n")
+            if lines and lines[0].lstrip().startswith("# "):
+                content = "\n".join(lines[1:]).strip()
+            print(f"  {content}")
+        print()
+        return
+
+    content = f"# Objective\n\n{text}\n"
+    vault.write_note(path, content, ["objective", project.lower().replace(" ", "-")], {})
+    print()
+    print(f"  {G}✓{R} Objective saved for {G}{project}{R} ({path})")
+    print(f"  {D}  Injected at every session start.{R}")
+    print()
 
 
 def _run_stats():
