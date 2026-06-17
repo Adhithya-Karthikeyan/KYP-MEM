@@ -125,6 +125,18 @@
       "type": "file"
     },
     {
+      "path": "package.json",
+      "accessCount": 2,
+      "lastAccessed": 1781694171927,
+      "type": "file"
+    },
+    {
+      "path": "pyproject.toml",
+      "accessCount": 2,
+      "lastAccessed": 1781694179296,
+      "type": "file"
+    },
+    {
       "path": "kyp_mem/config.py",
       "accessCount": 1,
       "lastAccessed": 1781693876285,
