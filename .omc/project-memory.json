@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1781693173431,
+  "lastScanned": 1783784663359,
   "projectRoot": "/Users/adhithya/Projects/tools/KYP-MEM",
   "techStack": {
     "languages": [
@@ -63,7 +63,7 @@
       "path": "bin",
       "purpose": "Executable scripts",
       "fileCount": 3,
-      "lastAccessed": 1781693173419,
+      "lastAccessed": 1783784663351,
       "keyFiles": [
         "cli.mjs",
         "install.mjs",
@@ -74,7 +74,7 @@
       "path": "kyp_mem",
       "purpose": null,
       "fileCount": 8,
-      "lastAccessed": 1781693173420,
+      "lastAccessed": 1783784663351,
       "keyFiles": [
         "__init__.py",
         "cli.py",
@@ -87,73 +87,12 @@
       "path": "kyp_mem/static",
       "purpose": "Static files",
       "fileCount": 1,
-      "lastAccessed": 1781693173421,
+      "lastAccessed": 1783784663352,
       "keyFiles": [
         "index.html"
       ]
     }
   },
-  "hotPaths": [
-    {
-      "path": "kyp_mem/hooks.py",
-      "accessCount": 19,
-      "lastAccessed": 1781693969992,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/static/index.html",
-      "accessCount": 15,
-      "lastAccessed": 1781712297107,
-      "type": "file"
-    },
-    {
-      "path": "bin/cli.mjs",
-      "accessCount": 5,
-      "lastAccessed": 1781693861704,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/cli.py",
-      "accessCount": 4,
-      "lastAccessed": 1781694000903,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/server.py",
-      "accessCount": 3,
-      "lastAccessed": 1781694055547,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/ui.py",
-      "accessCount": 3,
-      "lastAccessed": 1781711773276,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/vault.py",
-      "accessCount": 3,
-      "lastAccessed": 1781711814982,
-      "type": "file"
-    },
-    {
-      "path": "package.json",
-      "accessCount": 3,
-      "lastAccessed": 1781712277911,
-      "type": "file"
-    },
-    {
-      "path": "pyproject.toml",
-      "accessCount": 3,
-      "lastAccessed": 1781712282815,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/config.py",
-      "accessCount": 1,
-      "lastAccessed": 1781693876285,
-      "type": "file"
-    }
-  ],
+  "hotPaths": [],
   "userDirectives": []
 }
