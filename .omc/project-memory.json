@@ -93,6 +93,13 @@
       ]
     }
   },
-  "hotPaths": [],
+  "hotPaths": [
+    {
+      "path": "kyp_mem/vector.py",
+      "accessCount": 1,
+      "lastAccessed": 1783784937853,
+      "type": "file"
+    }
+  ],
   "userDirectives": []
 }
