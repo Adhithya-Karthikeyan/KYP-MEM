@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "entries": {
+    "79a93d4a2f8f50b95f852280616242fee1855dc99a3c75211917f55e72e95fae": {
+      "last_emitted_at_ms": 1784633457727,
+      "message": "Use parallel execution for independent tasks. Use run_in_background for long operations (npm install, builds, tests)."
+    },
+    "14acf10906abb58966768478b29b2e8aee8fdc6fee5d7c74e7e7e24e099e79e2": {
+      "last_emitted_at_ms": 1784633201567,
+      "message": "Spawning agent: general-purpose (opus) [BACKGROUND] | Task: Architecture design audit"
+    },
+    "d479f1ebbafc877acd04774c305d32b4499c3876180804f4234613fc8b7a6ca1": {
+      "last_emitted_at_ms": 1784633201566,
+      "message": "Spawning agent: general-purpose (sonnet) [BACKGROUND] | Task: Code quality bug audit"
+    },
+    "466399dafa2d20f60587180bad0a07358eb7f2bce724df0ff682f038ad33f5ad": {
+      "last_emitted_at_ms": 1784633122395,
+      "message": "Read multiple files in parallel when possible for faster analysis."
+    }
+  },
+  "updated_at": "2026-07-21T11:30:57.727Z"
+}

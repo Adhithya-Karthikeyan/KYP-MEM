@@ -93,6 +93,103 @@
       ]
     }
   },
-  "hotPaths": [],
+  "hotPaths": [
+    {
+      "path": "kyp_mem/cli.py",
+      "accessCount": 5,
+      "lastAccessed": 1784633225866,
+      "type": "file"
+    },
+    {
+      "path": "bin/install.mjs",
+      "accessCount": 5,
+      "lastAccessed": 1784633235636,
+      "type": "file"
+    },
+    {
+      "path": "bin/python-env.mjs",
+      "accessCount": 5,
+      "lastAccessed": 1784633235675,
+      "type": "file"
+    },
+    {
+      "path": "bin/cli.mjs",
+      "accessCount": 5,
+      "lastAccessed": 1784633235726,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/server.py",
+      "accessCount": 5,
+      "lastAccessed": 1784633235838,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/vector.py",
+      "accessCount": 4,
+      "lastAccessed": 1784633225732,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/ui.py",
+      "accessCount": 4,
+      "lastAccessed": 1784633225791,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/config.py",
+      "accessCount": 4,
+      "lastAccessed": 1784633225826,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/hooks.py",
+      "accessCount": 4,
+      "lastAccessed": 1784633225887,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/vault.py",
+      "accessCount": 4,
+      "lastAccessed": 1784633225922,
+      "type": "file"
+    },
+    {
+      "path": "pyproject.toml",
+      "accessCount": 4,
+      "lastAccessed": 1784633235623,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 4,
+      "lastAccessed": 1784633235645,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 3,
+      "lastAccessed": 1784633216385,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/static/index.html",
+      "accessCount": 3,
+      "lastAccessed": 1784633367942,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/__init__.py",
+      "accessCount": 2,
+      "lastAccessed": 1784633215533,
+      "type": "file"
+    },
+    {
+      "path": "LICENSE",
+      "accessCount": 1,
+      "lastAccessed": 1784633225835,
+      "type": "file"
+    }
+  ],
   "userDirectives": []
 }

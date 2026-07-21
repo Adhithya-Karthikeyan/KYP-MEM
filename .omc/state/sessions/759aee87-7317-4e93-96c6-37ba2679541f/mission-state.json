@@ -1,0 +1,115 @@
+{
+  "updatedAt": "2026-07-21T11:32:46.023Z",
+  "missions": [
+    {
+      "id": "session:759aee87-7317-4e93-96c6-37ba2679541f:none",
+      "source": "session",
+      "name": "none",
+      "objective": "Session mission",
+      "createdAt": "2026-07-21T11:26:46.534Z",
+      "updatedAt": "2026-07-21T11:32:46.023Z",
+      "status": "running",
+      "workerCount": 4,
+      "taskCounts": {
+        "total": 4,
+        "pending": 0,
+        "blocked": 0,
+        "inProgress": 1,
+        "completed": 3,
+        "failed": 0
+      },
+      "agents": [
+        {
+          "name": "quality-auditor:aqualit",
+          "role": "quality-auditor",
+          "ownership": "aquality-auditor-69a125a3ae9f42df",
+          "status": "running",
+          "currentStep": null,
+          "latestUpdate": null,
+          "completedSummary": null,
+          "updatedAt": "2026-07-21T11:26:46.534Z"
+        },
+        {
+          "name": "packaging-auditor:apackag",
+          "role": "packaging-auditor",
+          "ownership": "apackaging-auditor-7c1e32aa5753456d",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-21T11:32:43.886Z"
+        },
+        {
+          "name": "architecture-auditor:aarchit",
+          "role": "architecture-auditor",
+          "ownership": "aarchitecture-auditor-eb537aa79026583a",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-21T11:32:46.023Z"
+        },
+        {
+          "name": "security-auditor:asecuri",
+          "role": "security-auditor",
+          "ownership": "asecurity-auditor-0a7a715f6f15c58c",
+          "status": "done",
+          "currentStep": null,
+          "latestUpdate": "completed",
+          "completedSummary": null,
+          "updatedAt": "2026-07-21T11:32:45.508Z"
+        }
+      ],
+      "timeline": [
+        {
+          "id": "session-start:apackaging-auditor-7c1e32aa5753456d:2026-07-21T11:32:10.200Z",
+          "at": "2026-07-21T11:32:10.200Z",
+          "kind": "update",
+          "agent": "packaging-auditor:apackag",
+          "detail": "started packaging-auditor:apackag",
+          "sourceKey": "session-start:apackaging-auditor-7c1e32aa5753456d"
+        },
+        {
+          "id": "session-start:asecurity-auditor-0a7a715f6f15c58c:2026-07-21T11:32:10.408Z",
+          "at": "2026-07-21T11:32:10.408Z",
+          "kind": "update",
+          "agent": "security-auditor:asecuri",
+          "detail": "started security-auditor:asecuri",
+          "sourceKey": "session-start:asecurity-auditor-0a7a715f6f15c58c"
+        },
+        {
+          "id": "session-start:aarchitecture-auditor-eb537aa79026583a:2026-07-21T11:32:10.650Z",
+          "at": "2026-07-21T11:32:10.650Z",
+          "kind": "update",
+          "agent": "architecture-auditor:aarchit",
+          "detail": "started architecture-auditor:aarchit",
+          "sourceKey": "session-start:aarchitecture-auditor-eb537aa79026583a"
+        },
+        {
+          "id": "session-stop:apackaging-auditor-7c1e32aa5753456d:2026-07-21T11:32:43.886Z",
+          "at": "2026-07-21T11:32:43.886Z",
+          "kind": "completion",
+          "agent": "packaging-auditor:apackag",
+          "detail": "completed",
+          "sourceKey": "session-stop:apackaging-auditor-7c1e32aa5753456d"
+        },
+        {
+          "id": "session-stop:asecurity-auditor-0a7a715f6f15c58c:2026-07-21T11:32:45.508Z",
+          "at": "2026-07-21T11:32:45.508Z",
+          "kind": "completion",
+          "agent": "security-auditor:asecuri",
+          "detail": "completed",
+          "sourceKey": "session-stop:asecurity-auditor-0a7a715f6f15c58c"
+        },
+        {
+          "id": "session-stop:aarchitecture-auditor-eb537aa79026583a:2026-07-21T11:32:46.023Z",
+          "at": "2026-07-21T11:32:46.023Z",
+          "kind": "completion",
+          "agent": "architecture-auditor:aarchit",
+          "detail": "completed",
+          "sourceKey": "session-stop:aarchitecture-auditor-eb537aa79026583a"
+        }
+      ]
+    }
+  ]
+}

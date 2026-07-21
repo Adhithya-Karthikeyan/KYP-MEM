@@ -1,0 +1,17 @@
+{"t":0,"agent":"aqualit","agent_type":"quality-auditor","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"apackag","agent_type":"packaging-auditor","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"aarchit","agent_type":"architecture-auditor","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"asecuri","agent_type":"security-auditor","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"apackag","agent_type":"packaging-auditor","event":"agent_stop","success":true,"duration_ms":124978}
+{"t":0,"agent":"apackag","agent_type":"packaging-auditor","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"aarchit","agent_type":"architecture-auditor","event":"agent_stop","success":true,"duration_ms":196228}
+{"t":0,"agent":"apackag","agent_type":"packaging-auditor","event":"agent_stop","success":true,"duration_ms":24634}
+{"t":0,"agent":"asecuri","agent_type":"security-auditor","event":"agent_stop","success":true,"duration_ms":266277}
+{"t":0,"agent":"asecuri","agent_type":"security-auditor","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"asecuri","agent_type":"security-auditor","event":"agent_stop","success":true,"duration_ms":11619}
+{"t":0,"agent":"apackag","agent_type":"packaging-auditor","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"asecuri","agent_type":"security-auditor","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"aarchit","agent_type":"architecture-auditor","event":"agent_start","parent_mode":"none"}
+{"t":0,"agent":"apackag","agent_type":"packaging-auditor","event":"agent_stop","success":true,"duration_ms":33686}
+{"t":0,"agent":"asecuri","agent_type":"security-auditor","event":"agent_stop","success":true,"duration_ms":35100}
+{"t":0,"agent":"aarchit","agent_type":"architecture-auditor","event":"agent_stop","success":true,"duration_ms":35373}

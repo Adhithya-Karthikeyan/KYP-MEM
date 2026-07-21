@@ -1,0 +1,42 @@
+{
+  "agents": [
+    {
+      "agent_id": "aquality-auditor-69a125a3ae9f42df",
+      "agent_type": "quality-auditor",
+      "started_at": "2026-07-21T11:26:46.534Z",
+      "parent_mode": "none",
+      "status": "running"
+    },
+    {
+      "agent_id": "apackaging-auditor-7c1e32aa5753456d",
+      "agent_type": "packaging-auditor",
+      "started_at": "2026-07-21T11:32:10.200Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-07-21T11:32:43.886Z",
+      "duration_ms": 33686
+    },
+    {
+      "agent_id": "aarchitecture-auditor-eb537aa79026583a",
+      "agent_type": "architecture-auditor",
+      "started_at": "2026-07-21T11:32:10.650Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-07-21T11:32:46.023Z",
+      "duration_ms": 35373
+    },
+    {
+      "agent_id": "asecurity-auditor-0a7a715f6f15c58c",
+      "agent_type": "security-auditor",
+      "started_at": "2026-07-21T11:32:10.408Z",
+      "parent_mode": "none",
+      "status": "completed",
+      "completed_at": "2026-07-21T11:32:45.508Z",
+      "duration_ms": 35100
+    }
+  ],
+  "total_spawned": 9,
+  "total_completed": 8,
+  "total_failed": 0,
+  "last_updated": "2026-07-21T11:32:46.126Z"
+}
