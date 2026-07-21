@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1783784663359,
+  "lastScanned": 1784633067510,
   "projectRoot": "/Users/adhithya/Projects/tools/KYP-MEM",
   "techStack": {
     "languages": [
@@ -63,7 +63,7 @@
       "path": "bin",
       "purpose": "Executable scripts",
       "fileCount": 3,
-      "lastAccessed": 1783784663351,
+      "lastAccessed": 1784633067497,
       "keyFiles": [
         "cli.mjs",
         "install.mjs",
@@ -74,7 +74,7 @@
       "path": "kyp_mem",
       "purpose": null,
       "fileCount": 8,
-      "lastAccessed": 1783784663351,
+      "lastAccessed": 1784633067498,
       "keyFiles": [
         "__init__.py",
         "cli.py",
@@ -87,19 +87,12 @@
       "path": "kyp_mem/static",
       "purpose": "Static files",
       "fileCount": 1,
-      "lastAccessed": 1783784663352,
+      "lastAccessed": 1784633067499,
       "keyFiles": [
         "index.html"
       ]
     }
   },
-  "hotPaths": [
-    {
-      "path": "kyp_mem/vector.py",
-      "accessCount": 1,
-      "lastAccessed": 1783784937853,
-      "type": "file"
-    }
-  ],
+  "hotPaths": [],
   "userDirectives": []
 }
