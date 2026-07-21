@@ -5,7 +5,9 @@
       "agent_type": "quality-auditor",
       "started_at": "2026-07-21T11:26:46.534Z",
       "parent_mode": "none",
-      "status": "running"
+      "status": "completed",
+      "completed_at": "2026-07-21T11:33:33.615Z",
+      "duration_ms": 407081
     },
     {
       "agent_id": "apackaging-auditor-7c1e32aa5753456d",
@@ -36,7 +38,7 @@
     }
   ],
   "total_spawned": 9,
-  "total_completed": 8,
+  "total_completed": 9,
   "total_failed": 0,
-  "last_updated": "2026-07-21T11:32:46.126Z"
+  "last_updated": "2026-07-21T11:33:33.718Z"
 }

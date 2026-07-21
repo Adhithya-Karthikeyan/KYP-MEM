@@ -1,0 +1,328 @@
+{
+  "version": 1,
+  "jobId": "d3e1a8ec-5cec-46cc-8b89-2268f0ff44a5",
+  "sessionId": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+  "scopeKey": "2aa67682197a967ef59e804729f6a0f5190244c25a0544063304ac7dc77cb68d",
+  "revision": 41,
+  "createdAt": "2026-07-21T11:33:15.472Z",
+  "updatedAt": "2026-07-21T11:33:16.479Z",
+  "producerGraceExpiresAt": "2026-07-21T11:33:45.472Z",
+  "bestEffortDeadlineAt": "2026-07-21T11:34:36.472Z",
+  "producers": {
+    "core": {
+      "state": "sealed",
+      "intentKey": "b089ad00880a87d953461d014792816ffe366ca9a4334790f97927fc4dd1b6ff",
+      "payloadDigest": "b089ad00880a87d953461d014792816ffe366ca9a4334790f97927fc4dd1b6ff",
+      "sealedAt": "2026-07-21T11:33:15.506Z",
+      "sealedBy": "foreground"
+    },
+    "wiki": {
+      "state": "no-op",
+      "sealedAt": "2026-07-21T11:33:15.472Z",
+      "sealedBy": "wiki-producer"
+    }
+  },
+  "actions": {
+    "foreground-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 0,
+      "idempotencyKey": "febf6dba2f2536433960a07f7cedce72e946b43ced0896570df80f017b8914d2",
+      "payload": {
+        "transcriptPath": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+        "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+        "reason": "other",
+        "input": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "transcript_path": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+          "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+          "prompt_id": "e79cf103-1abb-4b97-8e79-30610900f5a9",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "ended_at": "2026-07-21T11:33:15.471Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {},
+        "foregroundResult": {
+          "removedTransientFiles": 4,
+          "completedAt": "2026-07-21T11:33:15.505Z"
+        }
+      },
+      "budgetMs": 9000,
+      "completedAt": "2026-07-21T11:33:15.506Z",
+      "lastOutcomeCode": "completed"
+    },
+    "wiki-capture": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 0,
+      "idempotencyKey": "1719cd1ef5b51e0269b78c4cb8c9308c9c1f7b82fd1c067fc034c060f23863f5",
+      "payload": {},
+      "budgetMs": 9000,
+      "completedAt": "2026-07-21T11:33:15.472Z"
+    },
+    "team-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "cee6ac31df545408e1e822247ac249b3f8182a98a5fe8e448ae3b251e55bdee1",
+      "payload": {
+        "transcriptPath": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+        "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+        "reason": "other",
+        "input": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "transcript_path": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+          "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+          "prompt_id": "e79cf103-1abb-4b97-8e79-30610900f5a9",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "ended_at": "2026-07-21T11:33:15.471Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-07-21T11:33:15.569Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "17a100ec-f6aa-4936-acf6-05ad71206cdf",
+        "phase": "terminal",
+        "deadlineAt": "2026-07-21T11:33:25.542Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-07-21T11:33:15.700Z"
+    },
+    "python-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "1f1370c4ac056606059d517e2f106b602d8cbcb04587b3fcc5f3b9f89e649cd0",
+      "payload": {
+        "transcriptPath": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+        "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+        "reason": "other",
+        "input": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "transcript_path": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+          "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+          "prompt_id": "e79cf103-1abb-4b97-8e79-30610900f5a9",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "ended_at": "2026-07-21T11:33:15.471Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-07-21T11:33:15.716Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "b340d77c-05d2-4b64-981b-6cc66dce7823",
+        "phase": "terminal",
+        "deadlineAt": "2026-07-21T11:33:25.542Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-07-21T11:33:15.856Z"
+    },
+    "reply-cleanup": {
+      "class": "required",
+      "phase": "deferred-required",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "0b3a8b47c28b26d56aca004d4f572b96c118f16819c0d35162418816f9a5420a",
+      "payload": {
+        "transcriptPath": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+        "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+        "reason": "other",
+        "input": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "transcript_path": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+          "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+          "prompt_id": "e79cf103-1abb-4b97-8e79-30610900f5a9",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "ended_at": "2026-07-21T11:33:15.471Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 9000,
+      "claimedAt": "2026-07-21T11:33:15.871Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "cd018236-37f0-4ed7-89f7-53cb4099a1b8",
+        "phase": "terminal",
+        "deadlineAt": "2026-07-21T11:33:25.542Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-07-21T11:33:15.999Z"
+    },
+    "callback": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "d068ede2655bf89e0c0950e087d0603d7dcf45538e94f20a654d08c6f4841895",
+      "payload": {
+        "transcriptPath": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+        "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+        "reason": "other",
+        "input": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "transcript_path": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+          "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+          "prompt_id": "e79cf103-1abb-4b97-8e79-30610900f5a9",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "ended_at": "2026-07-21T11:33:15.471Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-07-21T11:33:16.014Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "4f53558c-6466-4f1d-bb12-d3d5c40a5dab",
+        "phase": "terminal",
+        "deadlineAt": "2026-07-21T11:33:25.542Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-07-21T11:33:16.139Z"
+    },
+    "notification": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "89c0438ff63097ce04beb60efb87292ff68a7af350a0ee331f3de9dbf42d62fc",
+      "payload": {
+        "transcriptPath": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+        "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+        "reason": "other",
+        "input": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "transcript_path": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+          "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+          "prompt_id": "e79cf103-1abb-4b97-8e79-30610900f5a9",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "ended_at": "2026-07-21T11:33:15.471Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-07-21T11:33:16.159Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "6d89dbe4-98f7-4bd4-85cd-cfad99c28745",
+        "phase": "terminal",
+        "deadlineAt": "2026-07-21T11:33:25.542Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-07-21T11:33:16.303Z"
+    },
+    "openclaw": {
+      "class": "best-effort",
+      "phase": "deferred-best-effort",
+      "status": "completed",
+      "attempts": 1,
+      "idempotencyKey": "31fe8f6e1cf204e27006de511df257326fdd98655122ca437013e8779ffc735b",
+      "payload": {
+        "transcriptPath": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+        "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+        "reason": "other",
+        "input": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "transcript_path": "/Users/adhithya/.claude/projects/-Users-adhithya-Projects-tools-KYP-MEM/9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711.jsonl",
+          "cwd": "/Users/adhithya/Projects/tools/KYP-MEM",
+          "prompt_id": "e79cf103-1abb-4b97-8e79-30610900f5a9",
+          "hook_event_name": "SessionEnd",
+          "reason": "other"
+        },
+        "metrics": {
+          "session_id": "9fdd0f0b-ecc4-4fa3-b67d-971fec5d8711",
+          "ended_at": "2026-07-21T11:33:15.471Z",
+          "reason": "other",
+          "agents_spawned": 0,
+          "agents_completed": 0,
+          "modes_used": []
+        },
+        "initialTeamNames": [],
+        "openClawEnabled": false,
+        "openClawRouting": {}
+      },
+      "budgetMs": 2000,
+      "claimedAt": "2026-07-21T11:33:16.319Z",
+      "runner": {
+        "attempt": 1,
+        "runnerNonce": "dcf277ad-653d-4ea8-bab5-b42cd6d51590",
+        "phase": "terminal",
+        "deadlineAt": "2026-07-21T11:33:25.542Z"
+      },
+      "lastOutcomeCode": "completed",
+      "completedAt": "2026-07-21T11:33:16.448Z"
+    }
+  },
+  "owner": null,
+  "phase": "complete",
+  "completion": {
+    "completedAt": "2026-07-21T11:33:16.464Z",
+    "terminalDigest": "90c8a1d366a2ed1a78c194d1986602ffa8d980a839f66a0c6b6755f156b51a10",
+    "terminalRevision": 40
+  }
+}
