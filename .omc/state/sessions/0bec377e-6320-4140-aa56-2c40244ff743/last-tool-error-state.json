@@ -1,7 +1,7 @@
 {
   "tool_name": "Bash",
-  "tool_input_preview": "{\"command\":\"~/.kyp-mem/venv/bin/python -c \\\"import hatchling; print('hatchling', hatchling.__file__)\\\" 2>&1 | tail -1; ~/.kyp-mem/venv/bin/python -c \\\"import build; print('build ok')\\\" 2>&1 | tail -1;...",
-  "error": "Exit code 1\nModuleNotFoundError: No module named 'hatchling'\nbuild ok\nls: /Users/adhithya/Projects/tools/KYP-MEM/.venv: No such file or directory\n/Users/adhithya/.local/bin/uv\n/opt/homebrew/bin/pipx",
-  "timestamp": "2026-07-26T18:08:41.659Z",
-  "retry_count": 3
+  "tool_input_preview": "{\"command\":\"env PATH=/usr/bin:/bin node --input-type=module -e \\\"\\nimport { findSystemPython } from '/Users/adhithya/Projects/tools/KYP-MEM/bin/python-env.mjs';\\nimport { spawnSync } from 'child_proce...",
+  "error": "Exit code 127\nenv: node: No such file or directory",
+  "timestamp": "2026-07-26T18:10:20.287Z",
+  "retry_count": 1
 }
