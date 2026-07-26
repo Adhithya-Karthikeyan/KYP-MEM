@@ -11,6 +11,7 @@
     "kyp_mem/static/",
     "pyproject.toml",
     "README.md",
+    "CHANGELOG.md",
     "LICENSE"
   ],
   "scripts": {

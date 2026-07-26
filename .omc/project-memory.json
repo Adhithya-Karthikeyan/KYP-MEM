@@ -96,74 +96,80 @@
   "hotPaths": [
     {
       "path": "kyp_mem/vault.py",
-      "accessCount": 15,
-      "lastAccessed": 1785085689247,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/maintenance.py",
-      "accessCount": 10,
-      "lastAccessed": 1785088631019,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/vector.py",
-      "accessCount": 9,
-      "lastAccessed": 1785085451724,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/server.py",
-      "accessCount": 9,
-      "lastAccessed": 1785085620166,
+      "accessCount": 19,
+      "lastAccessed": 1785089217944,
       "type": "file"
     },
     {
       "path": "kyp_mem/hooks.py",
-      "accessCount": 9,
-      "lastAccessed": 1785088800575,
+      "accessCount": 15,
+      "lastAccessed": 1785089330111,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/maintenance.py",
+      "accessCount": 13,
+      "lastAccessed": 1785089260960,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/vector.py",
+      "accessCount": 12,
+      "lastAccessed": 1785089209586,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/server.py",
+      "accessCount": 11,
+      "lastAccessed": 1785089296900,
       "type": "file"
     },
     {
       "path": "kyp_mem/cli.py",
-      "accessCount": 8,
-      "lastAccessed": 1785085311144,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/textindex.py",
-      "accessCount": 7,
-      "lastAccessed": 1785084996266,
+      "accessCount": 11,
+      "lastAccessed": 1785089339616,
       "type": "file"
     },
     {
       "path": "kyp_mem/search.py",
-      "accessCount": 7,
-      "lastAccessed": 1785085791679,
+      "accessCount": 8,
+      "lastAccessed": 1785089189399,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/textindex.py",
+      "accessCount": 8,
+      "lastAccessed": 1785089355230,
       "type": "file"
     },
     {
       "path": "kyp_mem/chunking.py",
-      "accessCount": 6,
-      "lastAccessed": 1785083913781,
+      "accessCount": 8,
+      "lastAccessed": 1785089355676,
       "type": "file"
     },
     {
       "path": "kyp_mem/ui.py",
-      "accessCount": 6,
-      "lastAccessed": 1785084435421,
+      "accessCount": 8,
+      "lastAccessed": 1785089394967,
+      "type": "file"
+    },
+    {
+      "path": "README.md",
+      "accessCount": 5,
+      "lastAccessed": 1785089167266,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/config.py",
+      "accessCount": 5,
+      "lastAccessed": 1785089260859,
       "type": "file"
     },
     {
       "path": "tests/test_vector.py",
       "accessCount": 4,
       "lastAccessed": 1785084315462,
-      "type": "file"
-    },
-    {
-      "path": "README.md",
-      "accessCount": 4,
-      "lastAccessed": 1785085375540,
       "type": "file"
     },
     {
@@ -174,8 +180,20 @@
     },
     {
       "path": "pyproject.toml",
+      "accessCount": 4,
+      "lastAccessed": 1785089170834,
+      "type": "file"
+    },
+    {
+      "path": "bin/python-env.mjs",
+      "accessCount": 4,
+      "lastAccessed": 1785089318212,
+      "type": "file"
+    },
+    {
+      "path": "bin/install.mjs",
       "accessCount": 3,
-      "lastAccessed": 1785085626487,
+      "lastAccessed": 1785089221707,
       "type": "file"
     },
     {
@@ -191,15 +209,15 @@
       "type": "file"
     },
     {
-      "path": "kyp_mem/config.py",
-      "accessCount": 2,
-      "lastAccessed": 1785085427410,
-      "type": "file"
-    },
-    {
       "path": "tests/test_search.py",
       "accessCount": 2,
       "lastAccessed": 1785085760107,
+      "type": "file"
+    },
+    {
+      "path": "bin/cli.mjs",
+      "accessCount": 2,
+      "lastAccessed": 1785089221550,
       "type": "file"
     },
     {
@@ -221,21 +239,21 @@
       "type": "file"
     },
     {
-      "path": "bin/python-env.mjs",
-      "accessCount": 1,
-      "lastAccessed": 1785088461468,
-      "type": "file"
-    },
-    {
-      "path": "bin/install.mjs",
-      "accessCount": 1,
-      "lastAccessed": 1785088461519,
-      "type": "file"
-    },
-    {
       "path": "tests/test_hooks.py",
       "accessCount": 1,
       "lastAccessed": 1785088848628,
+      "type": "file"
+    },
+    {
+      "path": "package.json",
+      "accessCount": 1,
+      "lastAccessed": 1785089170337,
+      "type": "file"
+    },
+    {
+      "path": "CHANGELOG.md",
+      "accessCount": 1,
+      "lastAccessed": 1785089312890,
       "type": "file"
     }
   ],
