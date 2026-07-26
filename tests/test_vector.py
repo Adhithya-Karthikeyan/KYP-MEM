@@ -228,3 +228,66 @@ def test_content_hash_is_stable_and_distinguishing():
 def test_notes_are_split_into_multiple_chunks(synced):
     # One vector per note was the old behaviour and the main accuracy problem.
     assert synced.stats()["chunks"] > synced.stats()["documents"]
+
+
+# --- failure recovery ---------------------------------------------------------
+
+def test_transient_write_error_retries_instead_of_wiping_the_index(synced, monkeypatch):
+    """One flaky write must not drop the whole collection.
+
+    The previous logic rebuilt on the *first* exception, so a locking conflict,
+    a full disk or an interrupted write destroyed the index rather than being
+    retried.
+    """
+    before = synced.stats()["chunks"]
+    calls = {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] == 1:
+            raise OSError("transient")
+
+    assert synced._write(flaky, "flaky") is True
+    assert calls["n"] == 2, "should have retried the operation itself"
+    assert synced.stats()["chunks"] == before, "index must survive a transient error"
+    assert synced.needs_full_sync is False
+
+
+def test_persistent_write_error_rebuilds_as_a_last_resort(synced):
+    attempts = {"n": 0}
+
+    def always_failing():
+        attempts["n"] += 1
+        raise RuntimeError("corrupt segment")
+
+    assert synced._write(always_failing, "broken") is False
+    assert attempts["n"] >= 2, "must try twice before resorting to a rebuild"
+    assert synced.needs_full_sync is True, "a rebuild must demand a full resync"
+
+
+def test_rebuild_flags_that_a_full_resync_is_required(synced):
+    synced.rebuild()
+    assert synced.needs_full_sync is True
+    synced.sync(DOCS)
+    assert synced.needs_full_sync is False
+
+
+def test_vault_resyncs_everything_after_a_mid_write_rebuild(tmp_path):
+    """A rebuild during a single-note write must not shrink the searchable set."""
+    from kyp_mem.vault import Vault
+    from tests.conftest import write as write_note
+
+    root = tmp_path / "vault"
+    write_note(root, "P/A.md", "# A\n\n## Topic\n\nDistinctive content about hydroponic lettuce.\n")
+    write_note(root, "P/B.md", "# B\n\n## Topic\n\nSeparate content about submarine sonar ranges.\n")
+    v = Vault(str(root))
+    v.ensure_vector_synced()
+    assert v.search("hydroponic lettuce", limit=3)
+
+    # Simulate the store having rebuilt itself mid-write: empty, flag raised.
+    v.vector.rebuild()
+    assert v.vector.stats()["chunks"] == 0
+
+    # The stale "ready" flag must not suppress the resync.
+    assert v.search("hydroponic lettuce", limit=3), "vault must resync after a rebuild"
+    assert v.search("submarine sonar ranges", limit=3), "the other note must return too"

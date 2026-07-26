@@ -135,6 +135,7 @@ kyp-mem ui
 | `kyp-mem stats` | Print vault statistics |
 | `kyp-mem tree` | Print vault file tree |
 | `kyp-mem config` | View or set configuration (e.g. `kyp-mem config session_model`) |
+| `kyp-mem objective <project> [text]` | Read or set a project's objective (injected at every session start) |
 | `kyp-mem doctor` | Check installation, configuration, and index health |
 | `kyp-mem doctor --deep` | Also exercise the semantic index read/write path |
 | `kyp-mem reindex` | Rebuild the semantic index from your markdown notes |
@@ -181,7 +182,8 @@ kyp-mem compact --purge-legacy
 # Remove from Claude Code (keeps your vault data)
 kyp-mem uninstall
 
-# Remove from Claude Code AND delete all data
+# Remove from Claude Code and delete ~/.kyp-mem (config, session logs,
+# and the default vault). A vault you configured elsewhere is NOT touched.
 kyp-mem uninstall --purge
 
 # Remove the npm package

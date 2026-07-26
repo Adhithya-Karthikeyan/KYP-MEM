@@ -280,7 +280,7 @@ def handle_session_start():
         del project_exists
 
         parts = [f"# [kyp-mem] {project_name} — Session Context"]
-        parts.append(f"Use `kyp_search` or `kyp_project_context` for architecture/project knowledge on demand.\n")
+        parts.append("Use `kyp_search` or `kyp_project_context` for architecture/project knowledge on demand.\n")
 
         # --- Objective (always first) ---
         if objective:
@@ -351,7 +351,7 @@ def handle_user_prompt():
     }
 
     SESSION_DIR.mkdir(parents=True, exist_ok=True)
-    with open(_session_file(data.get("session_id", "")), "a") as f:
+    with open(_session_file(data.get("session_id", "")), "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
 
 
@@ -413,7 +413,7 @@ def handle_post_tool_use():
         return
 
     SESSION_DIR.mkdir(parents=True, exist_ok=True)
-    with open(_session_file(data.get("session_id", "")), "a") as f:
+    with open(_session_file(data.get("session_id", "")), "a", encoding="utf-8") as f:
         f.write(json.dumps(entry) + "\n")
 
 
@@ -565,7 +565,7 @@ def _build_completed(files_edited, files_created, commands_classified, project_d
 
     test_cmds = [cmd for cls, cmd in commands_classified if cls == "test"]
     if test_cmds:
-        items.append(f"- Ran test suite")
+        items.append("- Ran test suite")
 
     git_writes = [cmd for cls, cmd in commands_classified if cls == "git_write"]
     for cmd in git_writes:
@@ -676,7 +676,10 @@ def handle_stop(session_id=""):
     if _is_subprocess() or not session_file.exists():
         return
 
-    text = session_file.read_text().strip()
+    # Node writes this log as UTF-8 and JSON.stringify does not escape
+    # non-ASCII, so real sessions contain raw UTF-8. Reading it with the
+    # locale encoding corrupts or crashes the Stop hook on Windows.
+    text = session_file.read_text(encoding="utf-8").strip()
     if not text:
         session_file.unlink(missing_ok=True)
         return

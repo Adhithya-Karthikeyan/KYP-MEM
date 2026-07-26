@@ -156,7 +156,7 @@ def test_optimize_fulltext_merges_fts_segments(vault):
     # Churn the index so FTS5 accumulates segments, which it never merges on
     # its own. This is what grew to 62.9 MB for 184 embeddings on a real vault.
     for i in range(12):
-        store.upsert_note(f"P/Churn.md", "P", "Churn", f"# Churn\n\nrevision {i} " + "token " * 60, [])
+        store.upsert_note("P/Churn.md", "P", "Churn", f"# Churn\n\nrevision {i} " + "token " * 60, [])
 
     before = mt.inspect(store.db_path)["sqlite_bytes"]
     result = mt.optimize_fulltext(store.db_path)

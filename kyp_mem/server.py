@@ -174,7 +174,12 @@ def kyp_write(path: str, content: str, tags: str = "", properties: str = "") -> 
     tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
     props = json.loads(properties) if properties else {}
 
-    vault.write_note(path, content, tag_list, props)
+    try:
+        vault.write_note(path, content, tag_list, props)
+    except ValueError as e:
+        # A path outside the vault: report it rather than raising, so the agent
+        # gets a usable message instead of a tool crash.
+        return f"Rejected: {e}"
 
     note = vault.index.notes.get(path)
     link_count = len(note.links) if note else 0

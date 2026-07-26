@@ -156,6 +156,11 @@ class VectorStore:
         self._lock_path = self.db_path / ".kyp.lock"
         self._client = None
         self._collection = None
+        # Set whenever the collection is dropped. A rebuild triggered by a
+        # single-note write would otherwise leave the index holding only that
+        # note, with the rest of the vault silently missing from search until
+        # something happened to trigger a full sync.
+        self.needs_full_sync = False
 
     # --- lazy connection ------------------------------------------------------
 
@@ -245,6 +250,7 @@ class VectorStore:
         sync re-embeds everything.
         """
         _log("rebuilding semantic index")
+        self.needs_full_sync = True
         try:
             if self._client is None:
                 self._connect()
@@ -284,23 +290,39 @@ class VectorStore:
         of swallowing it — a silently failed prune is how stale records
         accumulated unnoticed.
         """
-        for attempt in (1, 2):
-            try:
-                with self._locked(write=True):
-                    op()
-                return True
-            except Exception as e:
-                if attempt == 1:
-                    _log(f"{description} failed ({e!r}); rebuilding and retrying")
-                    try:
-                        with self._locked(write=True):
-                            self.rebuild()
-                    except Exception as re_err:
-                        _log(f"rebuild failed: {re_err!r}")
-                        return False
-                else:
-                    _log(f"{description} failed after rebuild: {e!r}")
-        return False
+        # Plain retry first. Dropping the whole collection on the first failure
+        # treats every transient error — a locking conflict, a full disk, an
+        # interrupted write — as index corruption, which is both drastic and
+        # usually wrong. Rebuilding is reserved for the case where a second
+        # straightforward attempt also fails.
+        try:
+            with self._locked(write=True):
+                op()
+            return True
+        except Exception as first:
+            _log(f"{description} failed ({first!r}); retrying")
+
+        try:
+            with self._locked(write=True):
+                op()
+            return True
+        except Exception as second:
+            _log(f"{description} failed again ({second!r}); rebuilding the index")
+
+        try:
+            with self._locked(write=True):
+                self.rebuild()
+        except Exception as rebuild_err:
+            _log(f"rebuild failed: {rebuild_err!r}")
+            return False
+
+        try:
+            with self._locked(write=True):
+                op()
+            return True
+        except Exception as final:
+            _log(f"{description} failed after rebuild: {final!r}")
+            return False
 
     # --- indexing -------------------------------------------------------------
 
@@ -388,6 +410,8 @@ class VectorStore:
                 )
 
         summary["ok"] = self._write(op, "sync")
+        if summary["ok"]:
+            self.needs_full_sync = False
         return summary
 
     def upsert_note(self, path: str, project: str, title: str, content: str, tags=None):

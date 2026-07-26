@@ -1,6 +1,7 @@
 """Vault — markdown file storage with frontmatter, wikilinks, and indexing."""
 
 import re
+import sys
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -316,7 +317,14 @@ class Vault:
         Kept out of ``__init__`` on purpose — building a Vault must stay cheap
         enough for a hook to do it on every session start.
         """
-        if not self._with_vector or self._vector_ready:
+        if not self._with_vector:
+            return
+        store = self.vector
+        # A store that rebuilt itself mid-write holds only whatever that write
+        # touched, so a cached "ready" flag must not suppress the resync.
+        if store is not None and getattr(store, "needs_full_sync", False):
+            self._vector_ready = False
+        if self._vector_ready:
             return
         self.sync_vector()
         self._vector_ready = True
@@ -344,7 +352,7 @@ class Vault:
                 st = f.stat()
             except OSError:
                 continue
-            out[str(f.relative_to(self.root))] = (st.st_mtime, st.st_size)
+            out[f.relative_to(self.root).as_posix()] = (st.st_mtime, st.st_size)
         return out
 
     def refresh_if_stale(self):
@@ -374,7 +382,11 @@ class Vault:
     def _load_all(self):
         notes = {}
         for md_file in self.root.rglob("*.md"):
-            rel = str(md_file.relative_to(self.root))
+            # as_posix(): on Windows str() yields backslashes, and every consumer
+            # of these keys (Note.folder, is_session_path, project prefixes in
+            # server.py and ui.py) matches on a literal "/". Without this the
+            # whole product silently finds nothing on Windows.
+            rel = md_file.relative_to(self.root).as_posix()
             try:
                 raw = md_file.read_text(encoding="utf-8")
             except OSError:
@@ -384,17 +396,45 @@ class Vault:
 
     # --- reads ----------------------------------------------------------------
 
+    def _resolve(self, path: str) -> Path:
+        """Resolve a vault-relative path, refusing anything that escapes the vault.
+
+        Every caller of this class is untrusted. ``kyp_delete`` and ``kyp_write``
+        take a path chosen by the agent — steerable by prompt injection through
+        any note or file it reads — and the web UI exposes the same read, write
+        and delete operations over HTTP. Without this check ``../../.ssh/id_rsa``
+        or an absolute path passes straight through to ``unlink()``.
+
+        Resolving also collapses symlinks, so a note symlinked outside the vault
+        is rejected rather than followed.
+        """
+        candidate = Path(path)
+        if candidate.is_absolute() or candidate.drive or candidate.root:
+            raise ValueError(f"path must be relative to the vault: {path!r}")
+        full = (self.root / candidate).resolve()
+        if full != self.root and self.root not in full.parents:
+            raise ValueError(f"path escapes the vault: {path!r}")
+        return full
+
+    def _safe_resolve(self, path: str):
+        """``_resolve`` for read paths: returns None instead of raising."""
+        try:
+            return self._resolve(path)
+        except ValueError as e:
+            print(f"[kyp-mem] rejected unsafe path: {e}", file=sys.stderr)
+            return None
+
     def list_tree(self, path: str = "") -> dict:
-        base = self.root / path if path else self.root
-        if not base.exists():
+        base = self._safe_resolve(path) if path else self.root
+        if base is None or not base.exists():
             return {"folders": [], "notes": []}
         folders = sorted(d.name for d in base.iterdir() if d.is_dir() and not d.name.startswith("."))
         notes = sorted(f.name for f in base.iterdir() if f.is_file() and f.suffix == ".md")
         return {"folders": folders, "notes": notes}
 
     def read(self, path: str):
-        full = self.root / path
-        if not full.exists():
+        full = self._safe_resolve(path)
+        if full is None or not full.exists() or not full.is_file():
             return None
         raw = full.read_text(encoding="utf-8")
         return parse_note(path, raw)
@@ -403,7 +443,9 @@ class Vault:
 
     def write_note(self, path: str, content: str, tags: list | None = None,
                    properties: dict | None = None):
-        full = self.root / path
+        # Writes raise rather than silently no-op: creating a file outside the
+        # vault is never a recoverable situation the caller should ignore.
+        full = self._resolve(path)
         full.parent.mkdir(parents=True, exist_ok=True)
 
         now = datetime.now().strftime("%Y-%m-%d")
@@ -442,12 +484,14 @@ class Vault:
             self._vector_ready = False
 
     def delete(self, path: str) -> bool:
-        full = self.root / path
-        if not full.exists():
+        full = self._safe_resolve(path)
+        if full is None or not full.exists() or not full.is_file():
             return False
         full.unlink()
+        # `self.root in parent.parents` keeps the climb inside the vault even if
+        # the containment check above is ever weakened.
         parent = full.parent
-        while parent != self.root and parent.is_dir() and not any(parent.iterdir()):
+        while parent != self.root and self.root in parent.parents and not any(parent.iterdir()):
             parent.rmdir()
             parent = parent.parent
 

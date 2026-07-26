@@ -238,10 +238,32 @@ def legacy_index_report(store) -> dict:
     same parent shared one store and repeatedly pruned each other's notes. Any
     leftover directory is now dead weight, but it may still be in use by an
     older kyp-mem install, so removal is always explicit.
+
+    The legacy path is derived purely from a *name* (``<vault>/../chroma``), and
+    the caller hands the result to ``rmtree``. So this must prove the directory
+    really is a Chroma store before reporting it. A vault that happens to be
+    named ``chroma``, or that contains notes under a ``chroma`` folder, would
+    otherwise be deleted along with every note in it.
     """
-    legacy = Path(store.legacy_db_path)
-    if not legacy.exists() or legacy.resolve() == Path(store.db_path).resolve():
-        return {"present": False, "bytes": 0, "path": str(legacy)}
+    absent = {"present": False, "bytes": 0, "path": str(store.legacy_db_path)}
+    try:
+        legacy = Path(store.legacy_db_path).resolve()
+        vault = Path(store.vault_path).resolve()
+        active = Path(store.db_path).resolve()
+    except OSError:
+        return absent
+
+    if not legacy.is_dir() or legacy in (active, vault):
+        return absent
+    # Never touch anything containing, contained by, or equal to the vault.
+    if vault in legacy.parents or legacy in vault.parents:
+        return absent
+    # Positive proof it is a Chroma store, and negative proof it holds no notes.
+    if not (legacy / "chroma.sqlite3").is_file():
+        return absent
+    if any(legacy.rglob("*.md")):
+        return absent
+
     return {"present": True, "bytes": _dir_size(legacy), "path": str(legacy)}
 
 

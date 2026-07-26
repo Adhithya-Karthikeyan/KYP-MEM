@@ -139,7 +139,7 @@ def _run_init():
     current = load_config()
     current_path = current.get("vault_path", DEFAULT_VAULT)
 
-    print(f"  Where should your vault live?")
+    print("  Where should your vault live?")
     print(f"  {D}This is where all your notes/knowledge will be stored.{R}")
     print(f"  {D}Default: {current_path}{R}")
     print()
@@ -206,8 +206,9 @@ def _run_setup_claude(global_config: bool = False):
     print(f"  {D}  Vault:   {vault_path}{R}")
     print()
     print(f"  {C}Done!{R} Restart Claude Code and kyp-mem will run automatically.")
-    print(f"  Claude gets these tools: kyp_list, kyp_read, kyp_write, kyp_delete,")
-    print(f"  kyp_search, kyp_tags, kyp_related, kyp_recent, kyp_stats")
+    print("  Claude gets these tools: kyp_search, kyp_session_search, kyp_project_context,")
+    print("  kyp_read, kyp_write, kyp_delete, kyp_list, kyp_tags, kyp_related, kyp_recent,")
+    print("  kyp_stats, kyp_sessions, kyp_session_create, kyp_objective_get/set")
     print()
     print(f"  {D}To open the web UI anytime:{R} {Y}kyp-mem ui{R}")
     print()
@@ -357,7 +358,7 @@ def _run_uninstall(purge: bool = False):
             print(f"  {D}  {CONFIG_DIR} does not exist{R}")
 
     print()
-    print(f"  To finish, remove the npm package:")
+    print("  To finish, remove the npm package:")
     print(f"    {Y}npm uninstall -g kyp-mem{R}")
     print()
     if not purge:
@@ -446,7 +447,7 @@ def _run_install_hooks(global_config: bool = False, remove: bool = False):
     print(f"  {G}✓{R} Hooks installed ({scope_label})")
     print(f"  {D}  File: {settings_path}{R}")
     print()
-    print(f"  How it works:")
+    print("  How it works:")
     print(f"  {D}  • PostToolUse hook captures file edits, writes, and commands{R}")
     print(f"  {D}  • Stop hook compiles the session into a vault note{R}")
     print(f"  {D}  • Notes saved under Sessions/ with timestamps and tags{R}")
@@ -468,7 +469,9 @@ def _run_config(key, value):
         print(f"\n  {D}Configurable keys:{R}")
         print(f"  {D}  vault_path      — Path to vault directory{R}")
         print(f"  {D}  session_model   — Claude model for session summarization{R}")
-        print(f"  {D}                    (default: claude-haiku-4-5-20251001){R}")
+        print(f"  {D}                    (default: claude-sonnet-4-6){R}")
+        print(f"  {D}  embedding_model — optional sentence-transformers model for{R}")
+        print(f"  {D}                    semantic search (default: built-in MiniLM){R}")
         print()
         return
 
@@ -631,7 +634,7 @@ def _run_reindex():
 
 
 def _run_doctor(deep: bool = False):
-    from .config import CONFIG_FILE, load_config, get_vault_path
+    from .config import CONFIG_FILE, get_vault_path
 
     print()
     print(f"  {C}KYP-MEM{R} — Health Check")
@@ -761,7 +764,7 @@ def _doctor_index_section(vault_path: str, deep: bool = False):
     if legacy["present"]:
         print(f"  {Y}!{R} Legacy shared index: {human_bytes(legacy['bytes'])} at {legacy['path']}")
         print(f"  {D}    Pre-1.0 builds gave every vault in a folder the same index, so each")
-        print(f"      sync pruned the others' notes and re-embedded everything. Now unused.")
+        print("      sync pruned the others' notes and re-embedded everything. Now unused.")
         print(f"      Delete it with: kyp-mem compact --purge-legacy{R}")
 
     report = inspect(store.db_path)

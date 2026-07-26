@@ -1,6 +1,7 @@
 """KYP-MEM web UI — interactive interface for browsing the vault."""
 
 import json
+import os
 import webbrowser
 from datetime import datetime
 from pathlib import Path
@@ -31,7 +32,9 @@ def create_app(vault_path: str = None) -> FastAPI:
     @app.get("/")
     def index():
         html_path = Path(__file__).parent / "static" / "index.html"
-        return HTMLResponse(html_path.read_text())
+        # encoding pinned: read_text() defaults to the locale encoding, which on
+        # Windows is the ANSI code page and cannot decode this file.
+        return HTMLResponse(html_path.read_text(encoding="utf-8"))
 
     @app.get("/api/tree")
     def tree():
@@ -177,7 +180,10 @@ def create_app(vault_path: str = None) -> FastAPI:
         props = body.get("properties", {})
         if not path.endswith(".md"):
             path += ".md"
-        vault.write_note(path, content, tags, props)
+        try:
+            vault.write_note(path, content, tags, props)
+        except ValueError as e:
+            return JSONResponse({"error": str(e)}, 400)
         return JSONResponse({"ok": True, "path": path})
 
     @app.post("/api/sessions/create")
@@ -362,9 +368,26 @@ def create_app(vault_path: str = None) -> FastAPI:
     return app
 
 
-def start_ui(port: int = 3333, vault_path: str = None, open_browser: bool = True):
+def start_ui(port: int = 3333, vault_path: str = None, open_browser: bool = True,
+             host: str = None):
+    """Serve the vault browser.
+
+    Binds loopback by default. The API behind it is unauthenticated and can
+    read, write and delete any note, so binding all interfaces — as this used
+    to do while printing "localhost" — silently published the entire vault to
+    everyone on the network. Opting in to a wider bind is explicit and warned
+    about.
+    """
     app = create_app(vault_path)
+    host = host or os.environ.get("KYP_UI_HOST", "127.0.0.1")
+
     print(f"\033[36mKYP-MEM\033[0m UI -> http://localhost:{port}")
+    if host not in ("127.0.0.1", "localhost", "::1"):
+        print(
+            f"\033[33mWarning:\033[0m listening on {host} — the vault API has no "
+            "authentication, so anyone who can reach this port can read, edit "
+            "and delete your notes."
+        )
     if open_browser:
         webbrowser.open(f"http://localhost:{port}")
-    uvicorn.run(app, host="0.0.0.0", port=port, log_level="warning")
+    uvicorn.run(app, host=host, port=port, log_level="warning")

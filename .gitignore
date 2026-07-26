@@ -9,6 +9,7 @@ node_modules/
 .claude/
 package-lock.json
 chroma/
+.kyp-index-*/
 CLAUDE.md
 PLAN-ui-rewrite.md
 templates/
@@ -30,3 +31,11 @@ secrets.*
 credentials.json
 .npmrc
 .pypirc
+
+# OMC agent state — local operational artifacts with absolute paths.
+# Project-scoped skills are the intentional committable exception.
+.omc/
+!.omc/skills/
+!.omc/skills/**
+.pytest_cache/
+.ruff_cache/

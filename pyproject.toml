@@ -39,15 +39,26 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/kdbalagency/kyp-mem"
-Repository = "https://github.com/kdbalagency/kyp-mem"
-Issues = "https://github.com/kdbalagency/kyp-mem/issues"
+Homepage = "https://github.com/Adhithya-Karthikeyan/KYP-MEM"
+Repository = "https://github.com/Adhithya-Karthikeyan/KYP-MEM"
+Issues = "https://github.com/Adhithya-Karthikeyan/KYP-MEM/issues"
 
 [project.scripts]
 kyp-mem = "kyp_mem.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["kyp_mem"]
+
+[tool.hatch.build.targets.sdist]
+# Explicit allow-list. The default sdist sweeps the whole working tree, which
+# shipped 145 .omc/ agent-state files containing personal absolute paths.
+include = [
+    "kyp_mem",
+    "pyproject.toml",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE",
+]
 
 [tool.ruff]
 # Must match requires-python. Without this, ruff assumes the interpreter it is
