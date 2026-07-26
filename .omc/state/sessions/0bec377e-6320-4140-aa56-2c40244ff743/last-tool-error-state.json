@@ -1,0 +1,7 @@
+{
+  "tool_name": "Bash",
+  "tool_input_preview": "{\"command\":\"cd /Users/adhithya/Projects/tools/KYP-MEM\\nSMOKE=/private/tmp/claude-501/-Users-adhithya-Projects-tools-KYP-MEM/0bec377e-6320-4140-aa56-2c40244ff743/scratchpad/smokevault\\nrm -rf \\\"$SMOKE\\...",
+  "error": "Exit code 1\n(eval):39: parse error near `\\n'",
+  "timestamp": "2026-07-26T16:49:54.216Z",
+  "retry_count": 1
+}

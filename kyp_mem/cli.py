@@ -43,7 +43,19 @@ def main():
 
     un = subparsers.add_parser("uninstall", help="Remove KYP-MEM from Claude Code (hooks + MCP server)")
     un.add_argument("--purge", action="store_true", help="Also delete vault data and config at ~/.kyp-mem")
-    subparsers.add_parser("doctor", help="Check installation and config health")
+    doc_parser = subparsers.add_parser("doctor", help="Check installation, config, and index health")
+    doc_parser.add_argument("--deep", action="store_true",
+                            help="Also exercise the semantic index read/write path")
+
+    comp_parser = subparsers.add_parser(
+        "compact", help="Reclaim disk used by the semantic index (orphan sweep + rebuild + vacuum)")
+    comp_parser.add_argument("--dry-run", action="store_true", help="Report what would be freed, change nothing")
+    comp_parser.add_argument("--no-rebuild", action="store_true",
+                             help="Skip the index rebuild (rebuilding is what reclaims deleted slots)")
+    comp_parser.add_argument("--purge-legacy", action="store_true",
+                             help="Also delete the pre-1.0 shared index directory, if present")
+
+    subparsers.add_parser("reindex", help="Rebuild the semantic index from the markdown vault")
 
     cfg_parser = subparsers.add_parser("config", help="Get or set configuration values")
     cfg_parser.add_argument("key", nargs="?", help="Config key (e.g. session_model)")
@@ -88,7 +100,11 @@ def main():
     elif args.command == "uninstall":
         _run_uninstall(purge=args.purge)
     elif args.command == "doctor":
-        _run_doctor()
+        _run_doctor(deep=args.deep)
+    elif args.command == "compact":
+        _run_compact(dry_run=args.dry_run, rebuild=not args.no_rebuild, purge_legacy=args.purge_legacy)
+    elif args.command == "reindex":
+        _run_reindex()
     elif args.command == "hook":
         from .hooks import handle_session_start, handle_post_tool_use, handle_user_prompt, handle_stop
         if args.hook_command == "session-start":
@@ -522,7 +538,99 @@ def _run_tree():
     _print_tree(v.get_full_tree(), "")
 
 
-def _run_doctor():
+def _run_compact(dry_run: bool = False, rebuild: bool = True, purge_legacy: bool = False):
+    from .config import get_vault_path
+    from .vault import Vault
+    from .maintenance import compact, human_bytes
+
+    print()
+    print(f"  {C}KYP-MEM{R} — Compact semantic index")
+    print()
+
+    vault = Vault(get_vault_path())
+    store = vault.vector
+    if store is None:
+        print(f"  {Y}✗{R} Semantic index is disabled (KYP_NO_VECTOR is set)")
+        print()
+        return
+
+    if rebuild and not dry_run:
+        print(f"  {D}  Rebuilding from {len(vault.index.notes)} notes...{R}")
+
+    result = compact(vault, rebuild=rebuild, dry_run=dry_run, purge_legacy=purge_legacy)
+    if not result.get("ok"):
+        print(f"  {Y}✗{R} {result.get('reason', 'failed')}")
+        print()
+        return
+
+    steps = result["steps"]
+    orphans = steps.get("orphans", {}).get("removed", [])
+    dropped = steps.get("collections", {}).get("dropped", [])
+    vac = steps.get("vacuum", {})
+
+    if dropped:
+        print(f"  {G}✓{R} Dropped {len(dropped)} unused collection(s): {', '.join(dropped)}")
+    if orphans:
+        print(f"  {G}✓{R} Removed {len(orphans)} orphaned segment(s)")
+    if steps.get("fulltext", {}).get("optimized"):
+        print(f"  {G}✓{R} Merged full-text index segments")
+    if vac.get("freed_bytes"):
+        print(f"  {G}✓{R} Vacuumed sqlite — {human_bytes(vac['freed_bytes'])} returned")
+    if "sync" in steps:
+        s = steps["sync"]
+        print(f"  {G}✓{R} Re-embedded {s.get('added', 0)} notes")
+
+    legacy = steps.get("legacy", {})
+    if steps.get("legacy_removed", {}).get("removed"):
+        print(f"  {G}✓{R} Removed legacy shared index "
+              f"({human_bytes(steps['legacy_removed']['freed_bytes'])})")
+    elif legacy.get("present"):
+        print()
+        print(f"  {Y}!{R} Legacy shared index found: {human_bytes(legacy['bytes'])}")
+        print(f"  {D}    {legacy['path']}{R}")
+        print(f"  {D}    Pre-1.0 builds shared one index between every vault in a folder.{R}")
+        print(f"  {D}    Delete it with: kyp-mem compact --purge-legacy{R}")
+
+    before, after = result["before_bytes"], result["after_bytes"]
+    freed = result["freed_bytes"]
+    print()
+    if dry_run:
+        print(f"  {Y}dry run{R} — nothing was changed")
+        print(f"  {D}  Current size: {human_bytes(before)}{R}")
+    else:
+        pct = (freed / before * 100) if before else 0
+        print(f"  {C}{human_bytes(before)} → {human_bytes(after)}{R}  "
+              f"({human_bytes(freed)} freed, {pct:.1f}%)")
+    print()
+
+
+def _run_reindex():
+    from .config import get_vault_path
+    from .vault import Vault
+
+    print()
+    print(f"  {C}KYP-MEM{R} — Rebuild semantic index")
+    print()
+
+    vault = Vault(get_vault_path())
+    store = vault.vector
+    if store is None:
+        print(f"  {Y}✗{R} Semantic index is disabled (KYP_NO_VECTOR is set)")
+        print()
+        return
+
+    print(f"  {D}  Embedding {len(vault.index.notes)} notes...{R}")
+    store.rebuild()
+    summary = vault.sync_vector()
+    stats = store.stats()
+    if summary.get("ok"):
+        print(f"  {G}✓{R} Indexed {stats.get('chunks', 0)} chunks from {stats.get('documents', 0)} notes")
+    else:
+        print(f"  {Y}✗{R} Reindex failed — see stderr above")
+    print()
+
+
+def _run_doctor(deep: bool = False):
     from .config import CONFIG_FILE, load_config, get_vault_path
 
     print()
@@ -592,11 +700,21 @@ def _run_doctor():
         elif has_post or has_stop:
             print(f"  {Y}!{R} Partial hooks installed ({label}) — run: kyp-mem install-hooks")
 
-    # Session log
-    session_file = Path.home() / ".kyp-mem" / "sessions" / "current.jsonl"
-    if session_file.exists():
-        line_count = len(session_file.read_text().strip().split("\n"))
-        print(f"  {D}·{R} Active session log: {line_count} entries")
+    # Session logs — one file per Claude session, so count them all.
+    session_dir = Path.home() / ".kyp-mem" / "sessions"
+    if session_dir.exists():
+        logs = list(session_dir.glob("current*.jsonl"))
+        if logs:
+            entries = 0
+            for log in logs:
+                try:
+                    entries += len(log.read_text().strip().split("\n"))
+                except OSError:
+                    pass
+            print(f"  {D}·{R} Active session logs: {len(logs)} file(s), {entries} entries")
+
+    # Semantic index health and footprint
+    _doctor_index_section(vault_path, deep=deep)
 
     # Binary
     kyp_bin = shutil.which("kyp-mem")
@@ -615,6 +733,74 @@ def _run_doctor():
         print(f"  {G}✓{R} MCP SDK installed")
 
     print()
+
+
+def _doctor_index_section(vault_path: str, deep: bool = False):
+    """Report semantic-index size and waste.
+
+    The health check is only run with --deep. It used to run implicitly on
+    every process start, which was the main source of both startup latency and
+    index bloat.
+    """
+    try:
+        from .vector import VectorStore, vector_enabled
+        from .maintenance import inspect, human_bytes
+    except ImportError as e:
+        print(f"  {Y}✗{R} Semantic index unavailable: {e}")
+        return
+
+    if not vector_enabled():
+        print(f"  {D}·{R} Semantic index disabled (KYP_NO_VECTOR is set)")
+        return
+
+    from .maintenance import legacy_index_report
+
+    store = VectorStore(vault_path)
+
+    legacy = legacy_index_report(store)
+    if legacy["present"]:
+        print(f"  {Y}!{R} Legacy shared index: {human_bytes(legacy['bytes'])} at {legacy['path']}")
+        print(f"  {D}    Pre-1.0 builds gave every vault in a folder the same index, so each")
+        print(f"      sync pruned the others' notes and re-embedded everything. Now unused.")
+        print(f"      Delete it with: kyp-mem compact --purge-legacy{R}")
+
+    report = inspect(store.db_path)
+    if not report["exists"]:
+        print(f"  {D}·{R} Semantic index not built yet — run: kyp-mem reindex")
+        return
+
+    print(f"  {G}✓{R} Semantic index: {human_bytes(report['total_bytes'])} on disk "
+          f"({report['embeddings']} embeddings)")
+
+    waste = sum(o["bytes"] for o in report["orphans"]) + report["reclaimable_sqlite_bytes"]
+    if report["orphans"]:
+        print(f"  {Y}!{R} {len(report['orphans'])} orphaned segment(s) — "
+              f"{human_bytes(sum(o['bytes'] for o in report['orphans']))}")
+    if report["reclaimable_sqlite_bytes"] > 1024 * 1024:
+        print(f"  {Y}!{R} {human_bytes(report['reclaimable_sqlite_bytes'])} reclaimable in sqlite freelist")
+
+    stale = [n for _, n in report["collections"] if n != store.collection_name]
+    if stale:
+        print(f"  {Y}!{R} {len(stale)} unused collection(s): {', '.join(stale)}")
+
+    # An index far larger than its content is the signature of the growth bug.
+    if report["embeddings"] and report["total_bytes"] > 50 * 1024 * 1024:
+        per_record = report["total_bytes"] / report["embeddings"]
+        if per_record > 20_000:
+            print(f"  {Y}!{R} {human_bytes(int(per_record))} of index per embedding — "
+                  "far above expected; run: kyp-mem compact")
+
+    if waste > 1024 * 1024 or stale:
+        print(f"  {D}    Reclaim with: kyp-mem compact{R}")
+
+    if deep:
+        ok, detail = store.health_check()
+        if ok:
+            print(f"  {G}✓{R} Index read/write check passed")
+        else:
+            print(f"  {Y}✗{R} Index check failed: {detail}")
+            print(f"  {D}    Repair with: kyp-mem reindex{R}")
+    store.close()
 
 
 def _print_banner():

@@ -31,7 +31,11 @@ dependencies = [
     "fastapi>=0.100.0",
     "uvicorn>=0.20.0",
     "chromadb>=0.4.0",
-    "anthropic>=0.40.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
 ]
 
 [project.urls]
@@ -44,3 +48,16 @@ kyp-mem = "kyp_mem.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["kyp_mem"]
+
+[tool.ruff]
+# Must match requires-python. Without this, ruff assumes the interpreter it is
+# running under (3.14 here) and silently accepts syntax that fails on 3.10 —
+# which is how a nested same-quote f-string in server.py shipped in a package
+# declaring 3.10 support, making the MCP server unimportable there.
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: integration tests that build a real ChromaDB store",
+]

@@ -1,0 +1,230 @@
+"""Integration tests against a real ChromaDB store in a temp directory."""
+
+import pytest
+
+from kyp_mem.vector import VectorStore, content_hash
+
+pytest.importorskip("chromadb")
+
+pytestmark = pytest.mark.slow
+
+
+KNOWLEDGE_MD = """# Knowledge
+
+## Architecture
+
+The MCP server exposes vault tools over stdio and is started by Claude Code.
+
+## Bugs
+
+The stop hook raced on a shared activity log file, so two concurrent sessions
+summarised each other's work into the wrong project note.
+
+## Key Decisions
+
+Markdown on disk stays the source of truth; every derived index is disposable
+and can be rebuilt from the notes at any time.
+"""
+
+SESSION_MD = """# Session s1
+
+## Summary
+
+Investigated runaway disk usage in the persistence layer.
+
+## LEARNED
+
+Chroma tombstones deleted vectors and never reclaims the disk they used, so the
+index kept growing long after the records were gone.
+
+## COMPLETED
+
+Added an orphan-segment sweep and a vacuum step to the maintenance command.
+"""
+
+GREENLEAF_MD = """# GreenLeaf
+
+## Overview
+
+A gardening companion app that tracks watering schedules for houseplants.
+
+## Features
+
+Species lookup, soil moisture reminders, and a photo journal of plant growth.
+"""
+
+DOCS = {
+    "KYP-MEM/Knowledge.md": ("KYP-MEM", "Knowledge", KNOWLEDGE_MD, ["knowledge"]),
+    "KYP-MEM/Sessions/s1.md": ("KYP-MEM", "Session s1", SESSION_MD, ["session"]),
+    "GreenLeaf/Knowledge.md": ("GreenLeaf", "GreenLeaf", GREENLEAF_MD, ["knowledge"]),
+}
+
+
+@pytest.fixture
+def store(tmp_path):
+    s = VectorStore(str(tmp_path / "vault"))
+    yield s
+    s.close()
+
+
+@pytest.fixture
+def synced(store):
+    store.sync(DOCS)
+    return store
+
+
+def test_construction_opens_nothing(tmp_path):
+    # The whole point of the rewrite: building the store must not touch Chroma,
+    # so a session-start hook never loads the index.
+    s = VectorStore(str(tmp_path / "vault"))
+    assert s.is_connected() is False
+
+
+def test_sync_reports_what_it_did(store):
+    summary = store.sync(DOCS)
+    assert summary["ok"] is True
+    assert summary["added"] == 3
+    assert summary["removed"] == 0
+
+
+def test_indexes_non_session_notes(synced):
+    # The old store only embedded Sessions/, so Knowledge.md was unreachable.
+    hits = synced.search("gardening houseplants watering")
+    assert any(h.doc_path == "GreenLeaf/Knowledge.md" for h in hits)
+
+
+def test_semantic_paraphrase_match(synced):
+    # No shared keywords with the note; only meaning connects them.
+    hits = synced.search("why does disk usage keep growing after deletions")
+    assert hits
+    assert hits[0].doc_path == "KYP-MEM/Sessions/s1.md"
+
+
+def test_hits_carry_chunk_context(synced):
+    hits = synced.search("chroma tombstones")
+    assert hits[0].heading.endswith("LEARNED")
+    assert hits[0].project == "KYP-MEM"
+    assert hits[0].title == "Session s1"
+
+
+def test_project_filter(synced):
+    # "watering plants" also has to *not* pull in the KYP-MEM notes.
+    hits = synced.search("watering plants", project="GreenLeaf")
+    assert hits
+    assert all(h.project == "GreenLeaf" for h in hits)
+
+
+def test_project_filter_excludes_other_projects(synced):
+    hits = synced.search("index disk usage growing", project="GreenLeaf", min_similarity=0.0)
+    assert all(h.doc_path.startswith("GreenLeaf/") for h in hits)
+
+
+def test_sessions_only_filter(synced):
+    hits = synced.search("stop hook log", sessions_only=True)
+    assert all("/Sessions/" in h.doc_path for h in hits)
+
+
+def test_similarity_floor_suppresses_junk(synced):
+    # An unrelated query must be allowed to return nothing at all — the old
+    # store always handed back its top 5 regardless of quality.
+    assert synced.search("thai green curry recipe", min_similarity=0.9) == []
+
+
+def test_similarities_are_descending_and_bounded(synced):
+    hits = synced.search("session log", min_similarity=0.0)
+    sims = [h.similarity for h in hits]
+    assert sims == sorted(sims, reverse=True)
+    assert all(-1.01 <= s <= 1.01 for s in sims)
+
+
+def test_empty_query_returns_nothing(synced):
+    assert synced.search("") == []
+    assert synced.search("   ") == []
+
+
+def test_resync_is_idempotent(synced):
+    summary = synced.sync(DOCS)
+    assert summary["unchanged"] == 3
+    assert summary["added"] == 0
+    assert summary["updated"] == 0
+
+
+def test_changed_note_is_reembedded(synced):
+    docs = dict(DOCS)
+    docs["GreenLeaf/Knowledge.md"] = (
+        "GreenLeaf",
+        "GreenLeaf",
+        "# GreenLeaf\n\nRewritten: now a bicycle repair logbook with torque specifications.\n",
+        ["knowledge"],
+    )
+    summary = synced.sync(docs)
+    assert summary["updated"] == 1
+    hits = synced.search("bicycle torque specifications")
+    assert any(h.doc_path == "GreenLeaf/Knowledge.md" for h in hits)
+
+
+def test_shrinking_a_note_drops_its_extra_chunks(synced):
+    before = synced.stats()["chunks"]
+    docs = dict(DOCS)
+    docs["KYP-MEM/Knowledge.md"] = ("KYP-MEM", "Knowledge", "# Knowledge\n\nmuch smaller now\n", [])
+    synced.sync(docs)
+    assert synced.stats()["chunks"] < before
+    assert synced.stats()["documents"] == 3
+
+
+def test_removed_note_is_pruned(synced):
+    docs = {k: v for k, v in DOCS.items() if k != "GreenLeaf/Knowledge.md"}
+    summary = synced.sync(docs)
+    assert summary["removed"] == 1
+    assert all(h.doc_path != "GreenLeaf/Knowledge.md" for h in synced.search("gardening", min_similarity=0.0))
+
+
+def test_prune_actually_reaches_zero_documents(synced):
+    synced.sync({})
+    assert synced.stats()["documents"] == 0
+    assert synced.stats()["chunks"] == 0
+
+
+def test_upsert_single_note(synced):
+    synced.upsert_note(
+        "New/Note.md", "New", "Note", "# Note\n\nA distinctive marker about submarine sonar.\n", []
+    )
+    hits = synced.search("submarine sonar")
+    assert hits[0].doc_path == "New/Note.md"
+
+
+def test_upsert_replaces_rather_than_appends(synced):
+    synced.upsert_note("N.md", "P", "N", "# N\n\nfirst version about volcanoes\n", [])
+    synced.upsert_note("N.md", "P", "N", "# N\n\nsecond version about glaciers\n", [])
+    docs = [h.doc_path for h in synced.search("volcanoes", min_similarity=0.0)]
+    assert "N.md" not in docs or not synced.search("volcanoes eruption lava", min_similarity=0.6)
+
+
+def test_delete_note(synced):
+    synced.delete_note("GreenLeaf/Knowledge.md")
+    assert all(
+        h.doc_path != "GreenLeaf/Knowledge.md"
+        for h in synced.search("gardening", min_similarity=0.0)
+    )
+
+
+def test_health_check_passes_on_a_good_store(synced):
+    ok, detail = synced.health_check()
+    assert ok, detail
+
+
+def test_rebuild_then_resync_restores_everything(synced):
+    synced.rebuild()
+    assert synced.stats()["chunks"] == 0
+    synced.sync(DOCS)
+    assert synced.search("gardening houseplants")
+
+
+def test_content_hash_is_stable_and_distinguishing():
+    assert content_hash("abc") == content_hash("abc")
+    assert content_hash("abc") != content_hash("abd")
+
+
+def test_notes_are_split_into_multiple_chunks(synced):
+    # One vector per note was the old behaviour and the main accuracy problem.
+    assert synced.stats()["chunks"] > synced.stats()["documents"]

@@ -24,12 +24,21 @@ YOU MUST FOLLOW THESE INSTRUCTIONS when kyp-mem tools are available.
 4. Use the returned context to ground yourself: understand architecture, known bugs, past decisions, and what was done in recent sessions. Do NOT ask the user questions that are already answered in the project context.
 5. Check the project objective with `kyp_objective_get(project)`. If none is set, ask the user for the project's main goal and save it with `kyp_objective_set(project, objective)`. Keep your work aligned to this objective.
 
-### DURING WORK — WHEN TO SEARCH SESSIONS
-Call `kyp_session_search(query)` when:
+### DURING WORK — WHEN TO SEARCH
+`kyp_search(query)` is the primary tool. It is hybrid: exact keyword matching AND
+semantic meaning matching, across ALL notes (knowledge, decisions, guides, sessions).
+Ask it real questions in natural language. Call it when:
 - You encounter a bug or error — search for it to see if it was investigated before.
 - You are about to make an architectural decision — check if a prior session already made this decision.
-- The user asks "did we already...", "what happened with...", "last time we..." — search sessions semantically.
-- You are unsure about project-specific behavior — sessions contain investigation logs.
+- The user asks "did we already...", "what happened with...", "last time we...".
+- You are unsure about project-specific behavior.
+- You need an exact identifier, file name, or error string — exact terms are matched too.
+
+Use `kyp_session_search(query)` only when you specifically want work *history* and
+want to exclude project knowledge notes.
+
+Both return nothing when nothing is genuinely relevant — an empty result is a real
+answer, not a reason to retry with a vaguer query.
 
 ### DURING WORK — WHEN TO UPDATE KNOWLEDGE
 Call `kyp_write` to update the project's Knowledge.md when you:
@@ -42,7 +51,6 @@ Call `kyp_write` to update the project's Knowledge.md when you:
 Also use `kyp_write` to create new project notes for substantial topics (API docs, setup guides, component deep-dives). Use [[wikilinks]] to connect notes.
 
 ### DURING WORK — WHEN TO USE OTHER TOOLS
-- `kyp_search(query)` — keyword search across ALL notes (not just sessions). Use for finding specific content.
 - `kyp_read(path)` — read a specific note. Default is brief mode; use full=True for complete content.
 - `kyp_related(path)` — find notes connected by backlinks, tags, or folder proximity.
 - `kyp_tags(tag)` — browse by tag or list all tags.
@@ -58,6 +66,7 @@ Sessions are captured automatically by hooks — you do not need to create sessi
 - Tag notes consistently: use project name, topic tags, and type tags (bug, decision, guide, etc.).
 
 Call this tool to acknowledge these instructions. It returns a confirmation."""
+    vault.refresh_if_stale()
     projects = []
     for path in vault.index.notes:
         parts = path.split("/")
@@ -70,6 +79,7 @@ Call this tool to acknowledge these instructions. It returns a confirmation."""
 @mcp.tool()
 def kyp_list(path: str = "") -> str:
     """List notes and folders in the vault. Shows inline tags for quick navigation. Pass a folder path or empty for root."""
+    vault.refresh_if_stale()
     tree = vault.list_tree(path)
     lines = []
     for f in tree["folders"]:
@@ -90,6 +100,7 @@ def kyp_list(path: str = "") -> str:
 @mcp.tool()
 def kyp_read(path: str, full: bool = False) -> str:
     """Read a note. Returns brief summary by default (title, tags, preview, links). Set full=True for complete content."""
+    vault.refresh_if_stale()
     note = vault.read(path)
     if not note:
         return f"Not found: {path}"
@@ -113,7 +124,11 @@ def kyp_read(path: str, full: bool = False) -> str:
         if outlinks:
             parts.append(f"\nlinks: {', '.join(f'[[{l}]]' for l in outlinks)}")
         if backlinks:
-            parts.append(f"backlinks: {', '.join(f'[[{b.replace('.md', '')}]]' for b in backlinks)}")
+            # Built outside the f-string: reusing the same quote character
+            # inside an f-string is only valid on Python 3.12+, and this
+            # package supports 3.10.
+            names = ", ".join("[[{}]]".format(b.replace(".md", "")) for b in backlinks)
+            parts.append(f"backlinks: {names}")
 
         return "\n".join(parts)
 
@@ -175,25 +190,42 @@ def kyp_delete(path: str) -> str:
 
 
 @mcp.tool()
-def kyp_search(query: str, tag: str = "") -> str:
-    """Full-text search across all notes. Optionally filter by tag."""
-    results = vault.search(query, tag or None)
-    if not results:
-        return "No results found."
+def kyp_search(query: str, tag: str = "", project: str = "", limit: int = 10) -> str:
+    """PRIMARY SEARCH. Hybrid keyword + semantic search across ALL notes — knowledge, decisions, guides, and sessions.
 
-    lines = [f"Search: '{query}'" + (f" [tag: {tag}]" if tag else ""), ""]
-    for path, score, snippet in results:
-        note = vault.index.notes.get(path)
-        title = note.title if note else path
-        lines.append(f"  {title} ({path}) — score: {score:.3f}")
-        if snippet:
-            lines.append(f"    {snippet}")
-    return "\n".join(lines)
+    Combines exact-term matching (finds identifiers like `_prune_stale_logs`) with
+    meaning-based matching (finds 'why does disk keep growing' in a note that never
+    uses those words). Ask questions in natural language. Optionally filter by tag
+    or project. Returns nothing when nothing is genuinely relevant.
+    """
+    vault.refresh_if_stale()
+    results = vault.search(query, tag or None, limit=limit, project=project or None)
+    if not results:
+        return f"No results for '{query}'."
+
+    scope = []
+    if tag:
+        scope.append(f"tag: {tag}")
+    if project:
+        scope.append(f"project: {project}")
+    header = f"Search: '{query}'" + (f" [{', '.join(scope)}]" if scope else "")
+
+    lines = [header, ""]
+    for h in results:
+        via = "+".join(h.sources)
+        where = f" > {h.heading}" if h.heading else ""
+        lines.append(f"  {h.title or h.path}{where} ({h.path}) — {via}, score {h.score:.4f}")
+        if h.snippet:
+            for snip_line in h.snippet.strip().split("\n"):
+                lines.append(f"    {snip_line}")
+        lines.append("")
+    return "\n".join(lines).rstrip()
 
 
 @mcp.tool()
 def kyp_tags(tag: str = "") -> str:
     """List all tags with note counts, or get all notes with a specific tag."""
+    vault.refresh_if_stale()
     if tag:
         notes = vault.get_notes_by_tag(tag)
         if not notes:
@@ -209,6 +241,7 @@ def kyp_tags(tag: str = "") -> str:
 @mcp.tool()
 def kyp_related(path: str) -> str:
     """Find notes related to the given note — by backlinks, shared tags, and folder proximity."""
+    vault.refresh_if_stale()
     related = vault.get_related(path)
     if not related:
         return f"No related notes for: {path}"
@@ -224,6 +257,7 @@ def kyp_related(path: str) -> str:
 @mcp.tool()
 def kyp_recent(limit: int = 10) -> str:
     """Get recently modified notes."""
+    vault.refresh_if_stale()
     notes = vault.get_recent(limit)
     if not notes:
         return "Vault is empty."
@@ -239,6 +273,7 @@ def kyp_recent(limit: int = 10) -> str:
 @mcp.tool()
 def kyp_stats() -> str:
     """Get vault statistics — note count, folders, tags, links, and token economics (exploration cost vs memory injection cost)."""
+    vault.refresh_if_stale()
     s = vault.get_stats()
     lines = [
         "Vault stats:",
@@ -248,6 +283,26 @@ def kyp_stats() -> str:
         f"  Links: {s['links']}",
         f"  Backlinks: {s['backlinks']}",
     ]
+
+    store = vault.vector
+    if store is not None and store.is_connected():
+        try:
+            from .maintenance import human_bytes, inspect as inspect_store
+
+            vs = store.stats()
+            disk = inspect_store(store.db_path)
+            lines.append("")
+            lines.append("Semantic index:")
+            lines.append(f"  Chunks: {vs.get('chunks', 0)} across {vs.get('documents', 0)} notes")
+            lines.append(f"  On disk: {human_bytes(disk['total_bytes'])}")
+            if disk["orphans"]:
+                reclaim = sum(o["bytes"] for o in disk["orphans"])
+                lines.append(
+                    f"  ! {len(disk['orphans'])} orphaned segment(s), {human_bytes(reclaim)} "
+                    "reclaimable — run: kyp-mem compact"
+                )
+        except Exception:
+            pass
 
     try:
         from .config import STATS_FILE
@@ -274,22 +329,28 @@ def kyp_stats() -> str:
 
 
 @mcp.tool()
-def kyp_session_search(query: str, project: str = None) -> str:
-    """Semantic search across past session logs using vector embeddings. Use this to recall: what was investigated, bugs encountered, decisions made, and next steps from prior sessions. Search before re-investigating known issues or making decisions that may have been made before."""
-    from .vector import get_session_memory
-    results = get_session_memory().search_sessions(query, project=project, n_results=5)
-    
-    if not results or not results.get("ids") or not results["ids"][0]:
-        return "No relevant past sessions found."
-    
-    lines = ["Semantic Session Search Results:", ""]
-    for i, path in enumerate(results["ids"][0]):
-        doc = results["documents"][0][i]
-        score = results["distances"][0][i]
-        lines.append(f"--- Session: {path} (Distance: {score:.2f}) ---")
-        lines.append(doc)
+def kyp_session_search(query: str, project: str = None, limit: int = 5) -> str:
+    """Semantic search restricted to past SESSION LOGS only.
+
+    Use when you specifically want work history — what was investigated, which bugs
+    were hit, what was decided, what was left unfinished. For anything else prefer
+    `kyp_search`, which covers sessions *and* project knowledge in one call.
+    """
+    vault.refresh_if_stale()
+    hits = vault.search_sessions(query, project=project, limit=limit)
+    if not hits:
+        return f"No relevant past sessions for '{query}'."
+
+    from .search import relative_heading, strip_embedded_header
+
+    lines = [f"Session search: '{query}'", ""]
+    for h in hits:
+        rel = relative_heading(h.heading, h.title)
+        where = f" > {rel}" if rel else ""
+        lines.append(f"--- {h.doc_path}{where} (similarity {h.similarity:.2f}) ---")
+        lines.append(strip_embedded_header(h.text))
         lines.append("")
-    return "\n".join(lines)
+    return "\n".join(lines).rstrip()
 
 
 @mcp.tool()
@@ -324,6 +385,7 @@ def kyp_session_create(project: str, summary: str = "", investigated: str = "", 
 @mcp.tool()
 def kyp_sessions(project: str = "", limit: int = 10) -> str:
     """List sessions, optionally filtered by project. Shows most recent first."""
+    vault.refresh_if_stale()
     sessions = []
     for path, note in vault.index.notes.items():
         if "/Sessions/" not in path and not path.startswith("Sessions/"):
@@ -371,6 +433,7 @@ def kyp_objective_set(project: str, objective: str) -> str:
 @mcp.tool()
 def kyp_project_context(project: str) -> str:
     """CALL THIS AT SESSION START. Returns the project's full context: Knowledge.md (ground truth), project notes, and recent session summaries. Use this to understand architecture, known bugs, past decisions, and what was done recently. This prevents hallucination and avoids repeating past work."""
+    vault.refresh_if_stale()
     parts = []
 
     MAX_KNOWLEDGE_CHARS = 3000

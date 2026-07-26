@@ -1,15 +1,53 @@
 """Vault — markdown file storage with frontmatter, wikilinks, and indexing."""
 
 import re
-import json
-import yaml
-from pathlib import Path
+from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime
-from collections import defaultdict
+from pathlib import Path
+
+import yaml
+
+from .search import hybrid_search
+from .textindex import BM25Index
+from .vector import init_vector_db, vector_enabled
 
 FRONTMATTER_RE = re.compile(r"^---\s*\n(.*?)\n---\s*\n", re.DOTALL)
 WIKILINK_RE = re.compile(r"\[\[([^\]]+)\]\]")
+
+# Minimum share of a query's information content a keyword hit must match to
+# enter the ranking. RRF scores by rank, so without an absolute gate the single
+# weak match for an off-topic query becomes rank 1 and looks like an answer.
+#
+# Measured coverage: off-topic queries that clip one incidental word land at
+# 0.15-0.28 ("thai green curry recipe" hitting a note named GreenLeaf; "tax
+# return deadline 2026" hitting a timestamped session filename), while relevant
+# queries that genuinely need keyword evidence sit at 0.34-1.00. 0.30 is the
+# gap. The margin is real but not wide, and it comes from a small sample —
+# re-measure before moving it. Queries whose keyword coverage falls below this
+# are not lost: strong semantic similarity still carries them on its own.
+MIN_KEYWORD_IDF_COVERAGE = 0.30
+
+# Two similarity floors, because one cannot work.
+#
+# Measured on a real vault with the default MiniLM embeddings, the relevant and
+# irrelevant score ranges *overlap*: an off-topic query peaked at 0.244 while a
+# genuinely relevant short note scored 0.190. Any single threshold therefore
+# either admits junk or drops real answers.
+#
+# So the floor depends on how much evidence there is. Semantic similarity on
+# its own must clear the strict bar. A note the keyword index independently
+# found for the same query only has to clear the lenient one — two weak,
+# independent signals agreeing is stronger evidence than either alone.
+#
+# A better embedding model narrows the overlap and is the real fix; see
+# `embedding_profile` in vector.py.
+SEMANTIC_FLOOR_ALONE = 0.28
+SEMANTIC_FLOOR_CORROBORATED = 0.15
+
+
+def is_session_path(path: str) -> bool:
+    return "/Sessions/" in path or path.startswith("Sessions/")
 
 
 @dataclass
@@ -95,160 +133,256 @@ def serialize_note(note: Note) -> str:
 
 
 class Index:
+    """In-memory index over the vault.
+
+    Every structure here supports incremental update. Previously any single
+    write triggered a full re-parse of every note plus a rebuild of the whole
+    word index, so saving one note was O(vault).
+    """
+
     def __init__(self):
-        self.notes: dict[str, Note] = {}
-        self.backlinks: dict[str, set] = defaultdict(set)
-        self.forward_links: dict[str, set] = defaultdict(set)
-        self.tag_index: dict[str, set] = defaultdict(set)
-        self._word_index: dict[str, set] = defaultdict(set)
-        self._name_to_path: dict[str, str] = {}
+        self.notes: dict = {}
+        self.tag_index: dict = defaultdict(set)
+        self.folder_index: dict = defaultdict(set)
+        self.bm25 = BM25Index()
+        # Wikilinks are recorded by the *name* written in the source, resolved
+        # to a path only at read time. That way a note created later
+        # automatically picks up links that already pointed at its name,
+        # without needing a global rebuild.
+        self._link_sources: dict = defaultdict(set)
+        self._name_to_path: dict = {}
 
-    def rebuild(self, notes: dict[str, Note]):
-        self.notes = notes
-        self.backlinks = defaultdict(set)
-        self.forward_links = defaultdict(set)
-        self.tag_index = defaultdict(set)
-        self._word_index = defaultdict(set)
-        self._name_to_path = {}
+    # --- names ----------------------------------------------------------------
 
-        for path, note in notes.items():
-            self._name_to_path[Path(path).stem.lower()] = path
-            self._name_to_path[note.title.lower()] = path
+    @staticmethod
+    def _names_for(note: Note) -> set:
+        return {Path(note.path).stem.lower(), (note.title or "").lower()} - {""}
 
-        for path, note in notes.items():
-            for link in note.links:
-                target = self._name_to_path.get(link.lower())
-                if target and target != path:
-                    self.backlinks[target].add(path)
-                    self.forward_links[path].add(target)
+    # --- mutation -------------------------------------------------------------
 
-            for tag in note.tags:
-                self.tag_index[tag.lower()].add(path)
+    def add_note(self, note: Note):
+        """Insert or replace a single note."""
+        if note.path in self.notes:
+            self.remove_note(note.path)
 
-            text = f"{note.title} {note.content} {' '.join(note.tags)}".lower()
-            for word in set(re.findall(r"\w+", text)):
-                self._word_index[word].add(path)
+        self.notes[note.path] = note
+        for name in self._names_for(note):
+            self._name_to_path[name] = note.path
+        for tag in note.tags:
+            self.tag_index[tag.lower()].add(note.path)
+        if note.folder:
+            self.folder_index[note.folder].add(note.path)
+        for link in note.links:
+            self._link_sources[link.lower()].add(note.path)
 
-    def search(self, query: str, tag_filter: str = None) -> list[tuple[str, float, str]]:
-        query_words = re.findall(r"\w+", query.lower())
-        if not query_words:
-            return []
+        self.bm25.add(
+            note.path,
+            title=note.title,
+            body=note.content,
+            tags=note.tags,
+            path=note.path,
+        )
 
+    def remove_note(self, path: str):
+        note = self.notes.pop(path, None)
+        if note is None:
+            return
+        for name in self._names_for(note):
+            if self._name_to_path.get(name) == path:
+                del self._name_to_path[name]
+        for tag in note.tags:
+            self.tag_index[tag.lower()].discard(path)
+            if not self.tag_index[tag.lower()]:
+                del self.tag_index[tag.lower()]
+        if note.folder:
+            self.folder_index[note.folder].discard(path)
+            if not self.folder_index[note.folder]:
+                del self.folder_index[note.folder]
+        for link in note.links:
+            self._link_sources[link.lower()].discard(path)
+            if not self._link_sources[link.lower()]:
+                del self._link_sources[link.lower()]
+        self.bm25.remove(path)
+
+    def rebuild(self, notes: dict):
+        self.__init__()
+        for note in notes.values():
+            self.add_note(note)
+
+    # --- links ----------------------------------------------------------------
+
+    def resolve(self, name: str):
+        return self._name_to_path.get(name.lower())
+
+    def forward_links(self, path: str) -> set:
+        note = self.notes.get(path)
+        if not note:
+            return set()
+        out = set()
+        for link in note.links:
+            target = self.resolve(link)
+            if target and target != path:
+                out.add(target)
+        return out
+
+    def backlinks(self, path: str) -> set:
+        note = self.notes.get(path)
+        if not note:
+            return set()
+        sources = set()
+        for name in self._names_for(note):
+            sources |= self._link_sources.get(name, set())
+        return sources - {path}
+
+    # --- search ---------------------------------------------------------------
+
+    def search(self, query: str, tag_filter: str | None = None, limit: int = 20,
+               min_idf_coverage: float = 0.0) -> list:
         candidates = None
-        for word in query_words:
-            matching = set()
-            for idx_word, paths in self._word_index.items():
-                if word in idx_word:
-                    matching |= paths
-            candidates = matching if candidates is None else candidates & matching
-
-        if not candidates:
-            return []
-
         if tag_filter:
-            candidates &= self.tag_index.get(tag_filter.lower(), set())
+            candidates = self.tag_index.get(tag_filter.lower(), set())
+            if not candidates:
+                return []
+        return self.bm25.search(
+            query, limit=limit, candidates=candidates, min_idf_coverage=min_idf_coverage
+        )
 
-        results = []
-        for path in candidates:
-            note = self.notes[path]
-            text = f"{note.title}\n{note.content}"
-            score = sum(text.lower().count(w) for w in query_words) / max(len(text.split()), 1)
-
-            snippet = ""
-            lower_text = text.lower()
-            for w in query_words:
-                idx = lower_text.find(w)
-                if idx >= 0:
-                    start = max(0, idx - 50)
-                    end = min(len(text), idx + 80)
-                    snippet = "..." + text[start:end].strip() + "..."
-                    break
-
-            results.append((path, score, snippet))
-
-        results.sort(key=lambda x: -x[1])
-        return results[:20]
-
-    def get_related(self, path: str) -> list[tuple[str, float]]:
+    def get_related(self, path: str) -> list:
         if path not in self.notes:
             return []
 
         note = self.notes[path]
-        scores: dict[str, float] = defaultdict(float)
+        scores: dict = defaultdict(float)
 
-        for bl in self.backlinks.get(path, set()):
+        for bl in self.backlinks(path):
             scores[bl] += 0.3
-
-        for link in note.links:
-            target = self._name_to_path.get(link.lower())
-            if target and target != path:
-                scores[target] += 0.25
-
+        for target in self.forward_links(path):
+            scores[target] += 0.25
         for tag in note.tags:
-            for other_path in self.tag_index.get(tag.lower(), set()):
-                if other_path != path:
-                    scores[other_path] += 0.2
-
-        folder = note.folder
-        if folder:
-            for other_path, other_note in self.notes.items():
-                if other_path != path and other_note.folder == folder:
-                    scores[other_path] += 0.1
+            for other in self.tag_index.get(tag.lower(), set()):
+                if other != path:
+                    scores[other] += 0.2
+        if note.folder:
+            for other in self.folder_index.get(note.folder, set()):
+                if other != path:
+                    scores[other] += 0.1
 
         if not scores:
             return []
         max_score = max(scores.values())
         results = [(p, round(s / max_score, 2)) for p, s in scores.items()]
-        results.sort(key=lambda x: -x[1])
+        results.sort(key=lambda x: (-x[1], x[0]))
         return results[:15]
 
+    # --- compatibility --------------------------------------------------------
 
-from .vector import init_vector_db, get_session_memory
+    @property
+    def backlinks_map(self) -> dict:
+        return {p: self.backlinks(p) for p in self.notes}
+
 
 class Vault:
-    def __init__(self, vault_path: str):
+    """Markdown vault with a keyword index and an optional semantic index.
+
+    The semantic index is lazy in two stages: the store object is created
+    without opening Chroma, and Chroma is only opened when something actually
+    searches or writes. A session-start hook that just reads markdown therefore
+    never loads the vector index at all.
+    """
+
+    def __init__(self, vault_path: str, with_vector: bool = True):
         self.root = Path(vault_path).expanduser().resolve()
         self.root.mkdir(parents=True, exist_ok=True)
         self.index = Index()
-        init_vector_db(str(self.root))
+        self._vector_ready = False
+        self._with_vector = with_vector and vector_enabled()
+        # Hold our own reference rather than reading a module global on every
+        # access: a Vault's semantic index must not be swapped out from under
+        # it by an unrelated init elsewhere in the process.
+        self._vector_store = init_vector_db(str(self.root)) if self._with_vector else None
         self._load_all()
-        self._sync_vector_db()
-        self._last_mtime = self._max_mtime()
+        self._fingerprint = self._disk_fingerprint()
 
-    def _disk_note_paths(self) -> set[str]:
-        return {str(f.relative_to(self.root)) for f in self.root.rglob("*.md")}
+    # --- vector plumbing ------------------------------------------------------
 
-    def _max_mtime(self) -> float:
-        mtimes = [f.stat().st_mtime for f in self.root.rglob("*.md")]
-        return max(mtimes) if mtimes else 0.0
+    @property
+    def vector(self):
+        """The semantic store, or None when disabled."""
+        return self._vector_store
+
+    def ensure_vector_synced(self):
+        """Bring the semantic index up to date. Call before semantic search.
+
+        Kept out of ``__init__`` on purpose — building a Vault must stay cheap
+        enough for a hook to do it on every session start.
+        """
+        if not self._with_vector or self._vector_ready:
+            return
+        self.sync_vector()
+        self._vector_ready = True
+
+    def sync_vector(self) -> dict:
+        store = self.vector
+        if store is None:
+            return {"ok": False, "reason": "vector disabled"}
+        docs = {
+            path: (note.folder, note.title, note.content, note.tags)
+            for path, note in self.index.notes.items()
+        }
+        return store.sync(docs)
+
+    # --- loading --------------------------------------------------------------
+
+    def _disk_fingerprint(self):
+        """Cheap staleness signal: (path, mtime, size) for every note.
+
+        One directory walk, where the previous version walked twice per check.
+        """
+        out = {}
+        for f in self.root.rglob("*.md"):
+            try:
+                st = f.stat()
+            except OSError:
+                continue
+            out[str(f.relative_to(self.root))] = (st.st_mtime, st.st_size)
+        return out
 
     def refresh_if_stale(self):
-        current_mtime = self._max_mtime()
-        paths_changed = self._disk_note_paths() != set(self.index.notes.keys())
-        content_changed = current_mtime != self._last_mtime
-        if paths_changed or content_changed:
-            self._load_all()
-            self._sync_vector_db()
-            self._last_mtime = current_mtime
+        current = self._disk_fingerprint()
+        if current == self._fingerprint:
+            return False
 
-    def _sync_vector_db(self):
-        mem = get_session_memory()
-        if mem is None:
-            return
-        items = {
-            path: (note.folder, note.content)
-            for path, note in self.index.notes.items()
-            if "/Sessions/" in path or path.startswith("Sessions/")
-        }
-        mem.sync_sessions(items)
+        added = current.keys() - self._fingerprint.keys()
+        removed = self._fingerprint.keys() - current.keys()
+        changed = {p for p in current.keys() & self._fingerprint.keys()
+                   if current[p] != self._fingerprint[p]}
+
+        for path in removed:
+            self.index.remove_note(path)
+        for path in added | changed:
+            try:
+                raw = (self.root / path).read_text(encoding="utf-8")
+            except OSError:
+                continue
+            self.index.add_note(parse_note(path, raw))
+
+        self._fingerprint = current
+        # The semantic index is now behind; the next semantic search re-syncs.
+        self._vector_ready = False
+        return True
 
     def _load_all(self):
         notes = {}
         for md_file in self.root.rglob("*.md"):
             rel = str(md_file.relative_to(self.root))
-            raw = md_file.read_text(encoding="utf-8")
+            try:
+                raw = md_file.read_text(encoding="utf-8")
+            except OSError:
+                continue
             notes[rel] = parse_note(rel, raw)
         self.index.rebuild(notes)
+
+    # --- reads ----------------------------------------------------------------
 
     def list_tree(self, path: str = "") -> dict:
         base = self.root / path if path else self.root
@@ -258,14 +392,17 @@ class Vault:
         notes = sorted(f.name for f in base.iterdir() if f.is_file() and f.suffix == ".md")
         return {"folders": folders, "notes": notes}
 
-    def read(self, path: str) -> Note | None:
+    def read(self, path: str):
         full = self.root / path
         if not full.exists():
             return None
         raw = full.read_text(encoding="utf-8")
         return parse_note(path, raw)
 
-    def write_note(self, path: str, content: str, tags: list = None, properties: dict = None):
+    # --- writes ---------------------------------------------------------------
+
+    def write_note(self, path: str, content: str, tags: list | None = None,
+                   properties: dict | None = None):
         full = self.root / path
         full.parent.mkdir(parents=True, exist_ok=True)
 
@@ -284,41 +421,132 @@ class Vault:
         )
 
         full.write_text(serialize_note(note), encoding="utf-8")
-        self._load_all()
-        if "/Sessions/" in path or path.startswith("Sessions/"):
-            get_session_memory().upsert_session(path, note.folder, note.content)
+
+        # Re-parse from what we just wrote so the index matches disk exactly
+        # (title is derived from a leading "# " heading, not the filename).
+        parsed = parse_note(path, full.read_text(encoding="utf-8"))
+        self.index.add_note(parsed)
+        try:
+            st = full.stat()
+            self._fingerprint[path] = (st.st_mtime, st.st_size)
+        except OSError:
+            pass
+
+        store = self.vector
+        if store is not None and store.is_connected():
+            # Only touch the semantic index if it is already open. Otherwise
+            # the next semantic search picks this note up during its sync,
+            # which keeps writes off the slow path.
+            store.upsert_note(path, parsed.folder, parsed.title, parsed.content, parsed.tags)
+        else:
+            self._vector_ready = False
 
     def delete(self, path: str) -> bool:
         full = self.root / path
-        if full.exists():
-            full.unlink()
-            # Clean up empty parent dirs
-            parent = full.parent
-            while parent != self.root and not any(parent.iterdir()):
-                parent.rmdir()
-                parent = parent.parent
-            self._load_all()
-            if "/Sessions/" in path or path.startswith("Sessions/"):
-                get_session_memory().delete_session(path)
-            return True
-        return False
+        if not full.exists():
+            return False
+        full.unlink()
+        parent = full.parent
+        while parent != self.root and parent.is_dir() and not any(parent.iterdir()):
+            parent.rmdir()
+            parent = parent.parent
 
-    def search(self, query: str, tag: str = None) -> list:
-        return self.index.search(query, tag)
+        self.index.remove_note(path)
+        self._fingerprint.pop(path, None)
 
-    def get_tags(self) -> dict[str, int]:
+        store = self.vector
+        if store is not None and store.is_connected():
+            store.delete_note(path)
+        else:
+            self._vector_ready = False
+        return True
+
+    # --- search ---------------------------------------------------------------
+
+    def search(
+        self,
+        query: str,
+        tag: str | None = None,
+        limit: int = 10,
+        semantic: bool = True,
+        project: str | None = None,
+    ) -> list:
+        """Hybrid keyword + semantic search over every note.
+
+        Falls back cleanly to keyword-only when the semantic index is disabled
+        or unavailable, so search never hard-fails on a broken vector store.
+        """
+        keyword_hits = self.index.search(
+            query,
+            tag_filter=tag,
+            limit=max(limit * 3, limit),
+            min_idf_coverage=MIN_KEYWORD_IDF_COVERAGE,
+        )
+
+        keyword_paths = {p for p, _ in keyword_hits}
+
+        vector_hits = []
+        if semantic and self._with_vector:
+            try:
+                self.ensure_vector_synced()
+                store = self.vector
+                if store is not None:
+                    # Fetch at the lenient floor, then require the strict floor
+                    # only for notes the keyword index did not also find.
+                    raw = store.search(
+                        query,
+                        project=project,
+                        n_results=max(limit * 3, limit),
+                        min_similarity=SEMANTIC_FLOOR_CORROBORATED,
+                    )
+                    vector_hits = [
+                        h for h in raw
+                        if h.similarity >= SEMANTIC_FLOOR_ALONE or h.doc_path in keyword_paths
+                    ]
+                    if tag:
+                        allowed = self.index.tag_index.get(tag.lower(), set())
+                        vector_hits = [h for h in vector_hits if h.doc_path in allowed]
+                    vector_hits = vector_hits[:max(limit * 2, limit)]
+            except Exception:
+                vector_hits = []
+
+        return hybrid_search(
+            query,
+            keyword_hits,
+            vector_hits,
+            note_lookup=self.index.notes.get,
+            limit=limit,
+        )
+
+    def search_sessions(self, query: str, project: str | None = None, limit: int = 5,
+                        min_similarity: float | None = None):
+        """Semantic search restricted to session notes."""
+        if not self._with_vector:
+            return []
+        self.ensure_vector_synced()
+        store = self.vector
+        if store is None:
+            return []
+        kwargs = {"project": project, "n_results": limit, "sessions_only": True}
+        if min_similarity is not None:
+            kwargs["min_similarity"] = min_similarity
+        return store.search(query, **kwargs)
+
+    # --- derived views --------------------------------------------------------
+
+    def get_tags(self) -> dict:
         return {tag: len(paths) for tag, paths in sorted(self.index.tag_index.items())}
 
-    def get_notes_by_tag(self, tag: str) -> list[str]:
+    def get_notes_by_tag(self, tag: str) -> list:
         return sorted(self.index.tag_index.get(tag.lower(), set()))
 
-    def get_related(self, path: str) -> list[tuple[str, float]]:
+    def get_related(self, path: str) -> list:
         return self.index.get_related(path)
 
-    def get_backlinks(self, path: str) -> list[str]:
-        return sorted(self.index.backlinks.get(path, set()))
+    def get_backlinks(self, path: str) -> list:
+        return sorted(self.index.backlinks(path))
 
-    def get_recent(self, limit: int = 10) -> list[Note]:
+    def get_recent(self, limit: int = 10) -> list:
         notes = list(self.index.notes.values())
         notes.sort(key=lambda n: n.updated or n.created or "", reverse=True)
         return notes[:limit]
@@ -329,18 +557,18 @@ class Vault:
             parts = Path(path).parts
             current = tree
             for part in parts[:-1]:
-                existing = next((c for c in current["children"] if c["type"] == "folder" and c["name"] == part), None)
+                existing = next(
+                    (c for c in current["children"] if c["type"] == "folder" and c["name"] == part),
+                    None,
+                )
                 if not existing:
                     existing = {"name": part, "type": "folder", "children": []}
                     current["children"].append(existing)
                 current = existing
             note = self.index.notes[path]
-            current["children"].append({
-                "name": parts[-1],
-                "type": "note",
-                "path": path,
-                "tags": note.tags,
-            })
+            current["children"].append(
+                {"name": parts[-1], "type": "note", "path": path, "tags": note.tags}
+            )
         return tree
 
     def get_stats(self) -> dict:
@@ -351,8 +579,8 @@ class Vault:
             all_links += len(note.links)
         return {
             "notes": len(self.index.notes),
-            "folders": len(set(n.folder for n in self.index.notes.values() if n.folder)),
+            "folders": len(self.index.folder_index),
             "tags": len(all_tags),
             "links": all_links,
-            "backlinks": sum(len(v) for v in self.index.backlinks.values()),
+            "backlinks": sum(len(self.index.backlinks(p)) for p in self.index.notes),
         }

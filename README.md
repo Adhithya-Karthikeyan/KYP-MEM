@@ -51,6 +51,23 @@ KYP-MEM maintains structured project knowledge as Markdown files with `[[wikilin
 
 The agent searches this on-demand via `kyp_search` when it needs project context.
 
+### 3. Hybrid Retrieval
+
+`kyp_search` runs two indexes over **every** note and fuses them with Reciprocal
+Rank Fusion:
+
+- **BM25 keyword search** — finds exact identifiers like `_prune_stale_logs`,
+  error strings, and file names. Understands `snake_case` and `camelCase`, so
+  "content hash" matches `_content_hash`.
+- **Semantic search** — finds meaning. "Why does disk usage keep growing?" finds
+  the note that explains it without sharing a single keyword.
+
+Notes are embedded per markdown section rather than whole, so results point at
+the exact heading that answered the query instead of a whole document.
+
+Both indexes must clear a relevance floor. When nothing genuinely matches,
+search returns **nothing** — an honest empty answer beats a confident wrong one.
+
 ### How It All Connects
 
 1. **Session Start:** Recent session summaries are injected automatically — the agent knows what happened last time.
@@ -77,8 +94,9 @@ Restart Claude Code and you're ready to go.
 
 - Node.js 18+
 - Python 3.10+
-- Claude Code CLI
-- Anthropic API key (for session summarization with Sonnet)
+- Claude Code CLI — session summarization shells out to it and reuses your
+  existing Claude Code login, so no separate API key is needed. Without it,
+  sessions still save using a built-in structured fallback.
 
 ### Custom Vault Path
 
@@ -117,8 +135,45 @@ kyp-mem ui
 | `kyp-mem stats` | Print vault statistics |
 | `kyp-mem tree` | Print vault file tree |
 | `kyp-mem config` | View or set configuration (e.g. `kyp-mem config session_model`) |
-| `kyp-mem doctor` | Check installation and configuration health |
+| `kyp-mem doctor` | Check installation, configuration, and index health |
+| `kyp-mem doctor --deep` | Also exercise the semantic index read/write path |
+| `kyp-mem reindex` | Rebuild the semantic index from your markdown notes |
+| `kyp-mem compact` | Reclaim disk used by the semantic index |
 | `kyp-mem uninstall` | Remove hooks and MCP server from Claude Code |
+
+## Index Maintenance
+
+Your markdown notes are always the source of truth. The semantic index is
+derived and can be rebuilt from them at any time, so every command here is safe.
+
+ChromaDB does not return disk on its own: deleting a record only tombstones a
+slot, dropping a collection leaves its files behind, and SQLite's full-text
+index never merges its segments. `kyp-mem compact` handles all three — it
+rebuilds the index, sweeps orphaned segments, merges the full-text index, and
+vacuums the database.
+
+```bash
+kyp-mem doctor            # report index size and anything reclaimable
+kyp-mem compact --dry-run # show what would be freed, change nothing
+kyp-mem compact           # reclaim it
+```
+
+### Upgrading from a pre-1.0 install
+
+Earlier versions derived the index location from the vault's *parent* folder,
+so two vaults sitting side by side shared one index. Each sync treated the
+other vault's notes as deleted, pruned them, and re-embedded its own — meaning
+every switch between vaults silently rebuilt the entire index. That churn is
+what let the store grow without bound.
+
+Each vault now gets its own index directory. Run this once to clear the old
+shared one:
+
+```bash
+kyp-mem compact --purge-legacy
+```
+
+`kyp-mem doctor` tells you whether you have one.
 
 ## Uninstall
 

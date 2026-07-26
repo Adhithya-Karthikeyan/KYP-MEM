@@ -194,7 +194,10 @@ def handle_session_start():
         from .config import get_vault_path
         from .vault import Vault
 
-        vault = Vault(get_vault_path())
+        # No semantic index here. This hook runs on *every* session start and
+        # only reads markdown; loading the vector store would add seconds of
+        # latency to the one moment the user is waiting on us.
+        vault = Vault(get_vault_path(), with_vector=False)
 
         # Match case-insensitively: the project dir may be stored in the vault
         # with different casing than the cwd basename (e.g. on case-insensitive
@@ -858,7 +861,10 @@ def handle_stop(session_id=""):
     from .config import get_vault_path
     from .vault import Vault
 
-    vault = Vault(get_vault_path())
+    # Written without touching the semantic index: this hook fires as the user
+    # is closing the session, and embedding here would stall the exit. The next
+    # search re-syncs from disk and picks the note up.
+    vault = Vault(get_vault_path(), with_vector=False)
     vault.write_note(f"{project_name}/Sessions/{session_id}.md", content, tags, {})
 
 

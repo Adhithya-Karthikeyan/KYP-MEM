@@ -35,3 +35,19 @@ def get_vault_path() -> str:
 def get_session_model() -> str:
     config = load_config()
     return config.get("session_model", "claude-sonnet-4-6")
+
+
+def get_embedding_model() -> str:
+    """Sentence-transformers model for embeddings, or "" for the built-in one.
+
+    The default is ChromaDB's bundled ONNX all-MiniLM-L6-v2: no extra install,
+    works offline, and keeps the package light. It is also the weakest link in
+    retrieval precision — on a real vault its similarity scores for relevant
+    and irrelevant notes overlap, which is why search leans on keyword
+    corroboration to stay accurate.
+
+    Setting this to a stronger model (e.g. "BAAI/bge-small-en-v1.5") narrows
+    that overlap. It requires `pip install sentence-transformers` and a
+    `kyp-mem reindex`, since vectors from different models are not comparable.
+    """
+    return (load_config().get("embedding_model") or "").strip()

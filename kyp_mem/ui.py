@@ -68,7 +68,7 @@ def create_app(vault_path: str = None) -> FastAPI:
         edges = []
         seen_edges = set()
         for path in node_ids:
-            for target in vault.index.forward_links.get(path, set()):
+            for target in vault.index.forward_links(path):
                 if target not in node_ids:
                     continue
                 key = tuple(sorted([path, target]))
@@ -132,19 +132,29 @@ def create_app(vault_path: str = None) -> FastAPI:
         })
 
     @app.get("/api/search")
-    def search(q: str = "", tag: str = ""):
+    def search(q: str = "", tag: str = "", limit: int = 20, semantic: bool = True):
+        vault.refresh_if_stale()
         if not q and not tag:
             return JSONResponse([])
         if not q and tag:
             paths = vault.get_notes_by_tag(tag)
             return JSONResponse([
-                {"path": p, "score": 1.0, "snippet": "", "title": vault.index.notes[p].title if p in vault.index.notes else p}
+                {"path": p, "score": 1.0, "snippet": "", "sources": ["tag"],
+                 "title": vault.index.notes[p].title if p in vault.index.notes else p}
                 for p in paths
             ])
-        results = vault.search(q, tag or None)
+        results = vault.search(q, tag or None, limit=limit, semantic=semantic)
         return JSONResponse([
-            {"path": path, "score": score, "snippet": snippet, "title": vault.index.notes[path].title if path in vault.index.notes else path}
-            for path, score, snippet in results
+            {
+                "path": h.path,
+                "score": round(h.score, 5),
+                "snippet": h.snippet,
+                "title": h.title or h.path,
+                "heading": h.heading,
+                "sources": h.sources,
+                "similarity": round(h.similarity, 4) if h.similarity is not None else None,
+            }
+            for h in results
         ])
 
     @app.get("/api/tags")
@@ -194,25 +204,22 @@ def create_app(vault_path: str = None) -> FastAPI:
 
     @app.get("/api/sessions/search")
     def search_sessions(q: str = "", project: str = ""):
-        from .vector import get_session_memory
-        mem = get_session_memory()
-        if not mem or not q:
+        if not q:
             return JSONResponse([])
-        results = mem.search_sessions(q, project=project or None, n_results=10)
-        if not results or not results.get("ids") or not results["ids"][0]:
-            return JSONResponse([])
-        items = []
-        for i, path in enumerate(results["ids"][0]):
-            doc = results["documents"][0][i]
-            dist = results["distances"][0][i]
-            note = vault.index.notes.get(path)
-            items.append({
-                "path": path,
-                "title": note.title if note else path,
-                "distance": dist,
-                "snippet": doc[:300],
-            })
-        return JSONResponse(items)
+        vault.refresh_if_stale()
+        hits = vault.search_sessions(q, project=project or None, limit=10)
+        return JSONResponse([
+            {
+                "path": h.doc_path,
+                "title": h.title or h.doc_path,
+                "heading": h.heading,
+                "similarity": round(h.similarity, 4),
+                # Kept for backward compatibility with the existing UI.
+                "distance": round(1.0 - h.similarity, 4),
+                "snippet": h.text[:300],
+            }
+            for h in hits
+        ])
 
     @app.get("/api/sessions")
     def list_sessions(project: str = ""):

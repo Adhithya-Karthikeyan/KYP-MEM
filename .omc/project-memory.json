@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "lastScanned": 1784633067510,
+  "lastScanned": 1785083261061,
   "projectRoot": "/Users/adhithya/Projects/tools/KYP-MEM",
   "techStack": {
     "languages": [
@@ -63,7 +63,7 @@
       "path": "bin",
       "purpose": "Executable scripts",
       "fileCount": 3,
-      "lastAccessed": 1784633067497,
+      "lastAccessed": 1785083261050,
       "keyFiles": [
         "cli.mjs",
         "install.mjs",
@@ -74,7 +74,7 @@
       "path": "kyp_mem",
       "purpose": null,
       "fileCount": 8,
-      "lastAccessed": 1784633067498,
+      "lastAccessed": 1785083261050,
       "keyFiles": [
         "__init__.py",
         "cli.py",
@@ -87,7 +87,7 @@
       "path": "kyp_mem/static",
       "purpose": "Static files",
       "fileCount": 1,
-      "lastAccessed": 1784633067499,
+      "lastAccessed": 1785083261052,
       "keyFiles": [
         "index.html"
       ]
@@ -95,99 +95,129 @@
   },
   "hotPaths": [
     {
-      "path": "kyp_mem/cli.py",
-      "accessCount": 5,
-      "lastAccessed": 1784633225866,
-      "type": "file"
-    },
-    {
-      "path": "bin/install.mjs",
-      "accessCount": 5,
-      "lastAccessed": 1784633235636,
-      "type": "file"
-    },
-    {
-      "path": "bin/python-env.mjs",
-      "accessCount": 5,
-      "lastAccessed": 1784633235675,
-      "type": "file"
-    },
-    {
-      "path": "bin/cli.mjs",
-      "accessCount": 5,
-      "lastAccessed": 1784633235726,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/server.py",
-      "accessCount": 5,
-      "lastAccessed": 1784633235838,
+      "path": "kyp_mem/vault.py",
+      "accessCount": 15,
+      "lastAccessed": 1785085689247,
       "type": "file"
     },
     {
       "path": "kyp_mem/vector.py",
-      "accessCount": 4,
-      "lastAccessed": 1784633225732,
+      "accessCount": 9,
+      "lastAccessed": 1785085451724,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/server.py",
+      "accessCount": 9,
+      "lastAccessed": 1785085620166,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/cli.py",
+      "accessCount": 8,
+      "lastAccessed": 1785085311144,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/textindex.py",
+      "accessCount": 7,
+      "lastAccessed": 1785084996266,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/maintenance.py",
+      "accessCount": 7,
+      "lastAccessed": 1785085291438,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/search.py",
+      "accessCount": 7,
+      "lastAccessed": 1785085791679,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/chunking.py",
+      "accessCount": 6,
+      "lastAccessed": 1785083913781,
       "type": "file"
     },
     {
       "path": "kyp_mem/ui.py",
-      "accessCount": 4,
-      "lastAccessed": 1784633225791,
+      "accessCount": 6,
+      "lastAccessed": 1785084435421,
       "type": "file"
     },
     {
-      "path": "kyp_mem/config.py",
+      "path": "tests/test_vector.py",
       "accessCount": 4,
-      "lastAccessed": 1784633225826,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/hooks.py",
-      "accessCount": 4,
-      "lastAccessed": 1784633225887,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/vault.py",
-      "accessCount": 4,
-      "lastAccessed": 1784633225922,
-      "type": "file"
-    },
-    {
-      "path": "pyproject.toml",
-      "accessCount": 4,
-      "lastAccessed": 1784633235623,
-      "type": "file"
-    },
-    {
-      "path": "package.json",
-      "accessCount": 4,
-      "lastAccessed": 1784633235645,
+      "lastAccessed": 1785084315462,
       "type": "file"
     },
     {
       "path": "README.md",
-      "accessCount": 3,
-      "lastAccessed": 1784633216385,
+      "accessCount": 4,
+      "lastAccessed": 1785085375540,
       "type": "file"
     },
     {
-      "path": "kyp_mem/static/index.html",
+      "path": "kyp_mem/hooks.py",
       "accessCount": 3,
-      "lastAccessed": 1784633367942,
+      "lastAccessed": 1785084511819,
       "type": "file"
     },
     {
-      "path": "kyp_mem/__init__.py",
+      "path": "tests/test_maintenance.py",
+      "accessCount": 3,
+      "lastAccessed": 1785085321034,
+      "type": "file"
+    },
+    {
+      "path": "pyproject.toml",
+      "accessCount": 3,
+      "lastAccessed": 1785085626487,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_chunking.py",
       "accessCount": 2,
-      "lastAccessed": 1784633215533,
+      "lastAccessed": 1785083890304,
       "type": "file"
     },
     {
-      "path": "LICENSE",
+      "path": "tests/test_retrieval_quality.py",
+      "accessCount": 2,
+      "lastAccessed": 1785085398630,
+      "type": "file"
+    },
+    {
+      "path": "kyp_mem/config.py",
+      "accessCount": 2,
+      "lastAccessed": 1785085427410,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_search.py",
+      "accessCount": 2,
+      "lastAccessed": 1785085760107,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_textindex.py",
       "accessCount": 1,
-      "lastAccessed": 1784633225835,
+      "lastAccessed": 1785083847957,
+      "type": "file"
+    },
+    {
+      "path": "tests/conftest.py",
+      "accessCount": 1,
+      "lastAccessed": 1785084137044,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_vault.py",
+      "accessCount": 1,
+      "lastAccessed": 1785084192923,
       "type": "file"
     }
   ],

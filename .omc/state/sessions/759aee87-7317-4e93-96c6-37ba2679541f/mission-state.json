@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-07-21T11:33:33.615Z",
+  "updatedAt": "2026-07-21T12:03:37.562Z",
   "missions": [
     {
       "id": "session:759aee87-7317-4e93-96c6-37ba2679541f:none",
@@ -7,7 +7,7 @@
       "name": "none",
       "objective": "Session mission",
       "createdAt": "2026-07-21T11:26:46.534Z",
-      "updatedAt": "2026-07-21T11:33:33.615Z",
+      "updatedAt": "2026-07-21T12:03:37.562Z",
       "status": "done",
       "workerCount": 4,
       "taskCounts": {
@@ -27,7 +27,7 @@
           "currentStep": null,
           "latestUpdate": "completed",
           "completedSummary": null,
-          "updatedAt": "2026-07-21T11:33:33.615Z"
+          "updatedAt": "2026-07-21T12:03:37.562Z"
         },
         {
           "name": "packaging-auditor:apackag",
@@ -116,6 +116,14 @@
           "agent": "quality-auditor:aqualit",
           "detail": "completed",
           "sourceKey": "session-stop:aquality-auditor-69a125a3ae9f42df"
+        },
+        {
+          "id": "session-stop:a8a819d8247167f4a:2026-07-21T12:03:37.562Z",
+          "at": "2026-07-21T12:03:37.562Z",
+          "kind": "completion",
+          "agent": "quality-auditor:aqualit",
+          "detail": "completed",
+          "sourceKey": "session-stop:a8a819d8247167f4a"
         }
       ]
     }
