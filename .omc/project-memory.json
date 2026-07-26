@@ -101,6 +101,12 @@
       "type": "file"
     },
     {
+      "path": "kyp_mem/maintenance.py",
+      "accessCount": 10,
+      "lastAccessed": 1785088631019,
+      "type": "file"
+    },
+    {
       "path": "kyp_mem/vector.py",
       "accessCount": 9,
       "lastAccessed": 1785085451724,
@@ -113,6 +119,12 @@
       "type": "file"
     },
     {
+      "path": "kyp_mem/hooks.py",
+      "accessCount": 9,
+      "lastAccessed": 1785088800575,
+      "type": "file"
+    },
+    {
       "path": "kyp_mem/cli.py",
       "accessCount": 8,
       "lastAccessed": 1785085311144,
@@ -122,12 +134,6 @@
       "path": "kyp_mem/textindex.py",
       "accessCount": 7,
       "lastAccessed": 1785084996266,
-      "type": "file"
-    },
-    {
-      "path": "kyp_mem/maintenance.py",
-      "accessCount": 7,
-      "lastAccessed": 1785085291438,
       "type": "file"
     },
     {
@@ -161,15 +167,9 @@
       "type": "file"
     },
     {
-      "path": "kyp_mem/hooks.py",
-      "accessCount": 3,
-      "lastAccessed": 1785084511819,
-      "type": "file"
-    },
-    {
       "path": "tests/test_maintenance.py",
-      "accessCount": 3,
-      "lastAccessed": 1785085321034,
+      "accessCount": 4,
+      "lastAccessed": 1785088638821,
       "type": "file"
     },
     {
@@ -218,6 +218,24 @@
       "path": "tests/test_vault.py",
       "accessCount": 1,
       "lastAccessed": 1785084192923,
+      "type": "file"
+    },
+    {
+      "path": "bin/python-env.mjs",
+      "accessCount": 1,
+      "lastAccessed": 1785088461468,
+      "type": "file"
+    },
+    {
+      "path": "bin/install.mjs",
+      "accessCount": 1,
+      "lastAccessed": 1785088461519,
+      "type": "file"
+    },
+    {
+      "path": "tests/test_hooks.py",
+      "accessCount": 1,
+      "lastAccessed": 1785088848628,
       "type": "file"
     }
   ],

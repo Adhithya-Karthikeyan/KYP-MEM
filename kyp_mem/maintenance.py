@@ -268,6 +268,10 @@ def compact(vault, rebuild: bool = True, dry_run: bool = False, purge_legacy: bo
 
     chroma_dir = store.db_path
     before = inspect(chroma_dir)
+    # The legacy directory counts toward the starting total only when we are
+    # actually going to remove it. Otherwise "freed" could exceed "before" and
+    # the reported percentage would go over 100.
+    legacy_before = legacy_index_report(store)["bytes"] if purge_legacy else 0
     steps = {}
 
     if rebuild and not dry_run:
@@ -295,12 +299,14 @@ def compact(vault, rebuild: bool = True, dry_run: bool = False, purge_legacy: bo
         legacy_freed = removed.get("freed_bytes", 0)
 
     after = inspect(chroma_dir)
+    total_before = before["total_bytes"] + legacy_before
+    total_after = after["total_bytes"] + (legacy_before - legacy_freed)
     return {
         "ok": True,
         "dry_run": dry_run,
-        "before_bytes": before["total_bytes"],
-        "after_bytes": after["total_bytes"],
-        "freed_bytes": before["total_bytes"] - after["total_bytes"] + legacy_freed,
+        "before_bytes": total_before,
+        "after_bytes": total_after,
+        "freed_bytes": total_before - total_after,
         "steps": steps,
         "report": after,
     }

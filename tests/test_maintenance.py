@@ -1,6 +1,8 @@
 """Tests for on-disk reclaim. The real vault had 1.2 GB of index for 1.8 MB
 of vectors, almost all of it orphaned segments and un-vacuumed sqlite pages."""
 
+from pathlib import Path
+
 import pytest
 
 from kyp_mem import maintenance as mt
@@ -197,6 +199,33 @@ def test_compact_reclaims_orphans_and_keeps_search_working(vault):
     # The whole point: reclaiming disk must not lose knowledge.
     hits = vault.search_sessions("tombstoned slots reclaimed")
     assert hits, "semantic index must still answer after a compact"
+
+
+def test_compact_reported_totals_are_coherent_when_purging_legacy(vault):
+    """Freed can never exceed the starting total.
+
+    The legacy directory has to be counted in `before` when it is going to be
+    removed, or the reported percentage goes over 100.
+    """
+    legacy = Path(vault.vector.legacy_db_path)
+    legacy.mkdir(parents=True, exist_ok=True)
+    (legacy / "chroma.sqlite3").write_bytes(b"x" * 400_000)
+
+    result = mt.compact(vault, purge_legacy=True)
+    assert result["freed_bytes"] <= result["before_bytes"]
+    assert result["after_bytes"] <= result["before_bytes"]
+    assert result["before_bytes"] - result["after_bytes"] == result["freed_bytes"]
+    assert not legacy.exists()
+
+
+def test_compact_totals_exclude_legacy_when_not_purging(vault):
+    legacy = Path(vault.vector.legacy_db_path)
+    legacy.mkdir(parents=True, exist_ok=True)
+    (legacy / "chroma.sqlite3").write_bytes(b"x" * 400_000)
+
+    result = mt.compact(vault, purge_legacy=False)
+    assert result["freed_bytes"] <= result["before_bytes"]
+    assert legacy.exists(), "must not delete without an explicit purge"
 
 
 def test_compact_dry_run_changes_nothing(vault):

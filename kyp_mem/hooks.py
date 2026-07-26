@@ -160,6 +160,76 @@ def _find_objective_path(vault, project_name):
     return None
 
 
+def _find_child(parent, name):
+    """Case-insensitive child lookup.
+
+    The vault folder may be cased differently from the working directory's
+    basename ("kyp-mem" vs "KYP-MEM"), and on Linux that difference is real.
+    """
+    target = name.lower()
+    try:
+        for child in parent.iterdir():
+            if child.name.lower() == target:
+                return child
+    except OSError:
+        pass
+    return None
+
+
+def _session_context_files(vault_root, project_name, limit=10):
+    """Objective path and the newest session paths for a project.
+
+    Reads the filesystem directly instead of building a Vault. Constructing a
+    Vault parses every note in the vault and builds the full keyword index —
+    906 ms on a 1,281-note vault — to answer a question that needs eleven file
+    reads. This hook runs at every session start, while the user waits, so it
+    must not scale with total vault size.
+    """
+    project_dir = _find_child(Path(vault_root), project_name)
+    if project_dir is None or not project_dir.is_dir():
+        return None, [], False
+
+    objective_path = _find_child(project_dir, "Objective.md")
+    if objective_path is not None and not objective_path.is_file():
+        objective_path = None
+
+    sessions = []
+    sessions_dir = _find_child(project_dir, "Sessions")
+    if sessions_dir is not None and sessions_dir.is_dir():
+        try:
+            sessions = sorted(
+                (f for f in sessions_dir.iterdir() if f.suffix == ".md"),
+                key=lambda f: f.name,
+                reverse=True,
+            )[:limit]
+        except OSError:
+            sessions = []
+
+    return objective_path, sessions, True
+
+
+def _read_note_file(path):
+    """Parse a single note off disk, with no index involved."""
+    from .vault import parse_note
+
+    try:
+        raw = Path(path).read_text(encoding="utf-8")
+    except OSError:
+        return None
+    return parse_note(Path(path).name, raw)
+
+
+def _objective_text_from(path):
+    """Objective body with any leading ``# ...`` heading stripped."""
+    note = _read_note_file(path) if path else None
+    if not note:
+        return None
+    lines = note.content.strip().split("\n")
+    if lines and lines[0].lstrip().startswith("# "):
+        lines = lines[1:]
+    return "\n".join(lines).strip() or None
+
+
 def _read_objective(vault, project_name):
     """Return the objective text for a project, or None if not set.
 
@@ -192,35 +262,22 @@ def handle_session_start():
 
     try:
         from .config import get_vault_path
-        from .vault import Vault
 
-        # No semantic index here. This hook runs on *every* session start and
-        # only reads markdown; loading the vector store would add seconds of
-        # latency to the one moment the user is waiting on us.
-        vault = Vault(get_vault_path(), with_vector=False)
+        # Deliberately no Vault and no semantic index here. This hook runs at
+        # every session start while the user waits, and it only needs one
+        # objective note plus the newest session summaries — eleven files, not
+        # the whole vault. Building a Vault instead would parse every note and
+        # construct the keyword index (906 ms on a 1,281-note vault) for the
+        # same answer, and loading the vector store would cost more still.
+        objective_path, sessions, project_exists = _session_context_files(
+            get_vault_path(), project_name, limit=10
+        )
 
-        # Match case-insensitively: the project dir may be stored in the vault
-        # with different casing than the cwd basename (e.g. on case-insensitive
-        # filesystems "KYP-MEM" and "kyp-mem" are the same directory).
-        prefix = f"{project_name}/".lower()
-        project_notes = [p for p in vault.index.notes if p.lower().startswith(prefix)]
+        objective = _objective_text_from(objective_path)
 
-        objective = _read_objective(vault, project_name)
-
-        sessions = sorted(
-            (p for p in project_notes if "/sessions/" in p.lower()),
-            reverse=True,
-        )[:10]
-
-        # Nothing to say: no objective to surface, no objective to request
-        # (project is already known but sessions just haven't been captured),
-        # and no sessions. Only stay silent when this is an established project
-        # with an objective but zero sessions — otherwise we always at least
-        # surface or request the objective.
-        if not objective and not project_notes and not sessions:
-            # Brand-new / unknown directory: still ask for an objective so the
-            # project starts with a clear goal.
-            pass
+        # Even a brand-new directory gets the block, so the objective is always
+        # either surfaced or requested.
+        del project_exists
 
         parts = [f"# [kyp-mem] {project_name} — Session Context"]
         parts.append(f"Use `kyp_search` or `kyp_project_context` for architecture/project knowledge on demand.\n")
@@ -246,7 +303,7 @@ def handle_session_start():
         if sessions:
             parts.append(f"## Last {len(sessions)} Sessions")
             for sp in sessions:
-                note = vault.read(sp)
+                note = _read_note_file(sp)
                 if not note:
                     continue
                 parts.append(f"### {note.title}")
