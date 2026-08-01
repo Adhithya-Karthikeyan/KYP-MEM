@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "child_process";
-import { mkdirSync } from "fs";
+import { existsSync, mkdirSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
 import { ensureVenv, findSystemPython, overrideIsTooOld, resolvePython, venvDir } from "./python-env.mjs";
@@ -80,6 +80,33 @@ if (hooksResult.status === 0) {
   console.log(`  ${G}✓${R} Session capture hooks installed`);
 } else {
   console.log(`  ${Y}!${R} Could not install hooks — run manually: ${C}kyp-mem install-hooks --global${R}`);
+}
+
+// Step 5: Register with Kimi CLI too, but only when it is installed (its data
+// dir exists). Claude-only installs are completely unaffected.
+const kimiHome = process.env.KIMI_CODE_HOME || join(homedir(), ".kimi-code");
+if (existsSync(kimiHome)) {
+  const kimiMcpResult = run(py, [...pre, "-m", "kyp_mem.cli", "setup-kimi", "--global"], {
+    stdio: "inherit",
+  });
+
+  if (kimiMcpResult.status === 0) {
+    console.log(`  ${G}✓${R} MCP server registered with Kimi CLI`);
+  } else {
+    console.log(`  ${Y}!${R} Could not register with Kimi CLI — run manually: ${C}kyp-mem setup-kimi --global${R}`);
+  }
+
+  const kimiHooksResult = run(py, [...pre, "-m", "kyp_mem.cli", "install-kimi-hooks"], {
+    stdio: "inherit",
+  });
+
+  if (kimiHooksResult.status === 0) {
+    console.log(`  ${G}✓${R} Kimi CLI session capture hooks installed`);
+  } else {
+    console.log(`  ${Y}!${R} Could not install Kimi hooks — run manually: ${C}kyp-mem install-kimi-hooks${R}`);
+  }
+} else {
+  console.log(`  ${D}· Kimi CLI not detected — skipping (add later: kyp-mem setup-kimi --global)${R}`);
 }
 
 console.log();

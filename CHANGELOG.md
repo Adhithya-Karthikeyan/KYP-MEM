@@ -4,6 +4,33 @@ All notable changes to kyp-mem are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] — 2026-08-01
+
+### Changed
+
+- **Session-start injection is now compact and silent (Claude Code).** The hook
+  used to dump the objective plus full summaries of the last 10 sessions (~2k
+  tokens) into context and instruct the agent to re-display all of it in its
+  first reply. It now injects the objective plus one-line cues per session
+  (~63% fewer tokens on a real vault), tells the agent to use them silently,
+  and points at `kyp_session_search` for pulling full summaries only when
+  actually needed.
+- **Kimi CLI hooks display nothing.** Kimi renders hook stdout as a visible
+  chat block, so the Kimi hooks only capture (prompts, tool activity, session
+  summaries) and memory reaches the agent through the MCP tools instead
+  (`kyp_project_context` at session start, `kyp_search` on demand).
+
+### Added
+
+- **Kimi CLI support.** kyp-mem now integrates with Kimi CLI the same way it
+  does with Claude Code. `kyp-mem setup-kimi` registers the MCP server in Kimi's
+  `mcp.json` (user level with `--global`, project `.kimi-code/mcp.json` by
+  default), and `kyp-mem install-kimi-hooks` installs session-capture hooks in
+  Kimi's `config.toml` (UserPromptSubmit, PostToolUse, Stop — all silent).
+  Both take `--remove` to undo. Postinstall sets Kimi up automatically when it
+  detects an existing Kimi installation. Tool activity capture also accepts
+  Kimi's `tool_output` payload field alongside Claude's `tool_response`.
+
 ## [1.0.0] — 2026-07-26
 
 First stable release. Search was rebuilt and the semantic index changed format,

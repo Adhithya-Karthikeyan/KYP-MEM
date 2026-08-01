@@ -41,6 +41,14 @@ def main():
                     help="Add hooks to global ~/.claude/settings.json (default: project)")
     ih.add_argument("--remove", action="store_true", help="Remove KYP-MEM hooks")
 
+    sk = subparsers.add_parser("setup-kimi", help="Auto-configure Kimi CLI to use KYP-MEM")
+    sk.add_argument("--global", dest="global_config", action="store_true",
+                    help="Add to global $KIMI_CODE_HOME/mcp.json (default: project .kimi-code/mcp.json)")
+    sk.add_argument("--remove", action="store_true", help="Remove KYP-MEM from Kimi's mcp.json")
+
+    ikh = subparsers.add_parser("install-kimi-hooks", help="Set up auto-learning hooks for Kimi CLI")
+    ikh.add_argument("--remove", action="store_true", help="Remove KYP-MEM hooks from Kimi's config.toml")
+
     un = subparsers.add_parser("uninstall", help="Remove KYP-MEM from Claude Code (hooks + MCP server)")
     un.add_argument("--purge", action="store_true", help="Also delete vault data and config at ~/.kyp-mem")
     doc_parser = subparsers.add_parser("doctor", help="Check installation, config, and index health")
@@ -93,6 +101,12 @@ def main():
         _run_tree()
     elif args.command == "install-hooks":
         _run_install_hooks(global_config=args.global_config, remove=args.remove)
+    elif args.command == "setup-kimi":
+        from .kimi import run_setup_kimi
+        run_setup_kimi(global_config=args.global_config, remove=args.remove)
+    elif args.command == "install-kimi-hooks":
+        from .kimi import run_install_kimi_hooks
+        run_install_kimi_hooks(remove=args.remove)
     elif args.command == "config":
         _run_config(args.key, args.value)
     elif args.command == "objective":

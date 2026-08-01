@@ -1,7 +1,7 @@
 # KYP-MEM
 
 
-> Claude that remembers your conversations AND understands your project.
+> Claude Code & Kimi CLI that remember your conversations AND understand your project.
 
 KYP-MEM gives AI coding agents two-layer memory:
 
@@ -29,7 +29,7 @@ By intercepting the prompt, KYP-MEM automatically provided the agent with:
 
 ## How It Works
 
-KYP-MEM operates as a Model Context Protocol (MCP) server that runs silently in the background, integrating directly with Claude Code.
+KYP-MEM operates as a Model Context Protocol (MCP) server that runs silently in the background, integrating directly with Claude Code and Kimi CLI.
 
 ### 1. Episodic Memory (Sessions)
 
@@ -70,7 +70,7 @@ search returns **nothing** — an honest empty answer beats a confident wrong on
 
 ### How It All Connects
 
-1. **Session Start:** Recent session summaries are injected automatically — the agent knows what happened last time.
+1. **Session Start:** The project objective and one-line cues from recent sessions are injected automatically — the agent knows what happened last time without re-reading full summaries (those stay searchable in the vault).
 2. **During Work:** Hooks capture tool activity (reads, edits, commands) with actual content, not just file names.
 3. **Session End:** Sonnet synthesizes a rich, semantic summary and saves it to the vault + vector DB.
 4. **Future Sessions:** The agent can search past sessions semantically or look up project knowledge on demand.
@@ -87,13 +87,32 @@ That's it. The postinstall script automatically:
 2. Creates the default vault at `~/.kyp-mem/vault`
 3. Registers the MCP server with Claude Code
 4. Installs session capture hooks
+5. Does the same for Kimi CLI, if it is installed on the machine
 
-Restart Claude Code and you're ready to go.
+Restart Claude Code (or start a new Kimi CLI session) and you're ready to go.
+
+### Kimi CLI
+
+To set up Kimi CLI manually (or reinstall it later):
+
+```bash
+kyp-mem setup-kimi --global     # register the MCP server in ~/.kimi-code/mcp.json
+kyp-mem install-kimi-hooks      # install session capture hooks in ~/.kimi-code/config.toml
+```
+
+Everything works the same as with Claude Code, with one difference: Kimi CLI
+renders hook output as a visible block in its chat UI, so the Kimi hooks are
+**fully silent** — they only capture (prompts, tool activity, session
+summaries). Memory reaches the agent through the MCP tools instead:
+`kyp_project_context` loads the project objective and recent sessions at
+session start, and `kyp_search` / `kyp_session_search` answer questions on
+demand. Nothing is ever printed into your chat.
 
 ### Requirements
 
 - Node.js 18+
 - Python 3.10+
+- Claude Code and/or Kimi CLI — the agent(s) KYP-MEM integrates with.
 - Claude Code CLI — session summarization shells out to it and reuses your
   existing Claude Code login, so no separate API key is needed. Without it,
   sessions still save using a built-in structured fallback.
@@ -130,6 +149,8 @@ kyp-mem ui
 | `kyp-mem init` | Choose vault location (default: `~/.kyp-mem/vault`) |
 | `kyp-mem setup-claude` | Register MCP server with Claude Code |
 | `kyp-mem install-hooks` | Enable automatic session capture |
+| `kyp-mem setup-kimi` | Register MCP server with Kimi CLI (`--global` for user level, `--remove` to undo) |
+| `kyp-mem install-kimi-hooks` | Enable automatic session capture for Kimi CLI (`--remove` to undo) |
 | `kyp-mem serve` | Start MCP server (stdio, used by the agent) |
 | `kyp-mem ui` | Open the local web UI |
 | `kyp-mem stats` | Print vault statistics |
@@ -181,6 +202,10 @@ kyp-mem compact --purge-legacy
 ```bash
 # Remove from Claude Code (keeps your vault data)
 kyp-mem uninstall
+
+# Remove from Kimi CLI (also keeps your vault data)
+kyp-mem setup-kimi --global --remove
+kyp-mem install-kimi-hooks --remove
 
 # Remove from Claude Code and delete ~/.kyp-mem (config, session logs,
 # and the default vault). A vault you configured elsewhere is NOT touched.

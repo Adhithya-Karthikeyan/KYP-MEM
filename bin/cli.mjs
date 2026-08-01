@@ -45,7 +45,11 @@ if (args[0] === "hook") {
     ? join(sessionDir, `current-${safeId}.jsonl`)
     : join(sessionDir, "current.jsonl");
 
-  if (hookType === "user-prompt") {
+  // "user-prompt-kimi" is a legacy alias from the first Kimi integration,
+  // which printed the context block here. Kimi renders hook stdout as a
+  // visible chat block, so injection now happens silently through the MCP
+  // tools instead — this hook only records the prompt, like Claude's.
+  if (hookType === "user-prompt" || hookType === "user-prompt-kimi") {
     try {
       const data = JSON.parse(raw);
       const prompt = (data.prompt || "").trim();
@@ -69,7 +73,9 @@ if (args[0] === "hook") {
       if (tool.includes("kyp-mem") || tool.includes("kyp_mem")) process.exit(0);
 
       const input = data.tool_input || {};
-      const rawResp = data.tool_response || "";
+      // Claude Code sends tool_response; Kimi CLI sends tool_output (already
+      // truncated to 2000 chars). A payload never carries both.
+      const rawResp = data.tool_response || data.tool_output || "";
       const resp = (typeof rawResp === "string" ? rawResp : JSON.stringify(rawResp)).slice(0, 2000);
       const entry = { ts: new Date().toISOString(), tool, cwd: process.env.CLAUDE_PROJECT_DIR || process.cwd() };
 

@@ -109,18 +109,29 @@ def _is_subprocess():
     return os.environ.get("KYP_MEM_SUMMARIZING") == "1"
 
 
-def _extract_session_summary(content, max_chars=800):
+def _extract_session_oneliner(content, max_chars=140):
+    """One-line recall cue from a session note — the first sentence of its
+    Summary (or COMPLETED, for older notes), hard-truncated.
+
+    The hook injects these to jog memory; full summaries stay in the vault and
+    are searchable on demand, so they are not dumped into every context.
+    """
     import re
-    parts = []
-    for heading in ("Summary", "LEARNED", "COMPLETED"):
-        m = re.search(rf"(?:^|\n)##\s+{re.escape(heading)}\s*\n(.*?)(?=\n##\s|\Z)", content, re.DOTALL)
-        if m:
+    text = ""
+    for heading in ("Summary", "COMPLETED"):
+        m = re.search(rf"(?:^|\n)##\s+{heading}\s*\n(.*?)(?=\n##\s|\Z)", content, re.DOTALL)
+        if m and m.group(1).strip():
             text = m.group(1).strip()
-            if heading == "Summary":
-                parts.append(text)
-            else:
-                parts.append(f"**{heading.title()}:** {text[:250]}")
-    return "\n".join(parts)[:max_chars] if parts else content[:200]
+            break
+    if not text:
+        lines = [l.strip() for l in content.split("\n")
+                 if l.strip() and not l.strip().startswith(("#", "**", ">"))]
+        text = lines[0] if lines else ""
+    text = " ".join(text.split())
+    sentence = re.split(r"(?<=[.!?])\s", text, maxsplit=1)[0]
+    if len(sentence) > max_chars:
+        sentence = sentence[:max_chars].rstrip() + "…"
+    return sentence
 
 
 def _build_stats_line(project_name, injected_chars, session_ids):
@@ -299,17 +310,16 @@ def handle_session_start():
             )
             parts.append("")
 
-        # --- Recent sessions ---
+        # --- Recent sessions (one-liners only — details stay searchable) ---
         if sessions:
             parts.append(f"## Last {len(sessions)} Sessions")
             for sp in sessions:
                 note = _read_note_file(sp)
                 if not note:
                     continue
-                parts.append(f"### {note.title}")
-                summary = _extract_session_summary(note.content)
-                parts.append(summary)
-                parts.append("")
+                parts.append(f"- **{note.title}** — {_extract_session_oneliner(note.content)}")
+            parts.append("")
+            parts.append("Full summaries stay in the vault — pull them up with `kyp_session_search` only when actually needed.")
 
             session_ids = {Path(sp).stem for sp in sessions}
             stats_line = _build_stats_line(project_name, len("\n".join(parts)), session_ids)
@@ -317,7 +327,7 @@ def handle_session_start():
                 parts.append(stats_line)
 
         parts.append("")
-        parts.append("**CRITICAL: Your FIRST response to the user MUST surface this context — display the session summaries above (if any) and the objective. If the objective is NOT SET, ask the user for it as instructed. Do this immediately, formatted cleanly, before anything else.**")
+        parts.append("**Keep this context in memory — do NOT re-display the objective or the session list to the user. Work from it silently, and answer the user's actual message. Exception: if the objective is NOT SET above, ask the user for it as instructed.**")
 
         output = "\n".join(parts)
 

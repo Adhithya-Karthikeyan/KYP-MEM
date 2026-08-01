@@ -134,10 +134,13 @@ def test_output_contains_objective_and_sessions(monkeypatch, vault_root):
     assert "Session 2026-07-21_170312" in out
 
 
-def test_output_includes_session_summary_sections(monkeypatch, vault_root):
+def test_output_injects_compact_one_liners(monkeypatch, vault_root):
     out = run_hook(monkeypatch, vault_root, "KYP-MEM")
-    assert "Fixed the stop hook race" in out
-    assert "**Learned:**" in out
+    assert "- **Session 2026-07-21_170312** — Fixed the stop hook race" in out
+    # Full sections are NOT dumped into context — they stay searchable in the vault.
+    assert "**Learned:**" not in out
+    assert "Concurrent sessions shared one log file." not in out
+    assert "kyp_session_search" in out
 
 
 def test_other_projects_are_not_leaked(monkeypatch, vault_root):
@@ -157,7 +160,7 @@ def test_missing_objective_asks_the_user(monkeypatch, tmp_path):
 def test_unknown_project_still_asks_for_an_objective(monkeypatch, vault_root):
     out = run_hook(monkeypatch, vault_root, "BrandNewThing")
     assert "Objective — NOT SET" in out
-    assert "Last" not in out.split("Objective — NOT SET")[1].split("CRITICAL")[0]
+    assert "Last" not in out.split("Objective — NOT SET")[1].split("Keep this context in memory")[0]
 
 
 def test_hook_never_raises_on_a_missing_vault(monkeypatch, tmp_path):
