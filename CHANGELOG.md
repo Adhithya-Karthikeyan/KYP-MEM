@@ -9,10 +9,12 @@ This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.htm
 The lightweight release: the Python environment drops from **459 MB to
 145 MB** (28 MB for the minimal tier), the MCP server starts ~6x faster, and
 a packaging break that made every fresh install since 2026-07-28 crash is
-fixed. **Your markdown notes are untouched.** The semantic index changed
-format; it rebuilds itself automatically from your notes on first search —
-run `kyp-mem compact` afterwards to reclaim the old index's disk (often
-hundreds of MB).
+fixed. **Your markdown notes are untouched.** Two things rebuild themselves
+on upgrade: the Python environment (recreated from scratch once, because an
+in-place upgrade would leave the old 430 MB dependency tree installed) and
+the semantic index (new format; re-embeds from your notes on first search).
+Run `kyp-mem compact` afterwards to reclaim the old index's disk (often
+hundreds of MB more).
 
 ### Fixed
 

@@ -1,13 +1,14 @@
 """End-to-end retrieval quality — the regression net for the tuned thresholds.
 
-The similarity floors and the IDF-coverage gate in vault.py were calibrated
-against measured score distributions, not chosen by feel. These tests pin that
-calibration: relevant queries must find the right note, and off-topic queries
-must return *nothing* rather than a confident wrong answer.
+The similarity floors (per-embedder, in embedder.py) and the IDF-coverage
+gate in vault.py were calibrated against measured score distributions, not
+chosen by feel. These tests pin that calibration: relevant queries must find
+the right note, and off-topic queries must return *nothing* rather than a
+confident wrong answer.
 
 If one of these fails after a threshold change, re-measure the distributions
-before adjusting the test — the numbers in the vault.py comments are the
-justification for the current values.
+before adjusting the test — the measurement comments on the floor values in
+embedder.py are the justification for the current numbers.
 """
 
 import pytest

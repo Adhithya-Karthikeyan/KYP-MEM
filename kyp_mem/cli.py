@@ -56,7 +56,7 @@ def main():
                             help="Also exercise the semantic index read/write path")
 
     comp_parser = subparsers.add_parser(
-        "compact", help="Reclaim disk used by the semantic index (orphan sweep + rebuild + vacuum)")
+        "compact", help="Reclaim disk used by the semantic index (old-backend sweep + rebuild + vacuum)")
     comp_parser.add_argument("--dry-run", action="store_true", help="Report what would be freed, change nothing")
     comp_parser.add_argument("--no-rebuild", action="store_true",
                              help="Skip the index rebuild (rebuilding is what reclaims deleted slots)")
@@ -489,8 +489,10 @@ def _run_config(key, value):
         print(f"  {D}  vault_path      — Path to vault directory{R}")
         print(f"  {D}  session_model   — Claude model for session summarization{R}")
         print(f"  {D}                    (default: claude-sonnet-4-6){R}")
-        print(f"  {D}  embedding_model — optional sentence-transformers model for{R}")
-        print(f"  {D}                    semantic search (default: built-in MiniLM){R}")
+        print(f"  {D}  embedding_model — semantic search model. Empty = ONNX MiniLM{R}")
+        print(f"  {D}                    (default). 'static' = numpy-only lite tier.{R}")
+        print(f"  {D}                    'st:<name>' or a bare name = any{R}")
+        print(f"  {D}                    sentence-transformers model (needs [st]).{R}")
         print()
         return
 

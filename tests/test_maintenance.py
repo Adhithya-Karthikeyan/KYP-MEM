@@ -115,6 +115,26 @@ def test_integrity_check_passes_on_a_good_store(vault):
     assert ok, detail
 
 
+def test_inspect_handles_uri_hostile_paths(tmp_path):
+    """'#' and '?' in the vault path must not break read-only inspection.
+
+    SQLite's URI parser treats '?' as the query string and drops everything
+    after '#' as a fragment, so an unencoded path made inspect open the wrong
+    file and report a healthy index as empty.
+    """
+    from kyp_mem.vector import VectorStore
+
+    root = tmp_path / "my vault #1?x"
+    root.mkdir(parents=True)
+    store = VectorStore(str(root))
+    assert store.upsert_note("P/A.md", "P", "A", "# A\n\nhello uri world\n", [])
+
+    report = mt.inspect(store.db_path)
+    assert report["chunks"] > 0, "inspect must see the same file the store writes"
+    ok, detail = mt.check_integrity(store.db_path)
+    assert ok, detail
+
+
 def test_integrity_check_fails_on_garbage(tmp_path):
     index_dir = tmp_path / "idx"
     index_dir.mkdir()
@@ -169,7 +189,7 @@ def test_vacuum_reclaims_after_heavy_deletion(vault):
     store.delete_note("P/Churn.md")
 
     result = mt.vacuum(store.db_path)
-    assert result["after_bytes"] <= result["before_bytes"]
+    assert result["freed_bytes"] > 0, "vacuum after heavy churn must actually return disk"
     assert result["after_bytes"] > 0
 
 

@@ -138,6 +138,7 @@ if (args[0] === "doctor") {
   console.log("  Checking kyp-mem Python environment...");
   if (!ensureVenv({ stdio: "inherit", force: true })) {
     console.error("  \x1b[31m✗\x1b[0m Could not build the environment. Is Python 3.10+ installed?");
+    console.error("  \x1b[90m  Installing uv (https://docs.astral.sh/uv/) also works — it can fetch Python itself.\x1b[0m");
     process.exit(1);
   }
   console.log(`  \x1b[32m✓\x1b[0m Environment ready (${venvDir()})`);

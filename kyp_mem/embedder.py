@@ -79,7 +79,7 @@ def _l2_normalize(arr):
 
 
 class StaticEmbedder:
-    """model2vec static embeddings — the default tier.
+    """model2vec static embeddings — the opt-in [vector-lite] tier.
 
     Static means no attention pass at all: a lookup plus a pooled sum, which
     is why encoding is effectively free and the runtime is numpy.
@@ -180,7 +180,9 @@ class OnnxMiniLMEmbedder:
         except Exception as e:
             raise EmbedderUnavailable(
                 f"could not download the ONNX embedding model ({e!r}). "
-                "Check network access, or use the default static tier."
+                "Check network access, or switch to the offline-friendly lite "
+                "tier: kyp-mem config embedding_model static "
+                "(needs: pip install 'kyp-mem[vector-lite]')"
             ) from e
 
         if not (target / "model.onnx").is_file():
@@ -192,7 +194,13 @@ class OnnxMiniLMEmbedder:
 
     @staticmethod
     def _safe_extract(tar, dest: Path):
-        """Extract refusing members that escape ``dest`` (tar path traversal)."""
+        """Extract refusing members that escape ``dest`` (tar path traversal).
+
+        Only regular files and directories are allowed — that rejects
+        symlinks and hardlinks (which can redirect later members outside
+        ``dest``) and also devices/FIFOs, none of which belong in a model
+        archive.
+        """
         dest = dest.resolve()
         for member in tar.getmembers():
             target = (dest / member.name).resolve()
@@ -200,9 +208,9 @@ class OnnxMiniLMEmbedder:
                 raise EmbedderUnavailable(
                     f"ONNX archive contains an unsafe path: {member.name!r}"
                 )
-            if member.issym() or member.islnk():
+            if not (member.isfile() or member.isdir()):
                 raise EmbedderUnavailable(
-                    f"ONNX archive contains a link member: {member.name!r}"
+                    f"ONNX archive contains a non-regular member: {member.name!r}"
                 )
         tar.extractall(dest)  # noqa: S202 — members validated above
 

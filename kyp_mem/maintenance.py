@@ -19,11 +19,25 @@ from the notes.
 
 import shutil
 import sqlite3
+import urllib.parse
 from pathlib import Path
 
 from .vector import DB_FILENAME
 
 UUID_LEN = 36
+
+
+def _ro_connect(db_file: Path) -> sqlite3.Connection:
+    """Read-only connection via a file: URI.
+
+    The path must be percent-encoded: SQLite's URI parser treats ``?`` as the
+    start of the query string and drops everything after ``#`` as a fragment,
+    so a vault directory containing either character would silently make this
+    open the wrong path (measured: inspect reported 0 chunks for a healthy
+    index under a directory with ``#`` in its name).
+    """
+    encoded = urllib.parse.quote(str(db_file))
+    return sqlite3.connect(f"file:{encoded}?mode=ro", uri=True)
 
 
 def _dir_size(path: Path) -> int:
@@ -119,7 +133,7 @@ def inspect(index_dir) -> dict:
     if db_file.exists():
         report["db_bytes"] = db_file.stat().st_size
         try:
-            con = sqlite3.connect(f"file:{db_file}?mode=ro", uri=True)
+            con = _ro_connect(db_file)
         except sqlite3.Error:
             return report
         try:
@@ -146,7 +160,7 @@ def check_integrity(index_dir) -> tuple:
     if not db_file.exists():
         return True, "no database"
     try:
-        con = sqlite3.connect(f"file:{db_file}?mode=ro", uri=True)
+        con = _ro_connect(db_file)
     except sqlite3.Error as e:
         return False, repr(e)
     try:
@@ -179,11 +193,12 @@ def vacuum(index_dir) -> dict:
     before = _size()
     con = sqlite3.connect(str(db_file))
     try:
+        # Errors propagate: a VACUUM that cannot run means something is wrong
+        # with the store, and reporting "0 bytes freed" as if it succeeded
+        # would hide that from both the user and the tests.
         con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
         con.execute("VACUUM")
         con.commit()
-    except sqlite3.Error:
-        pass
     finally:
         con.close()
     after = _size()

@@ -94,6 +94,22 @@ function run(command, cmdArgs, stdio = "ignore", extraEnv = {}) {
   });
 }
 
+// Venvs provisioned before this version carry the old ChromaDB dependency
+// tree (~430 MB) that 1.2.0 stopped needing. pip and uv upgrades install new
+// requirements but never remove no-longer-required packages, so upgrading in
+// place would keep the old weight on disk forever. Rebuilding once from
+// scratch is cheap (seconds with uv) and guarantees the slim footprint.
+export const REBUILD_BELOW = "1.2.0";
+
+export function versionLt(a, b) {
+  const pa = String(a).split(".").map((n) => parseInt(n, 10) || 0);
+  const pb = String(b).split(".").map((n) => parseInt(n, 10) || 0);
+  for (let i = 0; i < 3; i++) {
+    if ((pa[i] ?? 0) !== (pb[i] ?? 0)) return (pa[i] ?? 0) < (pb[i] ?? 0);
+  }
+  return false;
+}
+
 // Whether uv is on PATH. uv provisions a venv roughly 100x faster than
 // `python -m venv`, installs packages roughly 60x faster than pip (warm
 // cache), and can download a managed CPython itself when no suitable
@@ -247,6 +263,10 @@ export function ensureVenv({ stdio = "ignore", force = false } = {}) {
     // uv-built venvs contain no pip at all. If uv has since disappeared from
     // PATH there is no tool left inside the venv to repair it with — delete
     // and rebuild from scratch via whichever path is available now.
+    rmSync(venvDir(), { recursive: true, force: true });
+  } else if (existsSync(venvPython()) && stamp && versionLt(stamp.version, REBUILD_BELOW)) {
+    // Crossing the 1.2.0 boundary: shed the old backend's dependency tree by
+    // rebuilding, since an in-place upgrade would leave it installed.
     rmSync(venvDir(), { recursive: true, force: true });
   }
 
