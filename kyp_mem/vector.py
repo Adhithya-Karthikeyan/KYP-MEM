@@ -64,6 +64,18 @@ def _log(msg: str):
     print(f"[kyp-mem vector] {msg}", file=sys.stderr)
 
 
+class SpecMismatch(RuntimeError):
+    """The on-disk index was re-embedded under a different model spec.
+
+    Raised instead of proceeding, because proceeding is how vector spaces get
+    mixed: a process still holding the old model would score queries against
+    the new vectors (silently wrong) or insert old-model vectors into the new
+    index (silently unfindable, and kept forever because the content hash
+    matches). Never triggers a rebuild — the index is fine, *this process* is
+    behind.
+    """
+
+
 def content_hash(content: str) -> str:
     return hashlib.sha256(content.encode("utf-8")).hexdigest()[:16]
 
@@ -122,11 +134,17 @@ class VectorStore:
         # meta table; ``embedding_profile`` is kept as an explicit override for
         # tests and callers that had one.
         self.embedding_model = embedding_model or ""
+        # An explicitly passed profile is pinned: it must never be silently
+        # swapped for whatever the index happens to contain (tests rely on
+        # this). A config-derived profile may follow the index when another
+        # process legitimately switches models — see _sync_spec.
+        self._profile_pinned = embedding_profile is not None
         self.embedding_profile = embedding_profile or resolve_spec(self.embedding_model)
 
         self._lock_path = self.db_path / ".kyp.lock"
         self._connected = False
         self._embedder = None
+        self._embedder_error = None
         # In-process cache of the chunk matrix, invalidated by generation.
         self._cache_generation = -1
         self._cache_rows = None
@@ -218,9 +236,64 @@ class VectorStore:
             self._connect()
 
     def _get_embedder(self):
+        if self._embedder_error is not None:
+            # A missing package or unreachable model does not fix itself
+            # mid-process; re-attempting the (up to ~30 s) download on every
+            # single search would stall the whole session. close() clears
+            # this, and a restart retries naturally.
+            raise self._embedder_error
         if self._embedder is None:
-            self._embedder = load_embedder(self.embedding_profile)
+            try:
+                self._embedder = load_embedder(self.embedding_profile)
+            except EmbedderUnavailable as e:
+                self._embedder_error = e
+                raise
         return self._embedder
+
+    def _sync_spec(self):
+        """Align this process with the on-disk embedder spec.
+
+        Another process may have legitimately re-embedded the shared index
+        under a different model (``kyp-mem config embedding_model ... &&
+        kyp-mem reindex``). When the fresh on-disk config agrees with what the
+        index now contains, follow it: drop the cached embedder and floors and
+        carry on with the new model. When it does not — or the profile is
+        pinned — raise SpecMismatch rather than mix vector spaces.
+        """
+        with self._db() as con:
+            row = con.execute("SELECT value FROM meta WHERE key='embedder'").fetchone()
+        stored = row[0] if row else None
+        if not stored or stored == self.embedding_profile:
+            return
+        if not self._profile_pinned:
+            try:
+                from .config import get_embedding_model
+
+                fresh = resolve_spec(get_embedding_model())
+            except Exception:
+                fresh = None
+            if fresh == stored:
+                _log(f"index switched to {stored}; following the new configuration")
+                self.embedding_profile = stored
+                self._embedder = None
+                self._embedder_error = None
+                self._cache_generation = -1
+                return
+        raise SpecMismatch(
+            f"index is embedded with {stored!r} but this process is configured "
+            f"for {self.embedding_profile!r}; refusing to mix vector spaces. "
+            "Restart the process, or run: kyp-mem reindex"
+        )
+
+    def _assert_spec(self, con):
+        """Transaction-time recheck: the spec must not have moved since
+        ``_sync_spec`` — vectors were encoded outside the transaction."""
+        row = con.execute("SELECT value FROM meta WHERE key='embedder'").fetchone()
+        if row and row[0] != self.embedding_profile:
+            raise SpecMismatch(
+                f"index switched to {row[0]!r} while this write was being "
+                f"encoded with {self.embedding_profile!r}; write refused"
+            )
 
     def close(self):
         # Per-operation connections mean there is nothing to close; this
@@ -228,6 +301,7 @@ class VectorStore:
         # updates the index when it is already live).
         self._connected = False
         self._embedder = None
+        self._embedder_error = None
         self._cache_generation = -1
         self._cache_rows = None
         self._cache_matrix = None
@@ -341,6 +415,7 @@ class VectorStore:
         sentinel = "__kyp_healthcheck__"
         try:
             self._ensure_connected()
+            self._sync_spec()
             vec = self._encode(["ok"])
             with self._locked(write=True), self._db() as con:
                 con.execute(
@@ -362,13 +437,15 @@ class VectorStore:
 
         A missing embedding runtime is neither transient nor index corruption
         — rebuilding would destroy good vectors over an uninstalled package —
-        so it fails fast with the install hint instead.
+        so it fails fast with the install hint instead. Likewise a spec
+        mismatch: the index is healthy, this process is just behind, and a
+        rebuild would clobber another process's freshly re-embedded index.
         """
         try:
             with self._locked(write=True):
                 op()
             return True
-        except EmbedderUnavailable as e:
+        except (EmbedderUnavailable, SpecMismatch) as e:
             _log(str(e))
             return False
         except Exception as first:
@@ -378,7 +455,7 @@ class VectorStore:
             with self._locked(write=True):
                 op()
             return True
-        except EmbedderUnavailable as e:
+        except (EmbedderUnavailable, SpecMismatch) as e:
             _log(str(e))
             return False
         except Exception as second:
@@ -424,6 +501,7 @@ class VectorStore:
             # counts accumulated by a half-failed first attempt would double.
             summary.update(added=0, updated=0, removed=0, unchanged=0)
             self._ensure_connected()
+            self._sync_spec()
             with self._db() as con:
                 existing = self._existing_doc_state(con)
 
@@ -453,6 +531,7 @@ class VectorStore:
             vectors = self._encode([r["text"] for r in rows])
 
             with self._db() as con:
+                self._assert_spec(con)
                 for path in stale_paths:
                     con.execute("DELETE FROM chunks WHERE doc_path = ?", (path,))
                 self._insert_rows(con, rows, vectors)
@@ -473,8 +552,10 @@ class VectorStore:
 
         def op():
             self._ensure_connected()
+            self._sync_spec()
             vectors = self._encode([r["text"] for r in rows])
             with self._db() as con:
+                self._assert_spec(con)
                 con.execute("DELETE FROM chunks WHERE doc_path = ?", (path,))
                 self._insert_rows(con, rows, vectors)
                 self._bump_generation(con)
@@ -513,8 +594,19 @@ class VectorStore:
         metas = [r[:6] for r in rows]
         if rows:
             dim = len(rows[0][6]) // 4
-            matrix = np.frombuffer(b"".join(r[6] for r in rows), dtype=np.float32)
-            matrix = matrix.reshape(len(rows), dim)
+            try:
+                matrix = np.frombuffer(b"".join(r[6] for r in rows), dtype=np.float32)
+                matrix = matrix.reshape(len(rows), dim)
+            except ValueError:
+                # Mixed-dimension rows: vectors from two models in one table.
+                # The write guards prevent this from happening anew; a store
+                # that already contains it must not crash every search in
+                # every process — report it and search empty until repaired.
+                _log(
+                    "index contains mixed-dimension vectors — semantic search "
+                    "is off until it is rebuilt. Run: kyp-mem reindex"
+                )
+                return [], np.zeros((0, 0), dtype=np.float32)
         else:
             matrix = np.zeros((0, 0), dtype=np.float32)
 
@@ -545,10 +637,14 @@ class VectorStore:
 
         try:
             self._ensure_connected()
+            # Follows a legitimate model switch by another process, or raises
+            # before we can score a query from one model against vectors from
+            # another — which produces confidently wrong emptiness, not noise.
+            self._sync_spec()
             query_vec = self._encode([query])[0]
             with self._locked(write=False):
                 metas, matrix = self._load_cache()
-        except EmbedderUnavailable as e:
+        except (EmbedderUnavailable, SpecMismatch) as e:
             _log(str(e))
             return []
         except Exception as e:
@@ -626,6 +722,32 @@ def reset_vector_db():
     _store = None
 
 
+_numpy_warned = False
+
+
+def vector_disabled_reason() -> str | None:
+    """Why semantic indexing is off: ``"env"``, ``"numpy"``, or None (it isn't).
+
+    The distinction matters to the CLI: "you turned this off" and "this isn't
+    installed" call for different messages, and telling a base-install user
+    that KYP_NO_VECTOR is set (it isn't) sends them debugging the wrong thing.
+    """
+    global _numpy_warned
+    if os.environ.get("KYP_NO_VECTOR", "").strip() in ("1", "true", "yes"):
+        return "env"
+    try:
+        import importlib.util
+
+        if importlib.util.find_spec("numpy") is None:
+            if not _numpy_warned:
+                _numpy_warned = True
+                _log("numpy not installed — semantic search off. pip install 'kyp-mem[vector]'")
+            return "numpy"
+    except Exception:
+        return "numpy"
+    return None
+
+
 def vector_enabled() -> bool:
     """Whether semantic indexing should run at all.
 
@@ -633,14 +755,4 @@ def vector_enabled() -> bool:
     install without the [vector] extra) disables it implicitly — BM25 keyword
     search still covers every note, so this is a degradation, not an outage.
     """
-    if os.environ.get("KYP_NO_VECTOR", "").strip() in ("1", "true", "yes"):
-        return False
-    try:
-        import importlib.util
-
-        if importlib.util.find_spec("numpy") is None:
-            _log("numpy not installed — semantic search off. pip install 'kyp-mem[vector]'")
-            return False
-    except Exception:
-        return False
-    return True
+    return vector_disabled_reason() is None

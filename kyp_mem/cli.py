@@ -59,7 +59,9 @@ def main():
         "compact", help="Reclaim disk used by the semantic index (old-backend sweep + rebuild + vacuum)")
     comp_parser.add_argument("--dry-run", action="store_true", help="Report what would be freed, change nothing")
     comp_parser.add_argument("--no-rebuild", action="store_true",
-                             help="Skip the index rebuild (rebuilding is what reclaims deleted slots)")
+                             help="Skip the re-embed from notes (vacuum and the old-backend "
+                                  "sweep still reclaim space; rebuild remains the recovery "
+                                  "path for a drifted index)")
     comp_parser.add_argument("--purge-legacy", action="store_true",
                              help="Also delete the pre-1.0 shared index directory, if present")
 
@@ -562,6 +564,17 @@ def _run_tree():
     _print_tree(v.get_full_tree(), "")
 
 
+def _print_vector_disabled():
+    """Say WHY semantic search is off — the two causes have different fixes."""
+    from .vector import vector_disabled_reason
+
+    if vector_disabled_reason() == "numpy":
+        print(f"  {Y}✗{R} Semantic search is not installed")
+        print(f"  {D}    Install it with: pip install 'kyp-mem[vector]'{R}")
+    else:
+        print(f"  {Y}✗{R} Semantic index is disabled (KYP_NO_VECTOR is set)")
+
+
 def _run_compact(dry_run: bool = False, rebuild: bool = True, purge_legacy: bool = False):
     from .config import get_vault_path
     from .vault import Vault
@@ -574,7 +587,7 @@ def _run_compact(dry_run: bool = False, rebuild: bool = True, purge_legacy: bool
     vault = Vault(get_vault_path())
     store = vault.vector
     if store is None:
-        print(f"  {Y}✗{R} Semantic index is disabled (KYP_NO_VECTOR is set)")
+        _print_vector_disabled()
         print()
         return
 
@@ -599,7 +612,12 @@ def _run_compact(dry_run: bool = False, rebuild: bool = True, purge_legacy: bool
         print(f"  {G}✓{R} Vacuumed index — {human_bytes(vac['freed_bytes'])} returned")
     if "sync" in steps:
         s = steps["sync"]
-        print(f"  {G}✓{R} Re-embedded {s.get('added', 0)} notes")
+        if s.get("ok"):
+            print(f"  {G}✓{R} Re-embedded {s.get('added', 0)} notes")
+        else:
+            print(f"  {Y}✗{R} Re-embed skipped — the existing index was kept")
+            if s.get("reason"):
+                print(f"  {D}    {s['reason']}{R}")
 
     legacy = steps.get("legacy", {})
     if steps.get("legacy_removed", {}).get("removed"):
@@ -636,7 +654,19 @@ def _run_reindex():
     vault = Vault(get_vault_path())
     store = vault.vector
     if store is None:
-        print(f"  {Y}✗{R} Semantic index is disabled (KYP_NO_VECTOR is set)")
+        _print_vector_disabled()
+        print()
+        return
+
+    # Prove the model loads BEFORE dropping the vectors — an offline machine
+    # must not trade a healthy index for an empty one.
+    from .embedder import EmbedderUnavailable
+
+    try:
+        store._get_embedder()
+    except EmbedderUnavailable as e:
+        print(f"  {Y}✗{R} Embedding model unavailable — existing index kept")
+        print(f"  {D}    {e}{R}")
         print()
         return
 
@@ -771,7 +801,12 @@ def _doctor_index_section(vault_path: str, deep: bool = False):
         return
 
     if not vector_enabled():
-        print(f"  {D}·{R} Semantic index disabled (KYP_NO_VECTOR is set)")
+        from .vector import vector_disabled_reason
+
+        if vector_disabled_reason() == "numpy":
+            print(f"  {D}·{R} Semantic search not installed — pip install 'kyp-mem[vector]'")
+        else:
+            print(f"  {D}·{R} Semantic index disabled (KYP_NO_VECTOR is set)")
         return
 
     from .maintenance import legacy_index_report

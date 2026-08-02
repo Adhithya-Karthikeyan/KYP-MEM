@@ -221,6 +221,12 @@ def legacy_index_report(store) -> dict:
     """
     absent = {"present": False, "bytes": 0, "path": str(store.legacy_db_path)}
     try:
+        # A symlink at the legacy location is refused outright: resolve()
+        # would follow it and the eventual rmtree would destroy the *target*,
+        # somewhere we never vetted. A genuine pre-1.0 index is a real
+        # directory; anything else is not ours to delete.
+        if Path(store.legacy_db_path).is_symlink():
+            return absent
         legacy = Path(store.legacy_db_path).resolve()
         vault = Path(store.vault_path).resolve()
         active = Path(store.db_path).resolve()
@@ -270,9 +276,21 @@ def compact(vault, rebuild: bool = True, dry_run: bool = False, purge_legacy: bo
     steps = {}
 
     if rebuild and not dry_run:
-        store.rebuild()
-        steps["sync"] = vault.sync_vector()
-        vault._vector_ready = True
+        # Prove the embedding model loads BEFORE dropping the vectors. An
+        # offline machine (or a base install) would otherwise wipe a healthy
+        # index, fail the re-embed, and report success — the exact opposite
+        # of maintenance. The loaded embedder is cached on the store, so the
+        # sync that follows reuses it rather than paying twice.
+        from .embedder import EmbedderUnavailable
+
+        try:
+            store._get_embedder()
+        except EmbedderUnavailable as e:
+            steps["sync"] = {"ok": False, "reason": str(e)}
+        else:
+            store.rebuild()
+            steps["sync"] = vault.sync_vector()
+            vault._vector_ready = True
 
     steps["chroma"] = remove_chroma_leftovers(index_dir, dry_run=dry_run)
     if not dry_run:

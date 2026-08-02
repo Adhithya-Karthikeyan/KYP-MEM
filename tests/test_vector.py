@@ -197,9 +197,16 @@ def test_upsert_single_note(synced):
 
 def test_upsert_replaces_rather_than_appends(synced):
     synced.upsert_note("N.md", "P", "N", "# N\n\nfirst version about volcanoes\n", [])
+    before = synced.stats()["chunks"]
     synced.upsert_note("N.md", "P", "N", "# N\n\nsecond version about glaciers\n", [])
-    docs = [h.doc_path for h in synced.search("volcanoes", min_similarity=0.0)]
-    assert "N.md" not in docs or not synced.search("volcanoes eruption lava", min_similarity=0.6)
+
+    # Same shape of note: replacing must not grow the index...
+    assert synced.stats()["chunks"] == before
+    # ...and no chunk of the first version may survive.
+    hits = synced.search("glaciers", min_similarity=0.0, n_results=50)
+    n_hits = [h for h in hits if h.doc_path == "N.md"]
+    assert n_hits, "N.md must still be indexed after the second upsert"
+    assert all("volcano" not in h.text for h in n_hits)
 
 
 def test_delete_note(synced):
@@ -230,6 +237,61 @@ def test_content_hash_is_stable_and_distinguishing():
 def test_notes_are_split_into_multiple_chunks(synced):
     # One vector per note was the old behaviour and the main accuracy problem.
     assert synced.stats()["chunks"] > synced.stats()["documents"]
+
+
+# --- model-switch safety ------------------------------------------------------
+
+def _set_stored_embedder(store, spec: str):
+    """Simulate another process having re-embedded the index under ``spec``."""
+    import sqlite3
+
+    con = sqlite3.connect(str(store.db_file))
+    with con:
+        con.execute("INSERT OR REPLACE INTO meta(key, value) VALUES ('embedder', ?)", (spec,))
+        con.execute(
+            "INSERT OR REPLACE INTO meta(key, value) VALUES ('generation', "
+            "COALESCE((SELECT CAST(value AS INTEGER) + 1 FROM meta WHERE key='generation'), 0))"
+        )
+    con.close()
+
+
+def test_stale_process_refuses_to_write_into_a_switched_index(synced):
+    """The cross-model poisoning bug: a process holding the old model must not
+    insert its vectors into an index re-embedded under a new model — the row
+    would carry a matching content hash and survive every future sync."""
+    before = synced.stats()["chunks"]
+    _set_stored_embedder(synced, "model2vec:someone/other-model")
+
+    ok = synced.upsert_note("P/New.md", "P", "New", "# New\n\npoison attempt\n", [])
+    assert ok is False, "write into a foreign-model index must be refused"
+
+    # Nothing was inserted and nothing was rebuilt/clobbered.
+    _set_stored_embedder(synced, synced.embedding_profile)
+    assert synced.stats()["chunks"] == before
+
+
+def test_stale_process_search_returns_empty_not_cross_model_scores(synced):
+    _set_stored_embedder(synced, "model2vec:someone/other-model")
+    # The stored spec disagrees with this process's configured spec (config is
+    # isolated to defaults by conftest), so search must refuse, not score.
+    assert synced.search("chroma tombstones") == []
+
+
+def test_process_follows_a_config_backed_model_switch(synced):
+    """When the on-disk config agrees with the index's new spec, a running
+    process adopts it instead of erroring until restart."""
+    from kyp_mem import config
+    from kyp_mem.embedder import resolve_spec
+
+    new_spec = resolve_spec("static")
+    assert new_spec != synced.embedding_profile, "test needs a real switch"
+    # Point the index at the new spec and make config agree.
+    config.save_config({"embedding_model": "static"})
+    _set_stored_embedder(synced, new_spec)
+
+    synced._sync_spec()
+    assert synced.embedding_profile == new_spec
+    assert synced._embedder is None, "the old model must be dropped on adoption"
 
 
 # --- failure recovery ---------------------------------------------------------

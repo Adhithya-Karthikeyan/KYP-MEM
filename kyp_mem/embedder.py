@@ -44,10 +44,18 @@ DEFAULT_STATIC_MODEL = "minishlab/potion-retrieval-32M"
 
 # Chroma's standalone ONNX artifact for all-MiniLM-L6-v2. Same URL and cache
 # location Chroma itself uses, so an existing ~/.cache/chroma download is
-# reused instead of fetched again.
+# reused instead of fetched again. The sha256 is the one Chroma pins for this
+# artifact (chromadb ONNXMiniLM_L6_V2._MODEL_SHA256) — a tarball that does
+# not match it never reaches the extractor.
 ONNX_MINILM_URL = "https://chroma-onnx-models.s3.amazonaws.com/all-MiniLM-L6-v2/onnx.tar.gz"
+ONNX_MINILM_SHA256 = "913d7300ceae3b2dbc2c50d1de4baacab4be7b9380491c27fab7418616a16ec3"
 ONNX_MINILM_CACHE = Path.home() / ".cache" / "chroma" / "onnx_models" / "all-MiniLM-L6-v2"
 ONNX_MAX_TOKENS = 256
+
+# One timeout for connect and each read. Long enough for a slow but live
+# transfer of the ~80 MB artifact to make progress, short enough that a
+# black-holed network fails a search in seconds, not minutes.
+ONNX_DOWNLOAD_TIMEOUT = 30
 
 # Spec prefixes accepted in the ``embedding_model`` config key. A bare
 # unprefixed name keeps its historical meaning: a sentence-transformers model.
@@ -150,33 +158,65 @@ class OnnxMiniLMEmbedder:
             ) from e
 
         model_dir = self._ensure_model()
-        self._tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
-        self._tokenizer.enable_truncation(max_length=ONNX_MAX_TOKENS)
-        self._tokenizer.enable_padding()
-        self._session = onnxruntime.InferenceSession(
-            str(model_dir / "model.onnx"), providers=["CPUExecutionProvider"]
-        )
+        try:
+            self._tokenizer = Tokenizer.from_file(str(model_dir / "tokenizer.json"))
+            self._tokenizer.enable_truncation(max_length=ONNX_MAX_TOKENS)
+            self._tokenizer.enable_padding()
+            self._session = onnxruntime.InferenceSession(
+                str(model_dir / "model.onnx"), providers=["CPUExecutionProvider"]
+            )
+        except Exception as e:
+            # A raw exception here would escalate through the store's
+            # retry-then-rebuild ladder and destroy a healthy index over a
+            # corrupt model cache. EmbedderUnavailable fails fast instead.
+            raise EmbedderUnavailable(
+                f"cached ONNX model failed to load ({e!r}). The files at "
+                f"{model_dir} may be corrupt — delete that directory and it "
+                "will re-download."
+            ) from e
 
     def _ensure_model(self) -> Path:
         target = ONNX_MINILM_CACHE / "onnx"
         if (target / "model.onnx").is_file() and (target / "tokenizer.json").is_file():
             return target
 
+        import contextlib
+        import hashlib
         import tarfile
         import tempfile
         import urllib.request
 
         _log("downloading all-MiniLM-L6-v2 ONNX model (~80 MB, one time)")
         ONNX_MINILM_CACHE.mkdir(parents=True, exist_ok=True)
+        tmp_path = None
         try:
-            with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as tmp:
-                with urllib.request.urlopen(ONNX_MINILM_URL, timeout=120) as resp:
-                    while chunk := resp.read(1 << 20):
-                        tmp.write(chunk)
-                tmp_path = tmp.name
-            with tarfile.open(tmp_path, "r:gz") as tar:
-                self._safe_extract(tar, ONNX_MINILM_CACHE)
-            os.unlink(tmp_path)
+            try:
+                digest = hashlib.sha256()
+                with tempfile.NamedTemporaryFile(suffix=".tar.gz", delete=False) as tmp:
+                    tmp_path = tmp.name
+                    with urllib.request.urlopen(
+                        ONNX_MINILM_URL, timeout=ONNX_DOWNLOAD_TIMEOUT
+                    ) as resp:
+                        while chunk := resp.read(1 << 20):
+                            digest.update(chunk)
+                            tmp.write(chunk)
+                if digest.hexdigest() != ONNX_MINILM_SHA256:
+                    raise EmbedderUnavailable(
+                        "downloaded ONNX model does not match its pinned sha256 "
+                        f"(got {digest.hexdigest()}) — refusing to extract it. "
+                        "A truncated transfer or a tampered mirror both look "
+                        "like this; retry on a trusted network."
+                    )
+                with tarfile.open(tmp_path, "r:gz") as tar:
+                    self._safe_extract(tar, ONNX_MINILM_CACHE)
+            finally:
+                # The temp tarball must not outlive this call on any path —
+                # a failed 80 MB download per search adds up fast.
+                if tmp_path:
+                    with contextlib.suppress(FileNotFoundError):
+                        os.unlink(tmp_path)
+        except EmbedderUnavailable:
+            raise
         except Exception as e:
             raise EmbedderUnavailable(
                 f"could not download the ONNX embedding model ({e!r}). "
@@ -280,8 +320,14 @@ def resolve_spec(spec: str | None) -> str:
         return "onnx:all-MiniLM-L6-v2"
     if low in STATIC_SPECS:
         return f"{STATIC_PREFIX}{DEFAULT_STATIC_MODEL}"
-    if low.startswith(STATIC_PREFIX) or low.startswith(ST_PREFIX) or low.startswith("onnx:"):
-        return spec
+    # Prefixes match case-insensitively but the canonical form always carries
+    # the lowercase prefix — dispatch in load_embedder/floors_for_spec is
+    # case-sensitive, and the canonical string is persisted in the index
+    # metadata where two spellings of one intent must not differ. The model
+    # name itself keeps its case: HF repo ids are case-sensitive.
+    for prefix in (STATIC_PREFIX, ST_PREFIX, "onnx:"):
+        if low.startswith(prefix):
+            return f"{prefix}{spec[len(prefix):]}"
     # Bare names keep their pre-1.2 meaning: a sentence-transformers model.
     return f"{ST_PREFIX}{spec}"
 
