@@ -4,6 +4,73 @@ All notable changes to kyp-mem are documented here.
 
 This project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] — 2026-08-02
+
+The lightweight release: the Python environment drops from **459 MB to
+145 MB** (28 MB for the minimal tier), the MCP server starts ~6x faster, and
+a packaging break that made every fresh install since 2026-07-28 crash is
+fixed. **Your markdown notes are untouched.** The semantic index changed
+format; it rebuilds itself automatically from your notes on first search —
+run `kyp-mem compact` afterwards to reclaim the old index's disk (often
+hundreds of MB).
+
+### Fixed
+
+- **Fresh installs were broken since 2026-07-28.** The MCP Python SDK
+  released v2.0.0 on that date and removed the `FastMCP` import path this
+  server is built on; kyp-mem's unbounded `mcp>=1.0.0` pin happily installed
+  it and then crashed on import. Now pinned to `mcp>=1.28,<2` (the SDK
+  maintainers' supported v1 maintenance line).
+
+### Changed
+
+- **ChromaDB is gone.** The semantic index is now a single SQLite file with
+  exact (numpy) nearest-neighbour search. At kyp-mem's scale, exact search
+  scores 50,000 chunks in under a millisecond — an approximate index bought
+  nothing and cost everything: chromadb's mandatory dependency tree
+  (kubernetes, grpcio, onnxruntime, opentelemetry, ~430 MB) was almost the
+  entire install, its deleted vectors never returned disk, and dropped
+  collections leaked segment directories. The new store reclaims space on
+  delete, vacuums on `kyp-mem compact`, and backs up with `cp`.
+  Retrieval quality is unchanged: the default embedding model is the exact
+  ONNX all-MiniLM-L6-v2 artifact ChromaDB bundled (existing model caches are
+  reused), with the same calibrated similarity floors.
+- **The MCP server answers ~6x faster after launch** (~1.2 s → ~0.2 s to
+  ready). The vault parse + keyword-index build now happens on the first tool
+  call instead of at process start. This matters because recent Claude Code
+  versions give a stdio server only ~2 seconds before the session's first
+  turn proceeds without its tools.
+- **Faster installs with uv.** When [uv](https://docs.astral.sh/uv/) is on
+  PATH, kyp-mem provisions its Python environment with it (~100x faster venv
+  creation, ~60x faster installs, and uv can download a suitable Python by
+  itself when the system has none). The plain `python -m venv` + pip flow
+  remains the fallback and works exactly as before.
+
+### Added
+
+- **Install tiers.** PyPI users can now choose:
+  `pip install kyp-mem` (~28 MB: MCP server, vault, BM25 keyword search,
+  hooks), `kyp-mem[vector]` (semantic search, default ONNX model),
+  `kyp-mem[vector-lite]` (semantic search with numpy-only static embeddings —
+  smallest, measurably weaker floors), `kyp-mem[ui]` (web UI), `kyp-mem[st]`
+  (any sentence-transformers model). Without `[vector]`, search degrades to
+  keyword-only and says so once on stderr. npm installs keep everything by
+  default (`KYP_MEM_LITE=1` opts out).
+- **Embedding model choice.** `kyp-mem config embedding_model` now accepts
+  `""` (default ONNX MiniLM), `static` (model2vec potion-retrieval-32M),
+  `model2vec:<model>`, `st:<model>`, or a bare sentence-transformers name as
+  before. Switching models re-embeds automatically on the next search —
+  similarity floors travel with the model.
+- **MCP tool annotations.** The 12 read-only tools now declare
+  `readOnlyHint`, so clients like Claude Code can skip permission prompts
+  for them; write/delete tools carry honest destructive/idempotent hints.
+  Malformed tool input (bad JSON in `properties`, missing project) returns a
+  corrective message the agent can act on instead of a protocol error.
+- **`kyp-mem compact` sweeps the old backend.** After upgrading, it removes
+  the ChromaDB files the pre-1.2 index directory still holds and reports how
+  much disk came back; `kyp-mem doctor` warns when they are present. The
+  SQLite index also gets a real integrity check in `doctor`.
+
 ## [1.1.0] — 2026-08-01
 
 ### Changed

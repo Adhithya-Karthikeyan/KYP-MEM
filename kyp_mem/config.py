@@ -38,16 +38,16 @@ def get_session_model() -> str:
 
 
 def get_embedding_model() -> str:
-    """Sentence-transformers model for embeddings, or "" for the built-in one.
+    """Embedding model spec, or "" for the default tier.
 
-    The default is ChromaDB's bundled ONNX all-MiniLM-L6-v2: no extra install,
-    works offline, and keeps the package light. It is also the weakest link in
-    retrieval precision — on a real vault its similarity scores for relevant
-    and irrelevant notes overlap, which is why search leans on keyword
-    corroboration to stay accurate.
+    Accepted values (resolution lives in embedder.py):
+      ""                        ONNX all-MiniLM-L6-v2 — the default, and the
+                                exact model the old ChromaDB backend bundled
+      "static" / "lite"         model2vec potion — numpy-only lite tier
+      "model2vec:<hf-model>"    any model2vec static model
+      "st:<name>" or bare name  a sentence-transformers model (needs [st])
 
-    Setting this to a stronger model (e.g. "BAAI/bge-small-en-v1.5") narrows
-    that overlap. It requires `pip install sentence-transformers` and a
-    `kyp-mem reindex`, since vectors from different models are not comparable.
+    Changing the model triggers an automatic re-embed on next search, since
+    vectors from different models are not comparable.
     """
     return (load_config().get("embedding_model") or "").strip()

@@ -1,5 +1,10 @@
-"""Tests for on-disk reclaim. The real vault had 1.2 GB of index for 1.8 MB
-of vectors, almost all of it orphaned segments and un-vacuumed sqlite pages."""
+"""Tests for on-disk reclaim.
+
+The SQLite backend has much less to reclaim than Chroma did (DELETE frees
+pages, VACUUM returns them), so these tests focus on what remains: vacuum,
+sweeping the old ChromaDB files a pre-1.2 install left behind, and the
+strictly-guarded removal of the pre-1.0 shared index directory.
+"""
 
 from pathlib import Path
 
@@ -9,11 +14,14 @@ from kyp_mem import maintenance as mt
 from kyp_mem.vault import Vault
 from tests.conftest import write
 
-pytest.importorskip("chromadb")
+pytest.importorskip("numpy")
+pytest.importorskip("onnxruntime")
+pytest.importorskip("tokenizers")
 
 pytestmark = pytest.mark.slow
 
-ORPHAN_ID = "deadbeef-0000-4000-8000-000000000000"
+# A UUID-named directory, as Chroma's segment dirs were.
+CHROMA_SEGMENT_ID = "deadbeef-0000-4000-8000-000000000000"
 
 
 @pytest.fixture
@@ -24,6 +32,14 @@ def vault(tmp_path):
     v = Vault(str(root))
     v.ensure_vector_synced()
     return v
+
+
+def _plant_chroma_leftovers(index_dir: Path, nbytes: int = 50_000):
+    (index_dir / "chroma.sqlite3").write_bytes(b"x" * nbytes)
+    segment = index_dir / CHROMA_SEGMENT_ID
+    segment.mkdir()
+    (segment / "data_level0.bin").write_bytes(b"x" * nbytes)
+    return segment
 
 
 def test_sibling_vaults_get_separate_index_dirs(tmp_path):
@@ -84,99 +100,75 @@ def test_inspect_reports_a_missing_store(tmp_path):
     assert report["total_bytes"] == 0
 
 
-def test_inspect_finds_live_segments(vault):
+def test_inspect_reports_live_contents(vault):
     report = mt.inspect(vault.vector.db_path)
     assert report["exists"] is True
-    assert report["segments"]
-    assert report["orphans"] == []
-    assert report["embeddings"] > 0
+    assert report["chunks"] > 0
+    assert report["documents"] == 2
+    assert report["db_bytes"] > 0
+    assert report["embedder"], "the embedder spec must be persisted"
+    assert report["chroma_leftovers"] == []
 
 
-def test_orphan_segment_is_detected_and_removed(vault):
-    chroma_dir = vault.vector.db_path
-    orphan = chroma_dir / ORPHAN_ID
-    orphan.mkdir()
-    (orphan / "data_level0.bin").write_bytes(b"x" * 50_000)
-
-    report = mt.inspect(chroma_dir)
-    assert [o["id"] for o in report["orphans"]] == [ORPHAN_ID]
-
-    result = mt.remove_orphan_segments(chroma_dir)
-    assert result["removed"] == [ORPHAN_ID]
-    assert result["freed_bytes"] >= 50_000
-    assert not orphan.exists()
+def test_integrity_check_passes_on_a_good_store(vault):
+    ok, detail = mt.check_integrity(vault.vector.db_path)
+    assert ok, detail
 
 
-def test_dry_run_removes_nothing(vault):
-    chroma_dir = vault.vector.db_path
-    orphan = chroma_dir / ORPHAN_ID
-    orphan.mkdir()
-    (orphan / "blob.bin").write_bytes(b"y" * 10_000)
-
-    result = mt.remove_orphan_segments(chroma_dir, dry_run=True)
-    assert result["removed"] == [ORPHAN_ID]
-    assert orphan.exists(), "dry run must not delete anything"
+def test_integrity_check_fails_on_garbage(tmp_path):
+    index_dir = tmp_path / "idx"
+    index_dir.mkdir()
+    (index_dir / mt.DB_FILENAME).write_bytes(b"this is not a sqlite database")
+    ok, _ = mt.check_integrity(index_dir)
+    assert ok is False
 
 
-def test_live_segments_are_never_removed(vault):
-    chroma_dir = vault.vector.db_path
-    before = {s["id"] for s in mt.inspect(chroma_dir)["segments"]}
-    mt.remove_orphan_segments(chroma_dir)
-    after = {s["id"] for s in mt.inspect(chroma_dir)["segments"]}
-    assert before == after
+def test_chroma_leftovers_are_detected_and_removed(vault):
+    index_dir = vault.vector.db_path
+    segment = _plant_chroma_leftovers(index_dir)
+
+    report = mt.inspect(index_dir)
+    assert "chroma.sqlite3" in report["chroma_leftovers"]
+    assert CHROMA_SEGMENT_ID in report["chroma_leftovers"]
+    assert report["chroma_leftover_bytes"] >= 100_000
+
+    result = mt.remove_chroma_leftovers(index_dir)
+    assert set(result["removed"]) == {"chroma.sqlite3", CHROMA_SEGMENT_ID}
+    assert result["freed_bytes"] >= 100_000
+    assert not segment.exists()
+    assert not (index_dir / "chroma.sqlite3").exists()
 
 
-def test_non_uuid_directories_are_left_alone(vault):
-    chroma_dir = vault.vector.db_path
-    keep = chroma_dir / "my-backup"
+def test_chroma_sweep_dry_run_removes_nothing(vault):
+    index_dir = vault.vector.db_path
+    segment = _plant_chroma_leftovers(index_dir)
+
+    result = mt.remove_chroma_leftovers(index_dir, dry_run=True)
+    assert set(result["removed"]) == {"chroma.sqlite3", CHROMA_SEGMENT_ID}
+    assert segment.exists(), "dry run must not delete anything"
+    assert (index_dir / "chroma.sqlite3").exists()
+
+
+def test_chroma_sweep_never_touches_the_live_index_or_other_files(vault):
+    index_dir = vault.vector.db_path
+    keep = index_dir / "my-backup"
     keep.mkdir()
     (keep / "f.txt").write_text("important")
-    mt.remove_orphan_segments(chroma_dir)
+
+    mt.remove_chroma_leftovers(index_dir)
     assert keep.exists()
+    assert (index_dir / mt.DB_FILENAME).exists()
+    assert vault.vector.stats()["chunks"] > 0
 
 
-def test_drop_unused_collections(vault):
+def test_vacuum_reclaims_after_heavy_deletion(vault):
     store = vault.vector
-    store.collection  # force connect
-    store._client.get_or_create_collection(name="legacy-sessions")
+    # Churn: add a bulky note, then delete it. Pages go to the freelist and
+    # only VACUUM hands them back to the filesystem.
+    store.upsert_note("P/Churn.md", "P", "Churn", "# Churn\n\n" + "token " * 20_000, [])
+    store.delete_note("P/Churn.md")
 
-    names = {n for _, n in mt._live_collections(store.db_path)}
-    assert "legacy-sessions" in names
-
-    result = mt.drop_unused_collections(store.db_path, keep_names={store.collection_name})
-    assert "legacy-sessions" in result["dropped"]
-
-    names = {n for _, n in mt._live_collections(store.db_path)}
-    assert "legacy-sessions" not in names
-    assert store.collection_name in names
-
-
-def test_optimize_fulltext_merges_fts_segments(vault):
-    store = vault.vector
-    # Churn the index so FTS5 accumulates segments, which it never merges on
-    # its own. This is what grew to 62.9 MB for 184 embeddings on a real vault.
-    for i in range(12):
-        store.upsert_note("P/Churn.md", "P", "Churn", f"# Churn\n\nrevision {i} " + "token " * 60, [])
-
-    before = mt.inspect(store.db_path)["sqlite_bytes"]
-    result = mt.optimize_fulltext(store.db_path)
-    assert result["optimized"], "expected at least one FTS table to optimize"
-    mt.vacuum(store.db_path)
-    after = mt.inspect(store.db_path)["sqlite_bytes"]
-    assert after <= before
-
-    # Optimizing must not damage the index.
-    store.close()
-    assert vault.search_sessions("tombstoned slots", min_similarity=0.0) is not None
-    assert store.search("revision", min_similarity=0.0)
-
-
-def test_optimize_fulltext_on_missing_store_is_safe(tmp_path):
-    assert mt.optimize_fulltext(tmp_path / "nope")["optimized"] == []
-
-
-def test_vacuum_shrinks_or_holds_the_sqlite_file(vault):
-    result = mt.vacuum(vault.vector.db_path)
+    result = mt.vacuum(store.db_path)
     assert result["after_bytes"] <= result["before_bytes"]
     assert result["after_bytes"] > 0
 
@@ -185,15 +177,13 @@ def test_vacuum_on_missing_store_is_safe(tmp_path):
     assert mt.vacuum(tmp_path / "nope")["freed_bytes"] == 0
 
 
-def test_compact_reclaims_orphans_and_keeps_search_working(vault):
-    chroma_dir = vault.vector.db_path
-    orphan = chroma_dir / ORPHAN_ID
-    orphan.mkdir()
-    (orphan / "data_level0.bin").write_bytes(b"z" * 200_000)
+def test_compact_reclaims_chroma_files_and_keeps_search_working(vault):
+    index_dir = vault.vector.db_path
+    segment = _plant_chroma_leftovers(index_dir, nbytes=200_000)
 
     result = mt.compact(vault)
     assert result["ok"] is True
-    assert not orphan.exists()
+    assert not segment.exists()
     assert result["freed_bytes"] > 0
 
     # The whole point: reclaiming disk must not lose knowledge.
@@ -229,13 +219,12 @@ def test_compact_totals_exclude_legacy_when_not_purging(vault):
 
 
 def test_compact_dry_run_changes_nothing(vault):
-    chroma_dir = vault.vector.db_path
-    orphan = chroma_dir / ORPHAN_ID
-    orphan.mkdir()
-    (orphan / "b.bin").write_bytes(b"q" * 10_000)
+    index_dir = vault.vector.db_path
+    segment = _plant_chroma_leftovers(index_dir)
 
     mt.compact(vault, dry_run=True)
-    assert orphan.exists()
+    assert segment.exists()
+    assert (index_dir / "chroma.sqlite3").exists()
 
 
 def test_compact_rebuilds_index_from_markdown(vault):

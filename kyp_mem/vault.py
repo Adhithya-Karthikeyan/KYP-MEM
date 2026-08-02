@@ -31,20 +31,16 @@ MIN_KEYWORD_IDF_COVERAGE = 0.30
 
 # Two similarity floors, because one cannot work.
 #
-# Measured on a real vault with the default MiniLM embeddings, the relevant and
-# irrelevant score ranges *overlap*: an off-topic query peaked at 0.244 while a
-# genuinely relevant short note scored 0.190. Any single threshold therefore
-# either admits junk or drops real answers.
-#
+# Measured on a real vault, the relevant and irrelevant semantic score ranges
+# *overlap*: any single threshold either admits junk or drops real answers.
 # So the floor depends on how much evidence there is. Semantic similarity on
-# its own must clear the strict bar. A note the keyword index independently
-# found for the same query only has to clear the lenient one — two weak,
+# its own must clear a strict bar; a note the keyword index independently
+# found for the same query only has to clear a lenient one — two weak,
 # independent signals agreeing is stronger evidence than either alone.
 #
-# A better embedding model narrows the overlap and is the real fix; see
-# `embedding_profile` in vector.py.
-SEMANTIC_FLOOR_ALONE = 0.28
-SEMANTIC_FLOOR_CORROBORATED = 0.15
+# The actual floor *values* live with the embedding model (embedder.py) and
+# are read off the store below: score distributions differ between models, so
+# a floor measured for one model is meaningless for another.
 
 
 def is_session_path(path: str) -> bool:
@@ -286,9 +282,9 @@ class Vault:
     """Markdown vault with a keyword index and an optional semantic index.
 
     The semantic index is lazy in two stages: the store object is created
-    without opening Chroma, and Chroma is only opened when something actually
-    searches or writes. A session-start hook that just reads markdown therefore
-    never loads the vector index at all.
+    without touching disk, and the database and embedding model are only
+    opened when something actually searches or writes. A session-start hook
+    that just reads markdown therefore never loads the vector index at all.
     """
 
     def __init__(self, vault_path: str, with_vector: bool = True):
@@ -541,11 +537,11 @@ class Vault:
                         query,
                         project=project,
                         n_results=max(limit * 3, limit),
-                        min_similarity=SEMANTIC_FLOOR_CORROBORATED,
+                        min_similarity=store.floor_corroborated,
                     )
                     vector_hits = [
                         h for h in raw
-                        if h.similarity >= SEMANTIC_FLOOR_ALONE or h.doc_path in keyword_paths
+                        if h.similarity >= store.floor_alone or h.doc_path in keyword_paths
                     ]
                     if tag:
                         allowed = self.index.tag_index.get(tag.lower(), set())

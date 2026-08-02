@@ -4,7 +4,7 @@ import { spawnSync } from "child_process";
 import { existsSync, mkdirSync } from "fs";
 import { homedir } from "os";
 import { join } from "path";
-import { ensureVenv, findSystemPython, overrideIsTooOld, resolvePython, venvDir } from "./python-env.mjs";
+import { ensureVenv, findSystemPython, overrideIsTooOld, probeUv, resolvePython, venvDir } from "./python-env.mjs";
 
 const G = "\x1b[32m";
 const Y = "\x1b[33m";
@@ -23,7 +23,10 @@ if (process.env.KYP_MEM_SKIP_PYTHON_INSTALL === "1") {
   process.exit(0);
 }
 
-if (!findSystemPython()) {
+// uv can provision the venv even with no suitable system Python at all (it
+// downloads its own managed CPython), so only bail out here when neither a
+// system Python nor uv is available.
+if (!findSystemPython() && !probeUv()) {
   // Name the real cause: an unsupported interpreter is far more common than a
   // missing one (stock macOS ships 3.9, Debian 11 ships 3.9, Ubuntu 20.04 3.8).
   if (overrideIsTooOld()) {
@@ -33,6 +36,7 @@ if (!findSystemPython()) {
     console.log(`  ${Y}!${R} No Python 3.10 or newer was found.`);
     console.log(`  ${Y}!${R} Install Python 3.10+ (or set ${C}KYP_MEM_PYTHON${R}), then: ${C}npm rebuild kyp-mem${R}`);
   }
+  console.log(`  ${Y}!${R} Installing uv (${C}https://docs.astral.sh/uv/${R}) also solves this — uv can fetch Python itself.`);
   process.exit(0);
 }
 

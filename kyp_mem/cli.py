@@ -93,7 +93,12 @@ def main():
     elif args.command == "setup-claude":
         _run_setup_claude(global_config=args.global_config)
     elif args.command == "ui":
-        from .ui import start_ui
+        try:
+            from .ui import start_ui
+        except ImportError:
+            print(f"  {Y}!{R} The web UI needs fastapi and uvicorn.")
+            print(f"  {D}  Install them with: pip install 'kyp-mem[ui]'{R}")
+            return
         start_ui(port=args.port, open_browser=not args.no_open)
     elif args.command == "stats":
         _run_stats()
@@ -581,18 +586,15 @@ def _run_compact(dry_run: bool = False, rebuild: bool = True, purge_legacy: bool
         return
 
     steps = result["steps"]
-    orphans = steps.get("orphans", {}).get("removed", [])
-    dropped = steps.get("collections", {}).get("dropped", [])
+    chroma = steps.get("chroma", {})
     vac = steps.get("vacuum", {})
 
-    if dropped:
-        print(f"  {G}✓{R} Dropped {len(dropped)} unused collection(s): {', '.join(dropped)}")
-    if orphans:
-        print(f"  {G}✓{R} Removed {len(orphans)} orphaned segment(s)")
-    if steps.get("fulltext", {}).get("optimized"):
-        print(f"  {G}✓{R} Merged full-text index segments")
+    if chroma.get("removed"):
+        print(f"  {G}✓{R} Removed old ChromaDB files — "
+              f"{human_bytes(chroma['freed_bytes'])} "
+              f"({len(chroma['removed'])} item(s) from the pre-1.2 backend)")
     if vac.get("freed_bytes"):
-        print(f"  {G}✓{R} Vacuumed sqlite — {human_bytes(vac['freed_bytes'])} returned")
+        print(f"  {G}✓{R} Vacuumed index — {human_bytes(vac['freed_bytes'])} returned")
     if "sync" in steps:
         s = steps["sync"]
         print(f"  {G}✓{R} Re-embedded {s.get('added', 0)} notes")
@@ -782,32 +784,32 @@ def _doctor_index_section(vault_path: str, deep: bool = False):
         print(f"      Delete it with: kyp-mem compact --purge-legacy{R}")
 
     report = inspect(store.db_path)
-    if not report["exists"]:
+    if not report["exists"] or not report["db_bytes"]:
+        if report.get("chroma_leftover_bytes"):
+            print(f"  {Y}!{R} Old ChromaDB index files: "
+                  f"{human_bytes(report['chroma_leftover_bytes'])} — "
+                  "reclaim with: kyp-mem compact")
         print(f"  {D}·{R} Semantic index not built yet — run: kyp-mem reindex")
         return
 
-    print(f"  {G}✓{R} Semantic index: {human_bytes(report['total_bytes'])} on disk "
-          f"({report['embeddings']} embeddings)")
+    print(f"  {G}✓{R} Semantic index: {human_bytes(report['db_bytes'])} on disk "
+          f"({report['chunks']} chunks from {report['documents']} notes, "
+          f"{report['embedder'] or 'default model'})")
 
-    waste = sum(o["bytes"] for o in report["orphans"]) + report["reclaimable_sqlite_bytes"]
-    if report["orphans"]:
-        print(f"  {Y}!{R} {len(report['orphans'])} orphaned segment(s) — "
-              f"{human_bytes(sum(o['bytes'] for o in report['orphans']))}")
-    if report["reclaimable_sqlite_bytes"] > 1024 * 1024:
-        print(f"  {Y}!{R} {human_bytes(report['reclaimable_sqlite_bytes'])} reclaimable in sqlite freelist")
+    from .maintenance import check_integrity
 
-    stale = [n for _, n in report["collections"] if n != store.collection_name]
-    if stale:
-        print(f"  {Y}!{R} {len(stale)} unused collection(s): {', '.join(stale)}")
+    ok, detail = check_integrity(store.db_path)
+    if not ok:
+        print(f"  {Y}✗{R} Index integrity check failed: {detail}")
+        print(f"  {D}    Repair with: kyp-mem reindex{R}")
 
-    # An index far larger than its content is the signature of the growth bug.
-    if report["embeddings"] and report["total_bytes"] > 50 * 1024 * 1024:
-        per_record = report["total_bytes"] / report["embeddings"]
-        if per_record > 20_000:
-            print(f"  {Y}!{R} {human_bytes(int(per_record))} of index per embedding — "
-                  "far above expected; run: kyp-mem compact")
-
-    if waste > 1024 * 1024 or stale:
+    waste = report["reclaimable_bytes"] + report["chroma_leftover_bytes"]
+    if report["chroma_leftover_bytes"]:
+        print(f"  {Y}!{R} Old ChromaDB files from the pre-1.2 backend: "
+              f"{human_bytes(report['chroma_leftover_bytes'])}")
+    if report["reclaimable_bytes"] > 1024 * 1024:
+        print(f"  {Y}!{R} {human_bytes(report['reclaimable_bytes'])} reclaimable in the index file")
+    if waste > 1024 * 1024:
         print(f"  {D}    Reclaim with: kyp-mem compact{R}")
 
     if deep:

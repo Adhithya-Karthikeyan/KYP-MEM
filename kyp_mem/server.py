@@ -1,17 +1,62 @@
 """KYP-MEM MCP server — headless knowledge base for AI agents."""
 
 import json
+import threading
 from datetime import datetime
 from mcp.server.fastmcp import FastMCP
+from mcp.types import ToolAnnotations
 from .config import get_vault_path
 from .vault import Vault
 
-vault = Vault(get_vault_path())
+# Annotations let the client treat tools correctly without asking: Claude Code
+# can auto-approve read-only tools (fewer permission prompts per session), and
+# knows which calls are safe to retry. Hints, not enforcement — which is why
+# the write/delete tools carry honest destructive/idempotent hints instead.
+# openWorldHint=False everywhere: every tool operates on the local vault.
+READ_ONLY = ToolAnnotations(readOnlyHint=True, idempotentHint=True, openWorldHint=False)
+WRITE = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=True, openWorldHint=False)
+DESTRUCTIVE = ToolAnnotations(readOnlyHint=False, destructiveHint=True, idempotentHint=True, openWorldHint=False)
+CREATE = ToolAnnotations(readOnlyHint=False, destructiveHint=False, idempotentHint=False, openWorldHint=False)
+
+
+class _LazyVault:
+    """Defers Vault construction until a tool actually needs it.
+
+    Building the Vault parses every note and builds the BM25 index — over a
+    second on a real vault. Claude Code gives a stdio server roughly two
+    seconds to answer its first tools/list before the session's first turn
+    proceeds without the tools, so module import must stay cheap. The first
+    tool call absorbs the one-time build instead; it happens inside a turn,
+    where a second of latency is invisible.
+
+    The lock matters: FastMCP may dispatch tool calls concurrently, and two
+    racing constructions would each parse the whole vault and then fight over
+    the vector store.
+    """
+
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._vault = None
+
+    def _load(self):
+        v = self._vault
+        if v is None:
+            with self._lock:
+                v = self._vault
+                if v is None:
+                    v = self._vault = Vault(get_vault_path())
+        return v
+
+    def __getattr__(self, name):
+        return getattr(self._load(), name)
+
+
+vault = _LazyVault()
 
 mcp = FastMCP("kyp-mem")
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def ____kyp_instructions() -> str:
     """## KYP-MEM — Know Your Project Memory
 
@@ -76,7 +121,7 @@ Call this tool to acknowledge these instructions. It returns a confirmation."""
     return f"KYP-MEM active. Available projects: {', '.join(unique) if unique else '(none)'}. Call kyp_project_context(project) to load context."
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def kyp_list(path: str = "") -> str:
     """List notes and folders in the vault. Shows inline tags for quick navigation. Pass a folder path or empty for root."""
     vault.refresh_if_stale()
@@ -97,7 +142,7 @@ def kyp_list(path: str = "") -> str:
     return header + "\n" + "\n".join(lines)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def kyp_read(path: str, full: bool = False) -> str:
     """Read a note. Returns brief summary by default (title, tags, preview, links). Set full=True for complete content."""
     vault.refresh_if_stale()
@@ -165,14 +210,26 @@ def kyp_read(path: str, full: bool = False) -> str:
     return "\n".join(parts)
 
 
-@mcp.tool()
+@mcp.tool(annotations=WRITE)
 def kyp_write(path: str, content: str, tags: str = "", properties: str = "") -> str:
     """Create or update a note. Use this to persist knowledge: bug fixes, architectural decisions, setup guides, API contracts. Path like 'Project/Note.md'. Use [[wikilinks]] in content to connect notes. Tags: comma-separated. Properties: JSON string."""
     if not path.endswith(".md"):
         path += ".md"
 
     tag_list = [t.strip() for t in tags.split(",") if t.strip()] if tags else []
-    props = json.loads(properties) if properties else {}
+
+    # Malformed input comes back as a corrective message, not a raised
+    # exception: an execution error is visible to the model, which can fix the
+    # arguments and retry — a protocol error just kills the call.
+    if properties:
+        try:
+            props = json.loads(properties)
+        except json.JSONDecodeError as e:
+            return f"Rejected: properties is not valid JSON ({e}). Pass a JSON object like '{{\"key\": \"value\"}}' or omit it."
+        if not isinstance(props, dict):
+            return f"Rejected: properties must be a JSON object, got {type(props).__name__}."
+    else:
+        props = {}
 
     try:
         vault.write_note(path, content, tag_list, props)
@@ -186,7 +243,7 @@ def kyp_write(path: str, content: str, tags: str = "", properties: str = "") -> 
     return f"Written: {path} ({len(tag_list)} tags, {link_count} links detected)"
 
 
-@mcp.tool()
+@mcp.tool(annotations=DESTRUCTIVE)
 def kyp_delete(path: str) -> str:
     """Delete a note by path."""
     if vault.delete(path):
@@ -194,7 +251,7 @@ def kyp_delete(path: str) -> str:
     return f"Not found: {path}"
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def kyp_search(query: str, tag: str = "", project: str = "", limit: int = 10) -> str:
     """PRIMARY SEARCH. Hybrid keyword + semantic search across ALL notes — knowledge, decisions, guides, and sessions.
 
@@ -227,7 +284,7 @@ def kyp_search(query: str, tag: str = "", project: str = "", limit: int = 10) ->
     return "\n".join(lines).rstrip()
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def kyp_tags(tag: str = "") -> str:
     """List all tags with note counts, or get all notes with a specific tag."""
     vault.refresh_if_stale()
@@ -243,7 +300,7 @@ def kyp_tags(tag: str = "") -> str:
     return "Tags:\n" + "\n".join(f"  {t} ({c})" for t, c in tags.items())
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def kyp_related(path: str) -> str:
     """Find notes related to the given note — by backlinks, shared tags, and folder proximity."""
     vault.refresh_if_stale()
@@ -259,7 +316,7 @@ def kyp_related(path: str) -> str:
     return "\n".join(lines)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def kyp_recent(limit: int = 10) -> str:
     """Get recently modified notes."""
     vault.refresh_if_stale()
@@ -275,7 +332,7 @@ def kyp_recent(limit: int = 10) -> str:
     return "\n".join(lines)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def kyp_stats() -> str:
     """Get vault statistics — note count, folders, tags, links, and token economics (exploration cost vs memory injection cost)."""
     vault.refresh_if_stale()
@@ -299,12 +356,11 @@ def kyp_stats() -> str:
             lines.append("")
             lines.append("Semantic index:")
             lines.append(f"  Chunks: {vs.get('chunks', 0)} across {vs.get('documents', 0)} notes")
-            lines.append(f"  On disk: {human_bytes(disk['total_bytes'])}")
-            if disk["orphans"]:
-                reclaim = sum(o["bytes"] for o in disk["orphans"])
+            lines.append(f"  On disk: {human_bytes(disk['db_bytes'])}")
+            if disk["chroma_leftover_bytes"]:
                 lines.append(
-                    f"  ! {len(disk['orphans'])} orphaned segment(s), {human_bytes(reclaim)} "
-                    "reclaimable — run: kyp-mem compact"
+                    f"  ! {human_bytes(disk['chroma_leftover_bytes'])} of old ChromaDB "
+                    "files reclaimable — run: kyp-mem compact"
                 )
         except Exception:
             pass
@@ -333,7 +389,7 @@ def kyp_stats() -> str:
     return "\n".join(lines)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def kyp_session_search(query: str, project: str = None, limit: int = 5) -> str:
     """Semantic search restricted to past SESSION LOGS only.
 
@@ -358,9 +414,12 @@ def kyp_session_search(query: str, project: str = None, limit: int = 5) -> str:
     return "\n".join(lines).rstrip()
 
 
-@mcp.tool()
+@mcp.tool(annotations=CREATE)
 def kyp_session_create(project: str, summary: str = "", investigated: str = "", learned: str = "", completed: str = "", next_steps: str = "") -> str:
     """Create a structured session note. Project is required. Sections accept markdown text."""
+    project = (project or "").strip()
+    if not project:
+        return "Rejected: project is required — pass the project name the session belongs to."
     session_id = datetime.now().strftime("%Y-%m-%d_%H%M%S")
     parts = [f"# Session {session_id}", ""]
     parts.append(f"**Project:** {project}")
@@ -383,11 +442,14 @@ def kyp_session_create(project: str, summary: str = "", investigated: str = "", 
     content = "\n".join(parts)
     tags = ["session", "manual", project.lower().replace(" ", "-")]
     path = f"{project}/Sessions/{session_id}.md"
-    vault.write_note(path, content, tags, {})
+    try:
+        vault.write_note(path, content, tags, {})
+    except ValueError as e:
+        return f"Rejected: {e}"
     return f"Created session: {path}"
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def kyp_sessions(project: str = "", limit: int = 10) -> str:
     """List sessions, optionally filtered by project. Shows most recent first."""
     vault.refresh_if_stale()
@@ -410,7 +472,7 @@ def kyp_sessions(project: str = "", limit: int = 10) -> str:
     return "\n".join(lines)
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def kyp_objective_get(project: str) -> str:
     """Get the recorded objective / main goal for a project. The objective is injected at every session start. Returns a not-set message if none exists yet."""
     note = vault.read(f"{project}/Objective.md")
@@ -423,7 +485,7 @@ def kyp_objective_get(project: str) -> str:
     return content or f"No objective set for '{project}'."
 
 
-@mcp.tool()
+@mcp.tool(annotations=WRITE)
 def kyp_objective_set(project: str, objective: str) -> str:
     """Set (or replace) the objective / main goal for a project. This is injected into every future session start so work stays aligned. Call this once the user tells you what the project is for."""
     objective = objective.strip()
@@ -431,11 +493,14 @@ def kyp_objective_set(project: str, objective: str) -> str:
         return "Objective text is empty — nothing saved."
     path = f"{project}/Objective.md"
     content = f"# Objective\n\n{objective}\n"
-    vault.write_note(path, content, ["objective", project.lower().replace(" ", "-")], {})
+    try:
+        vault.write_note(path, content, ["objective", project.lower().replace(" ", "-")], {})
+    except ValueError as e:
+        return f"Rejected: {e}"
     return f"Objective saved for '{project}' ({path}). It will be injected at every session start."
 
 
-@mcp.tool()
+@mcp.tool(annotations=READ_ONLY)
 def kyp_project_context(project: str) -> str:
     """CALL THIS AT SESSION START. Returns the project's full context: Knowledge.md (ground truth), project notes, and recent session summaries. Use this to understand architecture, known bugs, past decisions, and what was done recently. This prevents hallucination and avoids repeating past work."""
     vault.refresh_if_stale()

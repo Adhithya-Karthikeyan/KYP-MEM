@@ -1,10 +1,16 @@
-"""Vector-store maintenance: orphan removal, compaction, reindexing.
+"""Semantic-index maintenance: compaction, integrity, legacy cleanup.
 
-Chroma never gives back disk on its own. Deleting a record only tombstones a
-slot in the HNSW graph, and dropping a collection leaves its segment directory
-behind. On a real vault that had been running for two months this produced
-1.2 GB of on-disk index for 1.8 MB of actual vectors, with the HNSW graph
-holding ~236,000 allocated slots for 1,191 live records.
+The SQLite backend needs far less of this than the ChromaDB one did — DELETE
+actually frees pages and VACUUM returns them to the filesystem, so there are
+no tombstoned HNSW slots and no orphaned segment directories to hunt. What
+remains:
+
+  - VACUUM after churn, so the file shrinks back to its contents.
+  - Sweeping the ChromaDB files a pre-1.2 install left in the index directory
+    (chroma.sqlite3 plus UUID-named segment dirs) — often hundreds of MB of
+    dead weight for upgrading users.
+  - The pre-1.0 *shared* index directory, which predates per-vault index
+    paths and is only ever removed explicitly (``--purge-legacy``).
 
 Nothing here touches the markdown vault, which is the source of truth. The
 worst case for every operation in this module is that the index is rebuilt
@@ -14,6 +20,8 @@ from the notes.
 import shutil
 import sqlite3
 from pathlib import Path
+
+from .vector import DB_FILENAME
 
 UUID_LEN = 36
 
@@ -41,209 +49,160 @@ def _looks_like_uuid(name: str) -> bool:
     return len(name) == UUID_LEN and name.count("-") == 4
 
 
-def _sqlite_path(chroma_dir) -> Path:
-    """Every entry point here takes the chroma *directory*; resolve the db file."""
-    return Path(chroma_dir) / "chroma.sqlite3"
+def _db_file(index_dir) -> Path:
+    return Path(index_dir) / DB_FILENAME
 
 
-def _query_readonly(chroma_dir, sql: str, default):
-    path = _sqlite_path(chroma_dir)
-    if not path.exists():
-        return default
-    try:
-        con = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
-    except sqlite3.Error:
-        return default
-    try:
-        return list(con.execute(sql))
-    except sqlite3.Error:
-        return default
-    finally:
-        con.close()
+def chroma_leftovers(index_dir) -> list:
+    """Files the old ChromaDB backend left in the index directory.
+
+    Recognised positively — the chroma database file and UUID-named segment
+    directories — rather than "anything we don't know", so a user file that
+    strays into the directory is never swept up.
+    """
+    index_dir = Path(index_dir)
+    if not index_dir.is_dir():
+        return []
+    out = []
+    chroma_db = index_dir / "chroma.sqlite3"
+    if chroma_db.is_file():
+        out.append(chroma_db)
+    for child in sorted(index_dir.iterdir()):
+        if child.is_dir() and _looks_like_uuid(child.name):
+            out.append(child)
+    return out
 
 
-def _live_segment_ids(chroma_dir) -> set:
-    """Segment UUIDs Chroma still references."""
-    return {row[0] for row in _query_readonly(chroma_dir, "SELECT id FROM segments", [])}
+def remove_chroma_leftovers(index_dir, dry_run: bool = False) -> dict:
+    """Delete the old backend's files. They are never read again."""
+    removed, freed = [], 0
+    for item in chroma_leftovers(index_dir):
+        size = _dir_size(item) if item.is_dir() else item.stat().st_size
+        if not dry_run:
+            if item.is_dir():
+                shutil.rmtree(item, ignore_errors=True)
+            else:
+                item.unlink(missing_ok=True)
+        removed.append(item.name)
+        freed += size
+    return {"removed": removed, "freed_bytes": freed}
 
 
-def _live_collections(chroma_dir) -> list:
-    return [(r[0], r[1]) for r in _query_readonly(chroma_dir, "SELECT id, name FROM collections", [])]
-
-
-def inspect(chroma_dir) -> dict:
+def inspect(index_dir) -> dict:
     """Report on-disk state without changing anything."""
-    chroma_dir = Path(chroma_dir)
-    sqlite_path = _sqlite_path(chroma_dir)
+    index_dir = Path(index_dir)
+    db_file = _db_file(index_dir)
     report = {
-        "path": str(chroma_dir),
-        "exists": chroma_dir.exists(),
+        "path": str(index_dir),
+        "exists": index_dir.exists(),
         "total_bytes": 0,
-        "sqlite_bytes": 0,
-        "reclaimable_sqlite_bytes": 0,
-        "segments": [],
-        "orphans": [],
-        "collections": [],
-        "embeddings": 0,
+        "db_bytes": 0,
+        "reclaimable_bytes": 0,
+        "chunks": 0,
+        "documents": 0,
+        "embedder": "",
+        "chroma_leftover_bytes": 0,
+        "chroma_leftovers": [],
+        "integrity": None,
     }
-    if not chroma_dir.exists():
+    if not index_dir.exists():
         return report
 
-    report["total_bytes"] = _dir_size(chroma_dir)
-    if sqlite_path.exists():
-        report["sqlite_bytes"] = sqlite_path.stat().st_size
-        con = sqlite3.connect(f"file:{sqlite_path}?mode=ro", uri=True)
+    report["total_bytes"] = _dir_size(index_dir)
+
+    leftovers = chroma_leftovers(index_dir)
+    report["chroma_leftovers"] = [item.name for item in leftovers]
+    report["chroma_leftover_bytes"] = sum(
+        _dir_size(i) if i.is_dir() else i.stat().st_size for i in leftovers
+    )
+
+    if db_file.exists():
+        report["db_bytes"] = db_file.stat().st_size
+        try:
+            con = sqlite3.connect(f"file:{db_file}?mode=ro", uri=True)
+        except sqlite3.Error:
+            return report
         try:
             page_size = con.execute("PRAGMA page_size").fetchone()[0]
             freelist = con.execute("PRAGMA freelist_count").fetchone()[0]
-            report["reclaimable_sqlite_bytes"] = page_size * freelist
-            report["embeddings"] = con.execute("SELECT COUNT(*) FROM embeddings").fetchone()[0]
+            report["reclaimable_bytes"] = page_size * freelist
+            report["chunks"] = con.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
+            report["documents"] = con.execute(
+                "SELECT COUNT(DISTINCT doc_path) FROM chunks"
+            ).fetchone()[0]
+            row = con.execute("SELECT value FROM meta WHERE key='embedder'").fetchone()
+            report["embedder"] = row[0] if row else ""
         except sqlite3.Error:
             pass
         finally:
             con.close()
 
-    live = _live_segment_ids(chroma_dir)
-    report["collections"] = _live_collections(chroma_dir)
-
-    for child in chroma_dir.iterdir():
-        if not child.is_dir() or not _looks_like_uuid(child.name):
-            continue
-        entry = {"id": child.name, "bytes": _dir_size(child)}
-        report["segments"].append(entry)
-        if child.name not in live:
-            report["orphans"].append(entry)
-
     return report
 
 
-def remove_orphan_segments(chroma_dir, dry_run: bool = False) -> dict:
-    """Delete segment directories Chroma no longer references.
-
-    These are left behind when a collection is dropped or rebuilt. They are
-    never read again, but they are typically the largest thing on disk.
-    """
-    chroma_dir = Path(chroma_dir)
-    if not _sqlite_path(chroma_dir).exists():
-        return {"removed": [], "freed_bytes": 0}
-
-    live = _live_segment_ids(chroma_dir)
-    removed, freed = [], 0
-    for child in sorted(chroma_dir.iterdir()):
-        if not child.is_dir() or not _looks_like_uuid(child.name):
-            continue
-        if child.name in live:
-            continue
-        size = _dir_size(child)
-        if not dry_run:
-            shutil.rmtree(child, ignore_errors=True)
-        removed.append(child.name)
-        freed += size
-    return {"removed": removed, "freed_bytes": freed}
-
-
-def drop_unused_collections(chroma_dir, keep_names, dry_run: bool = False) -> dict:
-    """Delete Chroma collections that are not in ``keep_names``.
-
-    Catches collections left by earlier schema versions — for example the
-    v1 ``sessions`` collection, which indexed only session notes.
-    """
-    chroma_dir = Path(chroma_dir)
-    if not _sqlite_path(chroma_dir).exists():
-        return {"dropped": []}
-
-    keep = set(keep_names)
-    stale = [(cid, name) for cid, name in _live_collections(chroma_dir) if name not in keep]
-    if not stale or dry_run:
-        return {"dropped": [name for _, name in stale]}
-
-    import chromadb
-
-    client = chromadb.PersistentClient(path=str(chroma_dir))
-    dropped = []
-    for _, name in stale:
-        try:
-            client.delete_collection(name=name)
-            dropped.append(name)
-        except Exception:
-            pass
-    return {"dropped": dropped}
-
-
-def optimize_fulltext(chroma_dir) -> dict:
-    """Merge Chroma's FTS5 index segments.
-
-    FTS5 appends a new b-tree segment on every insert and delete and never
-    merges them on its own; VACUUM does not touch them either, because to
-    sqlite they are just ordinary table rows. On a store that saw heavy
-    write churn this dominates everything else on disk — 62.9 MB of segments
-    for 184 live embeddings on the vault this was written against.
-
-    ``optimize`` merges them into one segment. Must run before VACUUM so the
-    pages it frees actually get returned.
-    """
-    sqlite_path = _sqlite_path(chroma_dir)
-    if not sqlite_path.exists():
-        return {"optimized": [], "freed_bytes": 0}
-
-    tables = [
-        r[0]
-        for r in _query_readonly(
-            chroma_dir,
-            "SELECT name FROM sqlite_master WHERE type='table' AND sql LIKE '%USING fts%'",
-            [],
-        )
-    ]
-    if not tables:
-        return {"optimized": [], "freed_bytes": 0}
-
-    before = sqlite_path.stat().st_size
-    optimized = []
-    con = sqlite3.connect(str(sqlite_path))
+def check_integrity(index_dir) -> tuple:
+    """SQLite's own integrity check — cheap and catches real corruption."""
+    db_file = _db_file(index_dir)
+    if not db_file.exists():
+        return True, "no database"
     try:
-        for table in tables:
-            try:
-                con.execute(f'INSERT INTO "{table}"("{table}") VALUES(\'optimize\')')
-                con.commit()
-                optimized.append(table)
-            except sqlite3.Error:
-                pass
+        con = sqlite3.connect(f"file:{db_file}?mode=ro", uri=True)
+    except sqlite3.Error as e:
+        return False, repr(e)
+    try:
+        result = con.execute("PRAGMA integrity_check").fetchone()[0]
+        return result == "ok", result
+    except sqlite3.Error as e:
+        return False, repr(e)
     finally:
         con.close()
-    # Space shows up only after VACUUM; report the pre-vacuum delta as 0.
-    return {"optimized": optimized, "freed_bytes": max(0, before - sqlite_path.stat().st_size)}
 
 
-def vacuum(chroma_dir) -> dict:
-    """Compact the sqlite file, returning freed pages to the filesystem."""
-    sqlite_path = _sqlite_path(chroma_dir)
-    if not sqlite_path.exists():
+def vacuum(index_dir) -> dict:
+    """Compact the database, returning freed pages to the filesystem.
+
+    Also truncates the WAL: a crashed reader can leave a large -wal file
+    behind, and VACUUM alone does not shrink it.
+    """
+    db_file = _db_file(index_dir)
+    if not db_file.exists():
         return {"before_bytes": 0, "after_bytes": 0, "freed_bytes": 0}
 
-    before = sqlite_path.stat().st_size
-    con = sqlite3.connect(str(sqlite_path))
+    def _size():
+        total = 0
+        for suffix in ("", "-wal", "-shm"):
+            p = Path(str(db_file) + suffix)
+            if p.exists():
+                total += p.stat().st_size
+        return total
+
+    before = _size()
+    con = sqlite3.connect(str(db_file))
     try:
+        con.execute("PRAGMA wal_checkpoint(TRUNCATE)")
         con.execute("VACUUM")
         con.commit()
+    except sqlite3.Error:
+        pass
     finally:
         con.close()
-    after = sqlite_path.stat().st_size
+    after = _size()
     return {"before_bytes": before, "after_bytes": after, "freed_bytes": before - after}
 
 
 def legacy_index_report(store) -> dict:
-    """Detect a shared pre-rename index directory.
+    """Detect the pre-1.0 shared index directory.
 
     Before index directories were made unique per vault, every vault under the
     same parent shared one store and repeatedly pruned each other's notes. Any
     leftover directory is now dead weight, but it may still be in use by an
     older kyp-mem install, so removal is always explicit.
 
-    The legacy path is derived purely from a *name* (``<vault>/../chroma``), and
-    the caller hands the result to ``rmtree``. So this must prove the directory
-    really is a Chroma store before reporting it. A vault that happens to be
-    named ``chroma``, or that contains notes under a ``chroma`` folder, would
-    otherwise be deleted along with every note in it.
+    The legacy path is derived purely from a *name* (``<vault>/../chroma``),
+    and the caller hands the result to ``rmtree``. So this must prove the
+    directory really is a Chroma store before reporting it. A vault that
+    happens to be named ``chroma``, or that contains notes under a ``chroma``
+    folder, would otherwise be deleted along with every note in it.
     """
     absent = {"present": False, "bytes": 0, "path": str(store.legacy_db_path)}
     try:
@@ -277,19 +236,18 @@ def remove_legacy_index(store, dry_run: bool = False) -> dict:
 
 
 def compact(vault, rebuild: bool = True, dry_run: bool = False, purge_legacy: bool = False) -> dict:
-    """Full reclaim pass.
+    """Full reclaim pass: optional re-embed, chroma sweep, vacuum, legacy purge.
 
-    With ``rebuild=True`` the semantic index is dropped and rebuilt from the
-    markdown notes. That is the only way to reclaim tombstoned HNSW slots —
-    Chroma has no in-place compaction for them — and it is safe because the
-    notes are the source of truth.
+    Rebuilding is no longer *required* to reclaim space the way it was under
+    Chroma, but it remains the recovery path for a drifted or corrupt index,
+    and it is safe because the notes are the source of truth.
     """
     store = vault.vector
     if store is None:
         return {"ok": False, "reason": "vector index disabled"}
 
-    chroma_dir = store.db_path
-    before = inspect(chroma_dir)
+    index_dir = store.db_path
+    before = inspect(index_dir)
     # The legacy directory counts toward the starting total only when we are
     # actually going to remove it. Otherwise "freed" could exceed "before" and
     # the reported percentage would go over 100.
@@ -301,17 +259,9 @@ def compact(vault, rebuild: bool = True, dry_run: bool = False, purge_legacy: bo
         steps["sync"] = vault.sync_vector()
         vault._vector_ready = True
 
-    steps["collections"] = drop_unused_collections(
-        chroma_dir, keep_names={store.collection_name}, dry_run=dry_run
-    )
-    # Dropping collections orphans their segment dirs, so sweep afterwards.
-    store.close()
-    steps["orphans"] = remove_orphan_segments(chroma_dir, dry_run=dry_run)
+    steps["chroma"] = remove_chroma_leftovers(index_dir, dry_run=dry_run)
     if not dry_run:
-        # Merge FTS5 segments before vacuuming, or the pages they occupy stay
-        # allocated and VACUUM has nothing to reclaim.
-        steps["fulltext"] = optimize_fulltext(chroma_dir)
-        steps["vacuum"] = vacuum(chroma_dir)
+        steps["vacuum"] = vacuum(index_dir)
 
     steps["legacy"] = legacy_index_report(store)
     legacy_freed = 0
@@ -320,7 +270,7 @@ def compact(vault, rebuild: bool = True, dry_run: bool = False, purge_legacy: bo
         steps["legacy_removed"] = removed
         legacy_freed = removed.get("freed_bytes", 0)
 
-    after = inspect(chroma_dir)
+    after = inspect(index_dir)
     total_before = before["total_bytes"] + legacy_before
     total_after = after["total_bytes"] + (legacy_before - legacy_freed)
     return {

@@ -1,10 +1,12 @@
-"""Integration tests against a real ChromaDB store in a temp directory."""
+"""Integration tests against a real vector store in a temp directory."""
 
 import pytest
 
 from kyp_mem.vector import VectorStore, content_hash
 
-pytest.importorskip("chromadb")
+pytest.importorskip("numpy")
+pytest.importorskip("onnxruntime")
+pytest.importorskip("tokenizers")
 
 pytestmark = pytest.mark.slow
 

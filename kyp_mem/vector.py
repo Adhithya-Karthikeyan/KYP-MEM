@@ -1,63 +1,63 @@
-"""Semantic index over the vault, backed by ChromaDB.
+"""Semantic index over the vault: one SQLite file + numpy brute-force search.
 
-Rewritten to fix four things the previous version got wrong:
+This replaces the ChromaDB backend. Chroma pulled in ~430 MB of transitive
+dependencies (kubernetes, grpcio, onnxruntime, opentelemetry) for what is, at
+kyp-mem's scale, a small exact-nearest-neighbour problem: even 50,000 chunks
+of 384-dim float32 score in under a millisecond with a plain dot product. An
+ANN graph buys nothing here, and Chroma's HNSW store famously never returned
+disk (deleted slots tombstone forever; dropped collections leave their segment
+directories behind).
 
-  1. **It only indexed ``Sessions/``.** Knowledge.md, Objective.md and every
-     other project note had no semantic search at all.
-  2. **It embedded whole notes.** A 3 KB session became one vector, which
-     averaged its distinct sections into a point that matched everything
-     vaguely and nothing precisely. We now embed heading-scoped chunks.
-  3. **It connected eagerly and ran a write on every process start.** A
-     health check in the constructor did an upsert + query + delete each time
-     any process built a Vault — including short-lived hooks — which forced
-     the whole HNSW segment off disk and leaked a tombstoned slot per run.
-     Connection is now lazy and the health check is opt-in (``kyp-mem doctor``).
-  4. **It returned its top 5 no matter how bad they were.** Results now have
-     to clear a similarity floor.
+Design:
+
+  - Storage is a single ``semantic.sqlite3`` in the per-vault index directory:
+    a ``chunks`` table (metadata + embedding blob) and a ``meta`` table
+    (schema version, embedder spec, dimension, generation counter). DELETE
+    actually reclaims space, VACUUM compacts, backup is ``cp``.
+  - Search loads the chunk matrix into numpy once and caches it per process,
+    invalidated by the ``generation`` counter which every write bumps — so
+    concurrent processes see each other's writes without re-reading the table
+    on every query.
+  - Embeddings are computed *here* (see embedder.py), not inside the store's
+    dependency. Vectors from different models are not comparable, so the
+    embedder spec is persisted in ``meta``; a mismatch on connect drops the
+    stale vectors and flags ``needs_full_sync`` — the markdown vault is the
+    source of truth and re-embedding is cheap.
 
 Concurrency: the web UI, the MCP server and Claude Code hooks all touch the
-same directory, so writes are serialised with a cross-process file lock.
+same file. SQLite runs in WAL mode with a busy timeout, and multi-step
+read-modify-write operations (sync's diff-then-apply) are additionally
+serialised with the same cross-process file lock the Chroma backend used.
+
+Construction stays cheap — no file I/O, no model load — so a session-start
+hook that never searches never pays for any of this.
 """
 
 import hashlib
 import os
-import shutil
+import sqlite3
 import sys
 from contextlib import contextmanager
 from dataclasses import dataclass
 from pathlib import Path
 
 from .chunking import chunk_note
+from .embedder import EmbedderUnavailable, floors_for_spec, load_embedder, resolve_spec
 
 try:
     import fcntl  # POSIX (macOS/Linux)
 except ImportError:  # pragma: no cover - Windows fallback
     fcntl = None
 
-# Bumped when the on-disk chunk layout changes, so an upgrade starts a clean
-# collection instead of mixing incompatible records.
-SCHEMA_VERSION = "v2"
+# Bumped when the on-disk layout changes, so an upgrade starts a clean index
+# instead of mixing incompatible records. v3 = the SQLite backend.
+SCHEMA_VERSION = "v3"
 
-# Chroma rejects very large single adds; stay well under the limit.
-BATCH_SIZE = 500
+DB_FILENAME = "semantic.sqlite3"
 
-# Cosine distance is in [0, 2]; similarity = 1 - distance. Below this, a hit is
-# noise rather than a weak match.
-#
-# Default for semantic-only callers. Measured on a real vault with the default
-# MiniLM embeddings, off-topic queries peaked at 0.244, so this sits just above
-# that. Vault.search overrides it with a two-tier scheme that relaxes the floor
-# for notes the keyword index independently found — see vault.py.
-DEFAULT_MIN_SIMILARITY = 0.28
-
-# Explicit HNSW parameters. The previous store used the defaults and never
-# reclaimed deleted slots, growing to ~236k allocated slots for 1191 records.
-HNSW_CONFIG = {
-    "space": "cosine",       # correct metric for normalised text embeddings
-    "max_neighbors": 16,
-    "ef_construction": 100,
-    "ef_search": 64,
-}
+# Encode in bounded batches so a full-vault re-embed doesn't hold every
+# tokenised text in memory at once (matters for the ONNX/ST tiers).
+ENCODE_BATCH = 128
 
 
 def _log(msg: str):
@@ -69,12 +69,9 @@ def content_hash(content: str) -> str:
 
 
 # The index used to live at ``Path(vault).parent / "chroma"``. That is not
-# unique to a vault: two vaults side by side (say ~/docs/memory and
-# ~/docs/project-docs) resolved to the *same* directory. Each sync then saw the
-# other vault's notes as deleted, pruned them, and re-embedded its own — so
-# every alternation between vaults was a full wipe and rebuild of the index.
-# That churn, not merely Chroma's lack of compaction, is what grows the store
-# without bound.
+# unique to a vault: two vaults side by side resolved to the *same* directory
+# and repeatedly wiped each other's index. The digest keeps directories unique
+# per vault path.
 LEGACY_INDEX_DIRNAME = "chroma"
 
 
@@ -89,16 +86,6 @@ def legacy_index_dir_for(vault_path) -> Path:
     return Path(vault_path).expanduser().resolve().parent / LEGACY_INDEX_DIRNAME
 
 
-def _profile_name(embedding_model: str) -> str:
-    """Collection-name-safe slug identifying which model produced the vectors."""
-    if not embedding_model:
-        return "default"
-    slug = "".join(c if c.isalnum() else "-" for c in embedding_model).strip("-")
-    while "--" in slug:
-        slug = slug.replace("--", "-")
-    return slug[:40] or "custom"
-
-
 @dataclass
 class VectorHit:
     chunk_id: str
@@ -110,27 +97,11 @@ class VectorHit:
     similarity: float
 
 
-def _clear_chroma_cache():
-    """Drop Chroma's process-wide PersistentClient cache.
-
-    Clients are cached by path, so after deleting files on disk a re-created
-    client would otherwise keep pointing at them ("attempt to write a readonly
-    database").
-    """
-    try:
-        from chromadb.api.shared_system_client import SharedSystemClient
-
-        SharedSystemClient.clear_system_cache()
-    except Exception:
-        pass
-
-
 class VectorStore:
     """Chunk-level semantic index over every note in the vault.
 
-    Construction is cheap and does no I/O beyond creating the directory — the
-    Chroma client is only built on first actual use, so a session-start hook
-    that never searches never pays for the index.
+    Construction does no I/O. The SQLite file is opened, and the embedding
+    model loaded, on first actual use.
     """
 
     def __init__(self, vault_path: str, embedding_profile: str | None = None,
@@ -138,6 +109,7 @@ class VectorStore:
         self.vault_path = str(Path(vault_path).expanduser().resolve())
         self.db_path = index_dir_for(vault_path)
         self.legacy_db_path = legacy_index_dir_for(vault_path)
+        self.db_file = self.db_path / DB_FILENAME
 
         if embedding_model is None:
             try:
@@ -146,84 +118,122 @@ class VectorStore:
                 embedding_model = get_embedding_model()
             except Exception:
                 embedding_model = ""
+        # The canonical spec doubles as the compatibility key persisted in the
+        # meta table; ``embedding_profile`` is kept as an explicit override for
+        # tests and callers that had one.
         self.embedding_model = embedding_model or ""
-        self.embedding_profile = embedding_profile or _profile_name(self.embedding_model)
+        self.embedding_profile = embedding_profile or resolve_spec(self.embedding_model)
 
-        # The profile is part of the collection name: vectors from different
-        # models are not comparable, so switching models starts a separate
-        # collection rather than silently mixing incompatible embeddings.
-        self.collection_name = f"notes-{SCHEMA_VERSION}-{self.embedding_profile}"
         self._lock_path = self.db_path / ".kyp.lock"
-        self._client = None
-        self._collection = None
-        # Set whenever the collection is dropped. A rebuild triggered by a
-        # single-note write would otherwise leave the index holding only that
-        # note, with the rest of the vault silently missing from search until
-        # something happened to trigger a full sync.
+        self._connected = False
+        self._embedder = None
+        # In-process cache of the chunk matrix, invalidated by generation.
+        self._cache_generation = -1
+        self._cache_rows = None
+        self._cache_matrix = None
+        # Set whenever the stored vectors are dropped (rebuild, model switch).
+        # A single-note write after that would otherwise leave the index
+        # holding only that note until something triggered a full sync.
         self.needs_full_sync = False
+
+    # --- similarity floors ----------------------------------------------------
+
+    @property
+    def floor_alone(self) -> float:
+        """Strict floor for hits with no independent keyword evidence."""
+        return floors_for_spec(self.embedding_profile)[0]
+
+    @property
+    def floor_corroborated(self) -> float:
+        """Lenient floor for hits the keyword index also found."""
+        return floors_for_spec(self.embedding_profile)[1]
 
     # --- lazy connection ------------------------------------------------------
 
-    @property
-    def collection(self):
-        if self._collection is None:
-            self._connect()
-        return self._collection
-
-    def _embedding_function(self):
-        """The configured embedding model, or None for Chroma's bundled default.
-
-        A missing optional dependency must never break search, so a configured
-        model that cannot be loaded falls back to the default with a warning
-        rather than raising.
+    @contextmanager
+    def _db(self):
+        """A fresh connection per operation: safe under FastMCP's thread pool,
+        ~µs to open. The body runs inside a transaction (committed on success,
+        rolled back on exception) and the connection is always closed —
+        ``sqlite3``'s own ``with con`` only manages the transaction, which is
+        how connection leaks happen.
         """
-        if not self.embedding_model:
-            return None
+        self.db_path.mkdir(parents=True, exist_ok=True)
+        con = sqlite3.connect(str(self.db_file), timeout=10)
         try:
-            from chromadb.utils import embedding_functions
-
-            return embedding_functions.SentenceTransformerEmbeddingFunction(
-                model_name=self.embedding_model
-            )
-        except Exception as e:
-            _log(
-                f"embedding model {self.embedding_model!r} unavailable ({e!r}); "
-                "falling back to the built-in model. "
-                "Install it with: pip install sentence-transformers"
-            )
-            return None
+            con.execute("PRAGMA journal_mode=WAL")
+            con.execute("PRAGMA busy_timeout=5000")
+            con.execute("PRAGMA synchronous=NORMAL")
+            with con:
+                yield con
+        finally:
+            con.close()
 
     def _connect(self):
-        import chromadb
+        """Ensure the schema exists and the stored vectors match our model."""
+        with self._db() as con:
+            con.execute(
+                """CREATE TABLE IF NOT EXISTS meta (
+                       key TEXT PRIMARY KEY, value TEXT NOT NULL)"""
+            )
+            con.execute(
+                """CREATE TABLE IF NOT EXISTS chunks (
+                       chunk_id TEXT PRIMARY KEY,
+                       doc_path TEXT NOT NULL,
+                       project  TEXT NOT NULL DEFAULT '',
+                       title    TEXT NOT NULL DEFAULT '',
+                       heading  TEXT NOT NULL DEFAULT '',
+                       ordinal  INTEGER NOT NULL DEFAULT 0,
+                       hash     TEXT NOT NULL DEFAULT '',
+                       tags     TEXT NOT NULL DEFAULT '',
+                       text     TEXT NOT NULL DEFAULT '',
+                       embedding BLOB NOT NULL)"""
+            )
+            con.execute("CREATE INDEX IF NOT EXISTS idx_chunks_doc ON chunks(doc_path)")
+            con.execute("CREATE INDEX IF NOT EXISTS idx_chunks_project ON chunks(project)")
 
-        self.db_path.mkdir(parents=True, exist_ok=True)
-        self._client = chromadb.PersistentClient(path=str(self.db_path))
-        kwargs = {"name": self.collection_name}
-        ef = self._embedding_function()
-        if ef is not None:
-            kwargs["embedding_function"] = ef
-        try:
-            self._collection = self._client.get_or_create_collection(
-                configuration={"hnsw": dict(HNSW_CONFIG)}, **kwargs
-            )
-        except Exception:
-            # Older Chroma builds only accept the metadata form.
-            self._collection = self._client.get_or_create_collection(
-                metadata={
-                    "hnsw:space": HNSW_CONFIG["space"],
-                    "hnsw:M": HNSW_CONFIG["max_neighbors"],
-                    "hnsw:construction_ef": HNSW_CONFIG["ef_construction"],
-                    "hnsw:search_ef": HNSW_CONFIG["ef_search"],
-                },
-                **kwargs,
-            )
+            stored = dict(con.execute("SELECT key, value FROM meta"))
+            want = {"schema": SCHEMA_VERSION, "embedder": self.embedding_profile}
+            if stored.get("schema") != want["schema"] or stored.get("embedder") != want["embedder"]:
+                had_rows = con.execute("SELECT EXISTS(SELECT 1 FROM chunks)").fetchone()[0]
+                if had_rows:
+                    _log(
+                        f"index was built with {stored.get('embedder') or 'an older layout'}; "
+                        f"now configured for {want['embedder']} — re-embedding from notes"
+                    )
+                    con.execute("DELETE FROM chunks")
+                    self.needs_full_sync = True
+                con.execute(
+                    "INSERT OR REPLACE INTO meta(key, value) VALUES ('schema', ?), ('embedder', ?)",
+                    (want["schema"], want["embedder"]),
+                )
+                con.execute(
+                    "INSERT OR REPLACE INTO meta(key, value) VALUES ('generation', "
+                    "COALESCE((SELECT CAST(value AS INTEGER) + 1 FROM meta WHERE key='generation'), 0))"
+                )
+        self._connected = True
+
+    def _ensure_connected(self):
+        if not self._connected:
+            self._connect()
+
+    def _get_embedder(self):
+        if self._embedder is None:
+            self._embedder = load_embedder(self.embedding_profile)
+        return self._embedder
 
     def close(self):
-        self._collection = None
-        self._client = None
+        # Per-operation connections mean there is nothing to close; this
+        # resets the lazy state so the store is inert again (vault.write only
+        # updates the index when it is already live).
+        self._connected = False
+        self._embedder = None
+        self._cache_generation = -1
+        self._cache_rows = None
+        self._cache_matrix = None
 
     def is_connected(self) -> bool:
-        return self._collection is not None
+        return self._connected
 
     # --- locking --------------------------------------------------------------
 
@@ -241,10 +251,63 @@ class VectorStore:
             finally:
                 fcntl.flock(lf, fcntl.LOCK_UN)
 
+    # --- encoding -------------------------------------------------------------
+
+    def _encode(self, texts: list):
+        import numpy as np
+
+        embedder = self._get_embedder()
+        parts = [
+            embedder.encode(texts[i : i + ENCODE_BATCH])
+            for i in range(0, len(texts), ENCODE_BATCH)
+        ]
+        return np.vstack(parts) if parts else np.zeros((0, embedder.dim), dtype=np.float32)
+
+    def _chunk_records(self, path, project, title, content, tags, note_hash):
+        """Rows for one note, minus embeddings (encoded in bulk by the caller)."""
+        rows = []
+        for chunk in chunk_note(path, content):
+            rows.append(
+                {
+                    "chunk_id": chunk.chunk_id,
+                    "doc_path": path,
+                    "project": project or "",
+                    "title": title or "",
+                    "heading": chunk.heading,
+                    "ordinal": chunk.ordinal,
+                    "hash": note_hash,
+                    "tags": ",".join(str(t) for t in (tags or [])),
+                    "text": chunk.embed_text(title),
+                }
+            )
+        return rows
+
+    def _insert_rows(self, con, rows, vectors):
+        con.executemany(
+            """INSERT OR REPLACE INTO chunks
+               (chunk_id, doc_path, project, title, heading, ordinal, hash, tags, text, embedding)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+            [
+                (
+                    r["chunk_id"], r["doc_path"], r["project"], r["title"], r["heading"],
+                    r["ordinal"], r["hash"], r["tags"], r["text"],
+                    vectors[i].tobytes(),
+                )
+                for i, r in enumerate(rows)
+            ],
+        )
+
+    @staticmethod
+    def _bump_generation(con):
+        con.execute(
+            "INSERT OR REPLACE INTO meta(key, value) VALUES ('generation', "
+            "COALESCE((SELECT CAST(value AS INTEGER) + 1 FROM meta WHERE key='generation'), 0))"
+        )
+
     # --- recovery -------------------------------------------------------------
 
     def rebuild(self):
-        """Drop the collection and start clean.
+        """Drop every stored vector and start clean.
 
         Safe because the markdown vault is the source of truth and the next
         sync re-embeds everything.
@@ -252,53 +315,62 @@ class VectorStore:
         _log("rebuilding semantic index")
         self.needs_full_sync = True
         try:
-            if self._client is None:
-                self._connect()
-            self._client.delete_collection(name=self.collection_name)
-            self._collection = None
-            self._connect()
+            self._ensure_connected()
+            with self._db() as con:
+                con.execute("DELETE FROM chunks")
+                self._bump_generation(con)
             return
         except Exception as e:
-            _log(f"in-place reset failed ({e!r}); wiping store on disk")
+            _log(f"in-place reset failed ({e!r}); recreating the database file")
 
-        self.close()
-        _clear_chroma_cache()
-        shutil.rmtree(self.db_path, ignore_errors=True)
+        self._connected = False
+        try:
+            self.db_file.unlink(missing_ok=True)
+            for suffix in ("-wal", "-shm"):
+                Path(str(self.db_file) + suffix).unlink(missing_ok=True)
+        except OSError as e:
+            _log(f"could not remove database file: {e!r}")
         self._connect()
 
     def health_check(self) -> tuple:
-        """Exercise the write and read paths to surface a corrupt segment.
+        """Exercise the write, embed and read paths end to end.
 
-        Deliberately *not* called during construction — this is what the old
-        code did on every process start, and it was the single largest source
-        of both latency and index bloat. ``kyp-mem doctor`` calls it instead.
+        Deliberately not called during construction — ``kyp-mem doctor`` calls
+        it instead.
         """
         sentinel = "__kyp_healthcheck__"
         try:
-            with self._locked(write=True):
-                self.collection.upsert(documents=["ok"], ids=[sentinel])
-                self.collection.query(query_texts=["ok"], n_results=1)
-                self.collection.delete(ids=[sentinel])
+            self._ensure_connected()
+            vec = self._encode(["ok"])
+            with self._locked(write=True), self._db() as con:
+                con.execute(
+                    "INSERT OR REPLACE INTO chunks (chunk_id, doc_path, embedding) VALUES (?, ?, ?)",
+                    (sentinel, sentinel, vec[0].tobytes()),
+                )
+                con.execute("DELETE FROM chunks WHERE chunk_id = ?", (sentinel,))
+            self.search("ok", n_results=1, min_similarity=2.0)
             return True, "ok"
         except Exception as e:
             return False, repr(e)
 
     def _write(self, op, description: str = "write"):
-        """Run a write under the lock, rebuilding once if it fails.
+        """Run a write under the lock, rebuilding once if it fails twice.
 
-        Unlike the previous version this reports failure to the caller instead
-        of swallowing it — a silently failed prune is how stale records
-        accumulated unnoticed.
+        A transient error (lock conflict, full disk) gets a plain retry first;
+        dropping the index is reserved for persistent failure, and failure is
+        reported to the caller rather than swallowed.
+
+        A missing embedding runtime is neither transient nor index corruption
+        — rebuilding would destroy good vectors over an uninstalled package —
+        so it fails fast with the install hint instead.
         """
-        # Plain retry first. Dropping the whole collection on the first failure
-        # treats every transient error — a locking conflict, a full disk, an
-        # interrupted write — as index corruption, which is both drastic and
-        # usually wrong. Rebuilding is reserved for the case where a second
-        # straightforward attempt also fails.
         try:
             with self._locked(write=True):
                 op()
             return True
+        except EmbedderUnavailable as e:
+            _log(str(e))
+            return False
         except Exception as first:
             _log(f"{description} failed ({first!r}); retrying")
 
@@ -306,6 +378,9 @@ class VectorStore:
             with self._locked(write=True):
                 op()
             return True
+        except EmbedderUnavailable as e:
+            _log(str(e))
+            return False
         except Exception as second:
             _log(f"{description} failed again ({second!r}); rebuilding the index")
 
@@ -326,36 +401,9 @@ class VectorStore:
 
     # --- indexing -------------------------------------------------------------
 
-    def _chunk_records(self, path, project, title, content, tags, note_hash):
-        ids, docs, metas = [], [], []
-        for chunk in chunk_note(path, content):
-            ids.append(chunk.chunk_id)
-            docs.append(chunk.embed_text(title))
-            metas.append(
-                {
-                    "doc_path": path,
-                    "project": project or "",
-                    "title": title or "",
-                    "heading": chunk.heading,
-                    "ordinal": chunk.ordinal,
-                    "hash": note_hash,
-                    "tags": ",".join(str(t) for t in (tags or [])),
-                }
-            )
-        return ids, docs, metas
-
-    def _existing_doc_state(self):
-        """Map ``doc_path -> (hash, {chunk ids})`` for everything indexed."""
-        got = self.collection.get(include=["metadatas"])
-        state = {}
-        for cid, meta in zip(got.get("ids", []), got.get("metadatas", []) or []):
-            meta = meta or {}
-            doc = meta.get("doc_path")
-            if not doc:
-                continue
-            entry = state.setdefault(doc, [meta.get("hash"), set()])
-            entry[1].add(cid)
-        return {k: (v[0], v[1]) for k, v in state.items()}
+    def _existing_doc_state(self, con) -> dict:
+        """Map ``doc_path -> hash`` for everything indexed."""
+        return dict(con.execute("SELECT DISTINCT doc_path, hash FROM chunks"))
 
     def sync(self, docs: dict) -> dict:
         """Reconcile the index with the vault.
@@ -372,139 +420,184 @@ class VectorStore:
         }
 
         def op():
-            existing = self._existing_doc_state()
+            # Reset the counters: _write may run this op twice (retry), and
+            # counts accumulated by a half-failed first attempt would double.
+            summary.update(added=0, updated=0, removed=0, unchanged=0)
+            self._ensure_connected()
+            with self._db() as con:
+                existing = self._existing_doc_state(con)
 
-            stale_ids = []
-            add_ids, add_docs, add_metas = [], [], []
-
+            stale_paths = []
+            rows = []
             for path, (project, title, content, tags, h) in desired.items():
-                prev_hash, prev_ids = existing.get(path, (None, set()))
+                prev_hash = existing.get(path)
                 if prev_hash == h:
                     summary["unchanged"] += 1
                     continue
-                if prev_ids:
-                    # Chunk count can shrink, so drop the old ids explicitly
-                    # rather than relying on upsert to overwrite them.
-                    stale_ids.extend(prev_ids)
+                if prev_hash is not None:
+                    # Chunk count can shrink, so drop the old rows explicitly
+                    # rather than relying on REPLACE to overwrite them.
+                    stale_paths.append(path)
                     summary["updated"] += 1
                 else:
                     summary["added"] += 1
-                ids, cdocs, metas = self._chunk_records(path, project, title, content, tags, h)
-                add_ids.extend(ids)
-                add_docs.extend(cdocs)
-                add_metas.extend(metas)
+                rows.extend(self._chunk_records(path, project, title, content, tags, h))
 
-            for path, (_, prev_ids) in existing.items():
+            for path in existing:
                 if path not in desired:
-                    stale_ids.extend(prev_ids)
+                    stale_paths.append(path)
                     summary["removed"] += 1
 
-            if stale_ids:
-                for i in range(0, len(stale_ids), BATCH_SIZE):
-                    self.collection.delete(ids=stale_ids[i : i + BATCH_SIZE])
-            for i in range(0, len(add_ids), BATCH_SIZE):
-                self.collection.upsert(
-                    ids=add_ids[i : i + BATCH_SIZE],
-                    documents=add_docs[i : i + BATCH_SIZE],
-                    metadatas=add_metas[i : i + BATCH_SIZE],
-                )
+            # Encode outside the transaction: embedding a large sync can take
+            # a while and must not hold the database write lock.
+            vectors = self._encode([r["text"] for r in rows])
 
-        summary["ok"] = self._write(op, "sync")
-        if summary["ok"]:
-            self.needs_full_sync = False
+            with self._db() as con:
+                for path in stale_paths:
+                    con.execute("DELETE FROM chunks WHERE doc_path = ?", (path,))
+                self._insert_rows(con, rows, vectors)
+                self._bump_generation(con)
+
+        ok = self._write(op, "sync")
+        if not ok:
+            # The counts describe work that was rolled back, not work done.
+            return {"added": 0, "updated": 0, "removed": 0, "unchanged": 0, "ok": False}
+        summary["ok"] = True
+        self.needs_full_sync = False
         return summary
 
     def upsert_note(self, path: str, project: str, title: str, content: str, tags=None):
         """Re-embed a single note, replacing whatever was indexed for it."""
         h = content_hash(content)
-        ids, docs, metas = self._chunk_records(path, project, title, content, tags, h)
+        rows = self._chunk_records(path, project, title, content, tags, h)
 
         def op():
-            self.collection.delete(where={"doc_path": path})
-            for i in range(0, len(ids), BATCH_SIZE):
-                self.collection.upsert(
-                    ids=ids[i : i + BATCH_SIZE],
-                    documents=docs[i : i + BATCH_SIZE],
-                    metadatas=metas[i : i + BATCH_SIZE],
-                )
+            self._ensure_connected()
+            vectors = self._encode([r["text"] for r in rows])
+            with self._db() as con:
+                con.execute("DELETE FROM chunks WHERE doc_path = ?", (path,))
+                self._insert_rows(con, rows, vectors)
+                self._bump_generation(con)
 
         return self._write(op, f"upsert {path}")
 
     def delete_note(self, path: str):
         def op():
-            self.collection.delete(where={"doc_path": path})
+            self._ensure_connected()
+            with self._db() as con:
+                con.execute("DELETE FROM chunks WHERE doc_path = ?", (path,))
+                self._bump_generation(con)
 
         return self._write(op, f"delete {path}")
 
     # --- querying -------------------------------------------------------------
+
+    def _load_cache(self):
+        """(rows, matrix) for the whole index, reloaded when generation moves.
+
+        Loading everything and filtering with boolean masks is simpler and, at
+        this scale, faster than per-query SQL: the matrix is a few MB and the
+        reload only happens after a write.
+        """
+        import numpy as np
+
+        with self._db() as con:
+            gen_row = con.execute("SELECT value FROM meta WHERE key='generation'").fetchone()
+            generation = int(gen_row[0]) if gen_row else 0
+            if generation == self._cache_generation and self._cache_rows is not None:
+                return self._cache_rows, self._cache_matrix
+            rows = con.execute(
+                "SELECT chunk_id, doc_path, project, title, heading, text, embedding FROM chunks"
+            ).fetchall()
+
+        metas = [r[:6] for r in rows]
+        if rows:
+            dim = len(rows[0][6]) // 4
+            matrix = np.frombuffer(b"".join(r[6] for r in rows), dtype=np.float32)
+            matrix = matrix.reshape(len(rows), dim)
+        else:
+            matrix = np.zeros((0, 0), dtype=np.float32)
+
+        self._cache_generation = generation
+        self._cache_rows = metas
+        self._cache_matrix = matrix
+        return metas, matrix
 
     def search(
         self,
         query: str,
         project: str | None = None,
         n_results: int = 8,
-        min_similarity: float = DEFAULT_MIN_SIMILARITY,
+        min_similarity: float | None = None,
         sessions_only: bool = False,
     ) -> list:
         """Semantic search over chunks, best first.
 
-        Returns only hits clearing ``min_similarity`` — an empty list is a
-        truthful "nothing relevant", which the previous version could not say.
+        Returns only hits clearing the similarity floor — an empty list is a
+        truthful "nothing relevant". The default floor comes from the
+        configured embedding model, because score distributions differ between
+        models (see embedder.py).
         """
         if not query or not query.strip():
             return []
-
-        clauses = []
-        if project:
-            clauses.append({"project": project})
-        where = None
-        if clauses:
-            where = clauses[0] if len(clauses) == 1 else {"$and": clauses}
+        if min_similarity is None:
+            min_similarity = self.floor_alone
 
         try:
+            self._ensure_connected()
+            query_vec = self._encode([query])[0]
             with self._locked(write=False):
-                res = self.collection.query(
-                    query_texts=[query],
-                    n_results=max(n_results * 3, n_results),
-                    where=where,
-                )
+                metas, matrix = self._load_cache()
+        except EmbedderUnavailable as e:
+            _log(str(e))
+            return []
         except Exception as e:
             _log(f"search failed: {e!r}")
             return []
 
-        ids = (res.get("ids") or [[]])[0]
-        docs = (res.get("documents") or [[]])[0]
-        metas = (res.get("metadatas") or [[]])[0]
-        dists = (res.get("distances") or [[]])[0]
+        if not metas or matrix.shape[0] == 0 or matrix.shape[1] != query_vec.shape[0]:
+            if metas and matrix.shape[1] != query_vec.shape[0]:
+                _log(
+                    f"stored vectors are {matrix.shape[1]}-dim but the model produces "
+                    f"{query_vec.shape[0]}-dim — reindex with: kyp-mem reindex"
+                )
+            return []
+
+        sims = matrix @ query_vec
 
         hits = []
-        for cid, doc, meta, dist in zip(ids, docs, metas, dists):
-            meta = meta or {}
-            similarity = 1.0 - float(dist)
+        order = sims.argsort()[::-1]
+        for idx in order:
+            similarity = float(sims[idx])
             if similarity < min_similarity:
+                break  # sorted descending; nothing further can clear the floor
+            chunk_id, doc_path, chunk_project, title, heading, text = metas[idx]
+            if project and chunk_project != project:
                 continue
-            doc_path = meta.get("doc_path", cid.split("#")[0])
             if sessions_only and "/Sessions/" not in doc_path and not doc_path.startswith("Sessions/"):
                 continue
             hits.append(
                 VectorHit(
-                    chunk_id=cid,
+                    chunk_id=chunk_id,
                     doc_path=doc_path,
-                    project=meta.get("project", ""),
-                    title=meta.get("title", ""),
-                    heading=meta.get("heading", ""),
-                    text=doc or "",
+                    project=chunk_project,
+                    title=title,
+                    heading=heading,
+                    text=text,
                     similarity=similarity,
                 )
             )
-        return hits[:n_results]
+            if len(hits) >= n_results:
+                break
+        return hits
 
     def stats(self) -> dict:
         try:
-            with self._locked(write=False):
-                count = self.collection.count()
-            docs = len(self._existing_doc_state())
-            return {"chunks": count, "documents": docs, "collection": self.collection_name}
+            self._ensure_connected()
+            with self._locked(write=False), self._db() as con:
+                chunks = con.execute("SELECT COUNT(*) FROM chunks").fetchone()[0]
+                docs = con.execute("SELECT COUNT(DISTINCT doc_path) FROM chunks").fetchone()[0]
+            return {"chunks": chunks, "documents": docs, "embedder": self.embedding_profile}
         except Exception as e:
             return {"chunks": 0, "documents": 0, "error": repr(e)}
 
@@ -536,7 +629,18 @@ def reset_vector_db():
 def vector_enabled() -> bool:
     """Whether semantic indexing should run at all.
 
-    Set ``KYP_NO_VECTOR=1`` to skip it entirely — useful on the hook hot path
-    and for environments where the embedding runtime is unavailable.
+    ``KYP_NO_VECTOR=1`` disables it explicitly. A missing numpy (the base
+    install without the [vector] extra) disables it implicitly — BM25 keyword
+    search still covers every note, so this is a degradation, not an outage.
     """
-    return os.environ.get("KYP_NO_VECTOR", "").strip() not in ("1", "true", "yes")
+    if os.environ.get("KYP_NO_VECTOR", "").strip() in ("1", "true", "yes"):
+        return False
+    try:
+        import importlib.util
+
+        if importlib.util.find_spec("numpy") is None:
+            _log("numpy not installed — semantic search off. pip install 'kyp-mem[vector]'")
+            return False
+    except Exception:
+        return False
+    return True

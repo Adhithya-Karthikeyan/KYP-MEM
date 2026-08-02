@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "kyp-mem"
-version = "1.1.0"
+version = "1.2.0"
 description = "Know Your Project — Persistent knowledge base for AI agents. MCP-powered with wikilinks, backlinks, auto-learning, and neon web UI."
 readme = "README.md"
 license = {text = "MIT"}
@@ -25,15 +25,47 @@ classifiers = [
     "Topic :: Software Development :: Documentation",
     "Topic :: Text Processing :: Markup :: Markdown",
 ]
+# mcp is pinned below 2: mcp 2.0.0 (2026-07-28) removed the
+# mcp.server.fastmcp.FastMCP import path this server is built on. v1.x is the
+# maintainers' supported maintenance line; migrate deliberately, not by
+# accident of an unbounded pin.
 dependencies = [
-    "mcp>=1.0.0",
+    "mcp>=1.28,<2",
     "pyyaml>=6.0",
-    "fastapi>=0.100.0",
-    "uvicorn>=0.20.0",
-    "chromadb>=0.4.0",
 ]
 
+# The base install is deliberately tiny (~30 MB): MCP server, vault, BM25
+# keyword search, and hooks all work with no extras. Anything heavier is
+# opt-in. The npm installer provisions [ui,vector] by default, so npm users
+# keep the batteries-included experience; PyPI/uvx users choose their tier.
 [project.optional-dependencies]
+# Local web UI (kyp-mem ui).
+ui = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.20.0",
+]
+# Semantic search: SQLite + numpy vector store, embeddings via ONNX
+# all-MiniLM-L6-v2 (the exact model the old ChromaDB backend bundled, so
+# retrieval quality is unchanged). No torch.
+vector = [
+    "numpy>=1.24",
+    "onnxruntime>=1.17",
+    "tokenizers>=0.15",
+]
+# Numpy-only static embeddings (model2vec) — smallest possible semantic
+# tier. Opt in with: kyp-mem config embedding_model static. Measurably
+# weaker floors than the default; see kyp_mem/embedder.py.
+vector-lite = [
+    "numpy>=1.24",
+    "model2vec>=0.6",
+]
+# Full sentence-transformers models (pulls torch — heavy).
+st = [
+    "sentence-transformers>=3.0",
+]
+all = [
+    "kyp-mem[ui,vector]",
+]
 dev = [
     "pytest>=7.0",
 ]
@@ -70,5 +102,5 @@ target-version = "py310"
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = [
-    "slow: integration tests that build a real ChromaDB store",
+    "slow: integration tests that build a real vector store with real embeddings",
 ]

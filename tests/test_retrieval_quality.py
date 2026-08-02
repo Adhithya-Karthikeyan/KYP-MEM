@@ -15,7 +15,9 @@ import pytest
 from kyp_mem.vault import Vault
 from tests.conftest import write
 
-pytest.importorskip("chromadb")
+pytest.importorskip("numpy")
+pytest.importorskip("onnxruntime")
+pytest.importorskip("tokenizers")
 
 pytestmark = pytest.mark.slow
 

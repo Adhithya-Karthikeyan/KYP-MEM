@@ -40,7 +40,7 @@ Every coding session is automatically captured with full context:
 - File edits with diffs (what changed and why)
 - Command outputs (what happened)
 
-At session end, Claude Sonnet synthesizes raw activity into a structured summary with **Summary**, **Investigated**, **Learned**, **Completed**, and **Next Steps** sections. Sessions are semantically searchable via ChromaDB vector embeddings.
+At session end, Claude Sonnet synthesizes raw activity into a structured summary with **Summary**, **Investigated**, **Learned**, **Completed**, and **Next Steps** sections. Sessions are semantically searchable via local vector embeddings (a single SQLite file — no database server, no heavyweight dependencies).
 
 ### 2. Project Intelligence (Vault)
 
@@ -111,11 +111,31 @@ demand. Nothing is ever printed into your chat.
 ### Requirements
 
 - Node.js 18+
-- Python 3.10+
+- Python 3.10+ — or [uv](https://docs.astral.sh/uv/), which fetches its own.
+  When uv is installed, kyp-mem uses it to provision its Python environment
+  (~100x faster than pip).
 - Claude Code and/or Kimi CLI — the agent(s) KYP-MEM integrates with.
 - Claude Code CLI — session summarization shells out to it and reuses your
   existing Claude Code login, so no separate API key is needed. Without it,
   sessions still save using a built-in structured fallback.
+
+### Install size, and how to shrink it
+
+The npm install provisions everything (~145 MB): MCP server, web UI, and
+semantic search with a local ONNX embedding model — no torch, no database
+server. PyPI users can pick a tier:
+
+```bash
+pip install kyp-mem                # ~30 MB — MCP server + BM25 keyword search
+pip install 'kyp-mem[vector]'      # + semantic search (ONNX all-MiniLM-L6-v2)
+pip install 'kyp-mem[vector-lite]' # + semantic search, numpy-only static
+                                   #   embeddings (smaller, measurably weaker)
+pip install 'kyp-mem[ui]'          # + local web UI
+```
+
+Without the `[vector]` extra, everything still works — search degrades to
+keyword-only (BM25) and says so once on stderr. `KYP_MEM_LITE=1 npm install`
+gets the tiny base through npm too.
 
 ### Custom Vault Path
 
@@ -168,11 +188,10 @@ kyp-mem ui
 Your markdown notes are always the source of truth. The semantic index is
 derived and can be rebuilt from them at any time, so every command here is safe.
 
-ChromaDB does not return disk on its own: deleting a record only tombstones a
-slot, dropping a collection leaves its files behind, and SQLite's full-text
-index never merges its segments. `kyp-mem compact` handles all three — it
-rebuilds the index, sweeps orphaned segments, merges the full-text index, and
-vacuums the database.
+The index is one SQLite file that reclaims space on delete; `kyp-mem compact`
+re-embeds from your notes, vacuums the database, and — if you upgraded from a
+pre-1.2 install — sweeps the old ChromaDB files the previous backend left
+behind (often hundreds of MB).
 
 ```bash
 kyp-mem doctor            # report index size and anything reclaimable
